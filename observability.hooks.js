@@ -36,8 +36,8 @@ export async function onRequest(body, ctx) {
     finishOptions(ctx)
     if (options.observability === false) return undefined
     if (ctx.origin === "local") {
-      processLabCommand(ctx.options)
-      processCaptureCommand(ctx.options)
+      await processLabCommand(ctx.options)
+      await processCaptureCommand(ctx.options)
     }
     // Unknown / non-local origins must not export request-derived data.
     if (ctx.origin !== "local") return undefined
@@ -60,11 +60,6 @@ export async function onRequest(body, ctx) {
       const captureId = captureCommandId()
       const snapshotRecord = { id: captureId, at: record.ts, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), beforeText, afterText, beforeBytes: record.beforeBytes, afterBytes: record.afterBytes, savedBytes: record.savedBytes, report: record }
       let saved = await saveCapture(snapshotRecord)
-      if (saved.reason === "too_large") {
-        // JSON request bodies duplicate all text kept by the viewer. Drop that
-        // copy first so a typical long context still has a complete audit.
-        saved = await saveCapture(snapshotRecord)
-      }
       if (saved.saved) {
         const current = statsSnapshot()
         current.captures.unshift({ id: captureId, at: record.ts, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), before: record.beforeBytes, after: record.afterBytes, saved: record.savedBytes, summary: false })

@@ -172,6 +172,12 @@
       state.preset = V.presetOf(strategies())
       localize()
       paint()
+      globalThis.CompressAudit.init({
+        lang: function () { return lang },
+        getOptions: function () { return options },
+        saveOptions: function (next) { options = next; pending = true; clearTimeout(timer); timer = setTimeout(flush, Math.max(0, 1100 - (Date.now() - writeAt))) },
+        onOptions: function (fn) { /* panel.js has no options listener bus; audit polls via watch */ },
+      })
       watch()
     } catch (e) {
       setMessage(T.failedRead, "err")

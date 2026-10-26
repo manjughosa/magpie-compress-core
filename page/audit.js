@@ -209,7 +209,7 @@
       opts.captureCommand = { id: `clear-${Date.now()}`, action: "clear" }
       if (options.saveOptions) options.saveOptions(opts)
       else options.save({ captureCommand: opts.captureCommand })
-      $("captureStatus").textContent = "已请求清除；在下一次网关请求时执行。"
+      $("captureStatus").textContent = "已请求清除；请发一条消息触发网关请求，清除将在那时执行。"
     })
     options.onOptions(paintCaptures)
     paintCaptures()

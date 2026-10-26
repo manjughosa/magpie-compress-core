@@ -9,10 +9,33 @@
   <p class="hint" id="presetHint"></p>
   <p class="message" id="message" hidden></p>
   <div id="rows" class="list"></div>
+
+  <details class="fold" id="labFold">
+    <summary><span>试压实验室</span><span class="muted">单个策略 · 本地运行</span></summary>
+    <div class="lab-controls">
+      <select id="labStrategy" aria-label="试压策略"></select>
+      <button id="runLab" class="action" type="button">运行试压</button>
+    </div>
+    <textarea id="labInput" rows="7" spellcheck="false"></textarea>
+    <p class="hint">使用网关同一份引擎和当前策略参数，不调用模型，不保存试压文本。</p>
+    <p id="labStatus" class="hint" aria-live="polite"></p>
+    <div id="labResult"></div>
+  </details>
+
+  <details class="fold" id="captureFold">
+    <summary><span>真实压缩前后</span><span class="muted">最近 50 次 · 本地保存</span><button type="button" class="link" id="clearCaptures">清空</button></summary>
+    <p class="hint">默认保留最近 50 次完整前后对话，单份存储上限 2 MB；超出时保留统计并标注"仅摘要"。点击一条后，在下一次网关请求时载入。</p>
+    <div id="captures" class="capture-list"></div>
+    <p id="captureStatus" class="hint"></p>
+    <details id="captureDiff" class="diff-fold"><summary>查看完整前后差异</summary><div id="captureDetail"></div></details>
+  </details>
+
   <script src="_magpie/bridge.js"></script>
   <script src="engines.js"></script>
   <script src="view.js"></script>
   <script src="ui.js"></script>
+  <script src="lab-engine.bundle.js"></script>
+  <script src="audit.js"></script>
   <script src="panel.js" defer></script>
 </body>
 </html>
