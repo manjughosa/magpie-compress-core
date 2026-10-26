@@ -9649,6 +9649,9 @@ Files: ` + [...paths].join(", ");
   // page/lab-engine.js
   var encoder2 = new TextEncoder;
   globalThis.CompressLab = {
+    engines: ENGINES.map(function(e) {
+      return { id: e.id, label: e.label, available: e.available !== false };
+    }),
     async run(input, strategy, options) {
       if (typeof input !== "string" || !input.trim())
         throw new Error("请输入要试压的文本。");

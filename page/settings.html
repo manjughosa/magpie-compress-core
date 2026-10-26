@@ -1,34 +1,83 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="panel" data-panel="settings">
-  <div class="segs" id="presets"></div>
-  <p class="hint" id="presetHint"></p>
-  <p class="message" id="message" hidden></p>
-  <div id="rows" class="list"></div>
 
-  <details class="fold" id="labFold">
-    <summary><span>试压实验室</span><span class="muted">单个策略 · 本地运行</span></summary>
-    <div class="lab-controls">
-      <select id="labStrategy" aria-label="试压策略"></select>
-      <button id="runLab" class="action" type="button">运行试压</button>
+  <!-- ═══ 第一层：压缩策略 ═══ -->
+  <section class="layer" id="layerStrategies">
+    <header class="layer-head">
+      <h2 class="layer-title">压缩策略</h2>
+      <div class="segs" id="presets"></div>
+    </header>
+    <p class="hint" id="presetHint"></p>
+    <p class="message" id="message" hidden></p>
+    <div id="rows" class="strategy-list"></div>
+  </section>
+
+  <!-- ═══ 第一层：试压实验室 ═══ -->
+  <section class="layer" id="layerLab">
+    <details class="fold" id="labFold">
+      <summary class="layer-summary">
+        <span class="layer-icon">⚗</span>
+        <span class="layer-label">试压实验室</span>
+        <span class="layer-desc">单策略 · 本地运行 · 不耗 token</span>
+        <span class="chev">›</span>
+      </summary>
+      <div class="layer-body">
+        <div class="lab-grid">
+          <div class="lab-input-side">
+            <label class="lab-label" for="labStrategy">选择策略</label>
+            <div class="lab-controls">
+              <select id="labStrategy" aria-label="试压策略"></select>
+              <button id="runLab" class="action primary" type="button">运行试压</button>
+            </div>
+            <label class="lab-label" for="labInput">输入原文</label>
+            <textarea id="labInput" rows="8" spellcheck="false" placeholder="粘贴一段对话或文本…"></textarea>
+            <p class="hint">使用网关同一份引擎和当前策略参数，不调用模型，不保存试压文本。</p>
+            <p id="labStatus" class="hint" aria-live="polite"></p>
+          </div>
+          <div class="lab-result-side" id="labResult">
+            <div class="lab-empty">
+              <span class="lab-empty-icon">◈</span>
+              <p>运行试压后，这里显示压缩前后的对比</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ═══ 第一层：真实压缩前后 ═══ -->
+  <section class="layer" id="layerCaptures">
+    <details class="fold" id="captureFold">
+      <summary class="layer-summary">
+        <span class="layer-icon">⇄</span>
+        <span class="layer-label">真实压缩前后</span>
+        <span class="layer-desc">最近 50 次 · 本地保存</span>
+        <button type="button" class="link" id="clearCaptures">清空</button>
+        <span class="chev">›</span>
+      </summary>
+      <div class="layer-body">
+        <p class="hint">点击一条记录查看完整的压缩前后差异。数据在下一次网关请求时载入。</p>
+        <div id="captures" class="capture-list"></div>
+        <p id="captureStatus" class="hint"></p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ═══ 第二层：差异详情（点击后展开） ═══ -->
+  <section class="layer layer-detail" id="layerDiff" hidden>
+    <header class="layer-head">
+      <button type="button" class="back-btn" id="diffBack">‹ 返回列表</button>
+      <h2 class="layer-title" id="diffTitle">压缩前后差异</h2>
+    </header>
+    <div class="diff-container" id="captureDetail">
+      <!-- 动态填充 -->
     </div>
-    <textarea id="labInput" rows="7" spellcheck="false"></textarea>
-    <p class="hint">使用网关同一份引擎和当前策略参数，不调用模型，不保存试压文本。</p>
-    <p id="labStatus" class="hint" aria-live="polite"></p>
-    <div id="labResult"></div>
-  </details>
-
-  <details class="fold" id="captureFold">
-    <summary><span>真实压缩前后</span><span class="muted">最近 50 次 · 本地保存</span><button type="button" class="link" id="clearCaptures">清空</button></summary>
-    <p class="hint">默认保留最近 50 次完整前后对话，单份存储上限 2 MB；超出时保留统计并标注"仅摘要"。点击一条后，在下一次网关请求时载入。</p>
-    <div id="captures" class="capture-list"></div>
-    <p id="captureStatus" class="hint"></p>
-    <details id="captureDiff" class="diff-fold"><summary>查看完整前后差异</summary><div id="captureDetail"></div></details>
-  </details>
+  </section>
 
   <script src="_magpie/bridge.js"></script>
   <script src="engines.js"></script>

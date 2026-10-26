@@ -1,219 +1,352 @@
-// Shared lab form and real-request before/after viewer. No server or host API.
+// 审计模块：真实压缩前后的快照列表 + 差异查看
+// 分层结构：第一层是折叠的列表，点击后展开第二层差异详情
 (function () {
   "use strict"
+
+  var U = globalThis.CompressUI
   var V = globalThis.CompressView
-  var CAT = globalThis.CompressCatalog || { engines: [] }
   var $ = function (id) { return document.getElementById(id) }
+  var lang = "zh"
+  var getOptions = function () { return {} }
+  var saveOptions = function () {}
+  var captures = []
+  var selectedId = null
 
-  function el(tag, cls, text) {
-    var node = document.createElement(tag)
-    if (cls) node.className = cls
-    if (text != null) node.textContent = text
-    return node
-  }
-  function bytes(n) { return (Number(n) || 0).toLocaleString() + " B" }
-  function time(value) { try { return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) } catch { return "" } }
-  function field(tagName, id) { var node = el(tagName); node.id = id; return node }
-
-  function pane(label) {
-    var box = el("div", "diff-pane")
-    var head = el("div", "diff-label")
-    var copy = el("button", "link")
-    copy.type = "button"
-    copy.textContent = "复制"
-    var pre = el("pre", "diff-text")
-    copy.addEventListener("click", function () {
-      navigator.clipboard.writeText(pre.textContent).then(function () { copy.textContent = "已复制" }).catch(function () { copy.textContent = "选中文本复制" })
-    })
-    head.append(el("span", "", label), copy)
-    box.append(head, pre)
-    return { box: box, pre: pre }
+  function fmtBytes(n) {
+    if (n < 1024) return n + " B"
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB"
+    return (n / 1024 / 1024).toFixed(2) + " MB"
   }
 
-  function diff(before, after) {
-    var a = String(before).split("\n"), b = String(after).split("\n")
-    var first = 0
-    while (first < a.length && first < b.length && a[first] === b[first]) first++
-    var end = 0
-    while (end < a.length - first && end < b.length - first && a[a.length - 1 - end] === b[b.length - 1 - end]) end++
-    return [
-      { title: "原文 · 第 " + (first + 1) + " 行起", lines: a.slice(first, a.length - end) },
-      { title: "压缩后 · 第 " + (first + 1) + " 行起", lines: b.slice(first, b.length - end) },
-    ]
+  function fmtTime(ts) {
+    var d = new Date(ts)
+    var today = new Date()
+    var sameDay = d.toDateString() === today.toDateString()
+    return sameDay
+      ? d.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" })
+      : d.toLocaleDateString(lang, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
   }
 
-  function renderDetail(host, record) {
-    host.replaceChildren()
-    if (!record) { host.append(el("p", "hint", "选择一个请求查看完整前后文。")); return }
-    var meta = el("div", "diff-meta")
-    meta.append(el("span", "", (record.protocol || "chat") + " · " + bytes(record.beforeBytes ?? record.before)), el("span", "arrow", "→"), el("span", "", bytes(record.afterBytes ?? record.after)), el("span", "muted", "−" + bytes(record.savedBytes ?? record.saved)))
-    host.append(meta)
-    if (record.saved === 0) { host.append(el("p", "hint", "这次请求没有变化。")); return }
-    if (record.beforeText == null || record.afterText == null) {
-      host.append(el("p", "hint", "这个请求发生在快照记录启用之前，只有统计数据。")); return
+  function fmtRate(rate) {
+    var pct = Math.round(rate * 100)
+    return (pct > 0 ? "-" : pct < 0 ? "+" : "") + Math.abs(pct) + "%"
+  }
+
+  function renderList() {
+    var host = $("captures")
+    var status = $("captureStatus")
+    if (!host) return
+
+    U.clear(host)
+
+    if (!captures.length) {
+      host.append(U.el("p", "empty", "暂无记录。发一条消息触发网关请求后，这里会显示压缩前后的快照。"))
+      if (status) status.textContent = ""
+      return
     }
-    diff(record.beforeText, record.afterText).forEach(function (part) {
-      var p = pane(part.title)
-      p.pre.textContent = part.lines.join("\n")
-      host.append(p.box)
-    })
-  }
 
-  function init(options) {
-    var getOptions = options.getOptions
-    var T = function () { return V.text(options.lang() || "en") }
-    var Tc = T()
-    var labSelect = $("labStrategy")
-    CAT.engines.filter(function (e) { return e.available !== false }).forEach(function (e) {
-      var choice = el("option", "", e.name)
-      choice.value = e.id
-      labSelect.append(choice)
-    })
-    labSelect.value = "lite"
-    var textInput = $("labInput")
-    textInput.placeholder = "粘贴一段文本，只测试选中的策略；不会发送给模型。"
-    var labResult = null
-    var labExpanded = false
+    captures.forEach(function (cap) {
+      var row = U.el("button", "capture-row")
+      row.type = "button"
+      row.dataset.id = cap.id
 
-    function paintLab() {
-      var host = $("labResult")
-      host.replaceChildren()
-      if (!labResult) return
-      var head = el("div", "diff-meta")
-      head.append(el("strong", "", CAT.engines.find(function (e) { return e.id === labResult.strategy })?.name || labResult.strategy), el("span", "", bytes(labResult.before)), el("span", "arrow", "→"), el("span", "", bytes(labResult.after)), el("span", "muted", "−" + bytes(labResult.saved)))
-      host.append(head)
-      if (labResult.error) host.append(el("p", "message err", labResult.error))
-      var fold = el("details", "diff-fold")
-      fold.open = labExpanded
-      fold.addEventListener("toggle", function () { labExpanded = fold.open })
-      var summary = el("summary", "", "查看前后文本")
-      fold.append(summary)
-      diff(labResult.beforeText, labResult.afterText).forEach(function (part) {
-        var p = pane(part.title)
-        p.pre.textContent = part.lines.join("\n")
-        fold.append(p.box)
+      var name = U.el("span", "capture-name", cap.strategy || "auto")
+      var time = U.el("span", "capture-time", fmtTime(cap.ts))
+      var size = U.el("span", "capture-size", fmtBytes(cap.beforeBytes) + " → " + fmtBytes(cap.afterBytes))
+      var rate = U.el("span", "capture-rate " + (cap.rate > 0 ? "good" : cap.rate < 0 ? "bad" : ""), fmtRate(cap.rate))
+
+      row.append(name, time, size, rate)
+
+      row.addEventListener("click", function () {
+        selectCapture(cap.id)
       })
-      host.append(fold)
-    }
 
-    $("runLab").addEventListener("click", async function () {
-      var button = this
-      button.disabled = true
-      $("labStatus").textContent = "正在本地试压…"
-      try {
-        if (!globalThis.CompressLab) throw new Error("试压引擎未加载，请刷新页面。")
-        labResult = await globalThis.CompressLab.run(textInput.value, labSelect.value, getOptions())
-        labExpanded = false
-        $("labStatus").textContent = "已用同一策略管线完成；没有调用模型。"
-      } catch (error) {
-        labResult = null
-        $("labStatus").textContent = error.message
-      }
-      paintLab()
-      button.disabled = false
+      host.append(row)
     })
-    textInput.addEventListener("keydown", function (event) { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") $("runLab").click() })
 
-    var selectedCapture = null
-    var expanded = false
-    var known = ""
-    var loadingCapture = null
-    var captureCache = {}
-    // The detail is published beside this page as a script, so a <script> tag
-    // loads it directly. That is the one outbound the page CSP allows, and it
-    // needs no host round trip: the detail is there on the first click.
-    // Published beside the captures themselves: loading this re-renders the
-    // list from what the store holds instead of from the options snapshot.
-    function loadCaptureIndex() {
-      var script = document.createElement("script")
-      script.src = "captures/index.js?v=" + Date.now()
-      script.onload = function () {
-        script.remove()
-        var list = globalThis.__COMPRESS_CAPTURES_INDEX__
-        if (!Array.isArray(list)) return
-        captureIndex = list
-        paintCaptures()
-      }
-      script.onerror = function () { script.remove() }
-      document.head.append(script)
-    }
-    function loadCapture(id) {
-      selectedCapture = id
-      if (captureCache[id]) {
-        renderDetail($("captureDetail"), captureCache[id])
-        $("captureStatus").textContent = "已载入完整前后文。"
-        return
-      }
-      if (loadingCapture === id) return
-      loadingCapture = id
-      $("captureStatus").textContent = "正在载入本地快照…"
-      var script = document.createElement("script")
-      script.src = "captures/" + encodeURIComponent(id) + ".js?v=" + Date.now()
-      script.onload = function () {
-        loadingCapture = null
-        var store = globalThis.__COMPRESS_CAPTURES__ || {}
-        var record = store[id]
-        script.remove()
-        if (!record) { $("captureStatus").textContent = "这条快照的详情已随轮换清理，只剩索引。"; return }
-        captureCache[id] = record
-        renderDetail($("captureDetail"), record)
-        $("captureStatus").textContent = "已载入完整前后文。"
-      }
-      script.onerror = function () {
-        loadingCapture = null
-        script.remove()
-        $("captureStatus").textContent = "这条快照的详情已失效（插件重装或轮换后只剩索引）。"
-      }
-      document.head.append(script)
-    }
-    $("captureDiff").addEventListener("toggle", function () { if (this.open && selectedCapture) loadCapture(selectedCapture) })
-    // The list is published beside the page straight from the store, so it
-    // cannot drift from the captures that are actually on disk. Until that
-    // script arrives the options index is used, which is the older channel.
-    var captureIndex = null
-    function paintCaptures() {
-      var stats = getOptions().stats || {}
-      var records = captureIndex || (Array.isArray(stats.captures) ? stats.captures : [])
-      var signature = JSON.stringify(records)
-      if (signature === known) return
-      known = signature
-      if (records.length && !records.some(function (r) { return r.id === selectedCapture })) selectedCapture = records[0].id
-      if (!records.length) selectedCapture = null
-      var host = $("captures")
-      host.replaceChildren()
-      if (!records.length) { host.append(el("p", "hint", "还没有真实压缩快照。通过网关发出请求后，完整前后文会留在这里。")); $("captureDetail").replaceChildren(); return }
-      records.forEach(function (record) {
-        var row = el("button", "capture-row" + (record.id === selectedCapture ? " selected" : ""))
-        row.type = "button"
-        var full = record.summary !== true
-        var label = (record.protocol || "chat") + " · " + time(record.at)
-        if (!full) label += " · 仅摘要"
-        row.append(el("span", "num", time(record.at)), el("span", "capture-name", label), el("span", "muted", bytes(record.before) + " → " + bytes(record.after)), el("span", "num", "−" + bytes(record.saved)))
-        row.title = full ? "查看压缩前后完整内容" : "单侧超过 1 MB，按保护规则仅保存摘要"
-        row.disabled = !full
-        row.addEventListener("click", function () {
-          if (!full) { $("captureStatus").textContent = "该次完整前后文超过存储上限，仅保留统计。"; return }
-          selectedCapture = record.id
-          expanded = true
-          $("captureDiff").open = true
-          host.querySelectorAll(".capture-row").forEach(function (item) { item.classList.remove("selected") })
-          row.classList.add("selected")
-          loadCapture(record.id)
-        })
-        host.append(row)
-      })
-      if ($("captureDiff").open && !selectedCapture) $("captureDetail").replaceChildren(el("p", "hint", "点击任意一条快照即可就地载入完整前后文。"))
-    }
-    $("clearCaptures").addEventListener("click", function () {
-      var opts = Object.assign({}, getOptions())
-      opts.captureCommand = { id: `clear-${Date.now()}`, action: "clear" }
-      if (options.saveOptions) options.saveOptions(opts)
-      else options.save({ captureCommand: opts.captureCommand })
-      $("captureStatus").textContent = "已请求清除；请发一条消息触发网关请求，清除将在那时执行。"
-    })
-    options.onOptions(paintCaptures)
-    paintCaptures()
-    loadCaptureIndex()
+    if (status) status.textContent = captures.length + " 条记录 · 点击一条查看差异"
   }
-  globalThis.CompressAudit = { init: init, renderDetail: renderDetail }
+
+  function selectCapture(id) {
+    selectedId = id
+    var cap = captures.find(function (c) { return c.id === id })
+    if (!cap) return
+
+    // 高亮选中行
+    var rows = document.querySelectorAll(".capture-row")
+    rows.forEach(function (r) { r.classList.toggle("selected", r.dataset.id === id) })
+
+    // 显示第二层
+    var layerDiff = $("layerDiff")
+    var diffTitle = $("diffTitle")
+    var diffDetail = $("captureDetail")
+
+    if (!layerDiff || !diffDetail) return
+
+    layerDiff.hidden = false
+    if (diffTitle) diffTitle.textContent = "压缩前后差异 · " + (cap.strategy || "auto") + " · " + fmtTime(cap.ts)
+
+    renderDiff(diffDetail, cap)
+
+    // 滚动到详情区
+    layerDiff.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  function renderDiff(host, cap) {
+    U.clear(host)
+
+    // 头部统计
+    var header = U.el("div", "diff-header")
+    var stats = U.el("div", "diff-stats")
+
+    var stat1 = U.el("div", "diff-stat")
+    stat1.append(U.el("span", "k", "压缩前"), U.el("span", "v", fmtBytes(cap.beforeBytes)))
+
+    var stat2 = U.el("div", "diff-stat")
+    stat2.append(U.el("span", "k", "压缩后"), U.el("span", "v", fmtBytes(cap.afterBytes)))
+
+    var stat3 = U.el("div", "diff-stat")
+    var rateV = U.el("span", "v " + (cap.rate > 0 ? "good" : ""), fmtRate(cap.rate))
+    stat3.append(U.el("span", "k", "压缩率"), rateV)
+
+    var stat4 = U.el("div", "diff-stat")
+    stat4.append(U.el("span", "k", "节省"), U.el("span", "v", fmtBytes(cap.beforeBytes - cap.afterBytes)))
+
+    stats.append(stat1, stat2, stat3, stat4)
+
+    // 进度条（OmniRoute 风格）
+    var progressWrap = U.el("div", "")
+    progressWrap.style.cssText = "flex:1;max-width:200px;min-width:100px"
+    var progressBar = U.el("div", "progress-bar")
+    var progressFill = U.el("i")
+    progressFill.style.width = Math.min(100, Math.max(0, cap.rate * 100)) + "%"
+    progressBar.append(progressFill)
+    progressWrap.append(progressBar)
+
+    header.append(stats, progressWrap)
+
+    // 双栏对比
+    var panes = U.el("div", "diff-panes")
+
+    var beforePane = U.el("div", "diff-pane")
+    var beforeHead = U.el("div", "diff-pane-head")
+    beforeHead.append(
+      U.el("span", "diff-pane-title", "压缩前"),
+      U.el("span", "diff-pane-size", fmtBytes(cap.beforeBytes))
+    )
+    var beforeBody = U.el("div", "diff-pane-body")
+    beforeBody.textContent = cap.beforeText || "(无内容)"
+    beforePane.append(beforeHead, beforeBody)
+
+    var afterPane = U.el("div", "diff-pane")
+    var afterHead = U.el("div", "diff-pane-head")
+    afterHead.append(
+      U.el("span", "diff-pane-title", "压缩后"),
+      U.el("span", "diff-pane-size", fmtBytes(cap.afterBytes))
+    )
+    var afterBody = U.el("div", "diff-pane-body")
+    afterBody.innerHTML = highlightDiff(cap.beforeText || "", cap.afterText || "")
+    afterPane.append(afterHead, afterBody)
+
+    panes.append(beforePane, afterPane)
+
+    host.append(header, panes)
+  }
+
+  // 简单的差异高亮：标出被删除的部分
+  function highlightDiff(before, after) {
+    if (!before || !after) return escapeHtml(after)
+
+    // 找出 after 中不存在的 before 的行
+    var beforeLines = before.split("\n")
+    var afterLines = after.split("\n")
+    var afterSet = new Set(afterLines)
+
+    var result = []
+    var currentBlock = []
+
+    afterLines.forEach(function (line) {
+      // 检查这行是否在 before 中存在
+      var existsInBefore = beforeLines.some(function (bl) { return bl === line })
+      if (existsInBefore) {
+        result.push(escapeHtml(line))
+      } else {
+        // 新增的行（压缩后新增的，通常是摘要或标记）
+        result.push('<span class="diff-added">' + escapeHtml(line) + "</span>")
+      }
+    })
+
+    // 如果 after 比 before 短很多，说明有大量删除
+    // 在末尾添加一个"已删除 X 行"的提示
+    var removedCount = beforeLines.length - afterLines.length
+    if (removedCount > 0) {
+      result.push("")
+      result.push('<span class="diff-removed">… 已删除 ' + removedCount + " 行 …</span>")
+    }
+
+    return result.join("\n")
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  }
+
+  function loadCaptures() {
+    var opts = getOptions()
+    var list = (opts.stats && opts.stats.captures) || []
+    captures = list.slice().sort(function (a, b) { return b.ts - a.ts })
+    renderList()
+  }
+
+  function clearCaptures() {
+    if (!confirm("确定清空所有快照记录？此操作在下一次网关请求时执行。")) return
+    var opts = getOptions()
+    var next = Object.assign({}, opts)
+    next.captureCommand = { action: "clear", ts: Date.now() }
+    saveOptions(next)
+
+    var status = $("captureStatus")
+    if (status) status.textContent = "已提交清空命令，请发一条消息触发网关请求…"
+  }
+
+  function bindBack() {
+    var backBtn = $("diffBack")
+    if (!backBtn) return
+    backBtn.addEventListener("click", function () {
+      var layerDiff = $("layerDiff")
+      if (layerDiff) layerDiff.hidden = true
+      selectedId = null
+      var rows = document.querySelectorAll(".capture-row")
+      rows.forEach(function (r) { r.classList.remove("selected") })
+    })
+  }
+
+  // ═══ 试压实验室 ═══
+
+  function populateLabStrategies() {
+    var sel = $("labStrategy")
+    if (!sel || !globalThis.CompressLab) return
+
+    var engines = globalThis.CompressLab.engines || []
+    sel.innerHTML = ""
+
+    engines.forEach(function (eng) {
+      var opt = document.createElement("option")
+      opt.value = eng.id
+      opt.textContent = eng.label || eng.id
+      if (eng.available === false) opt.disabled = true
+      sel.append(opt)
+    })
+
+    // 默认选第一个可用的
+    var firstAvailable = engines.find(function (e) { return e.available !== false })
+    if (firstAvailable) sel.value = firstAvailable.id
+  }
+
+  function runLabTest() {
+    var input = $("labInput")
+    var strategy = $("labStrategy")
+    var status = $("labStatus")
+    var result = $("labResult")
+    var btn = $("runLab")
+
+    if (!input || !strategy || !result) return
+
+    var text = input.value.trim()
+    if (!text) {
+      if (status) status.textContent = "请输入要试压的文本"
+      return
+    }
+
+    if (!globalThis.CompressLab) {
+      if (status) status.textContent = "试压引擎未加载"
+      return
+    }
+
+    btn.disabled = true
+    if (status) status.textContent = "正在运行…"
+
+    globalThis.CompressLab.run(text, strategy.value, getOptions())
+      .then(function (res) {
+        if (status) status.textContent = ""
+        renderLabResult(result, res)
+      })
+      .catch(function (err) {
+        if (status) status.textContent = "试压失败：" + (err.message || err)
+      })
+      .finally(function () {
+        btn.disabled = false
+      })
+  }
+
+  function renderLabResult(host, res) {
+    U.clear(host)
+
+    var wrap = U.el("div", "lab-result")
+
+    // 头部统计
+    var head = U.el("div", "lab-result-head")
+    var stat = U.el("div", "lab-stat")
+    stat.append(
+      U.el("span", "from", fmtBytes(res.before)),
+      U.el("span", "arrow", "→"),
+      U.el("span", "to", fmtBytes(res.after)),
+      U.el("span", "rate", "−" + Math.round((res.saved / res.before) * 100) + "%")
+    )
+    head.append(stat)
+
+    // 差异对比
+    var panes = U.el("div", "diff-panes")
+
+    var beforePane = U.el("div", "diff-pane")
+    var beforeHead = U.el("div", "diff-pane-head")
+    beforeHead.append(
+      U.el("span", "diff-pane-title", "压缩前"),
+      U.el("span", "diff-pane-size", fmtBytes(res.before))
+    )
+    var beforeBody = U.el("div", "diff-pane-body")
+    beforeBody.textContent = res.beforeText
+    beforePane.append(beforeHead, beforeBody)
+
+    var afterPane = U.el("div", "diff-pane")
+    var afterHead = U.el("div", "diff-pane-head")
+    afterHead.append(
+      U.el("span", "diff-pane-title", "压缩后"),
+      U.el("span", "diff-pane-size", fmtBytes(res.after))
+    )
+    var afterBody = U.el("div", "diff-pane-body")
+    afterBody.innerHTML = highlightDiff(res.beforeText, res.afterText)
+    afterPane.append(afterHead, afterBody)
+
+    panes.append(beforePane, afterPane)
+
+    wrap.append(head, panes)
+    host.append(wrap)
+  }
+
+  function bindLab() {
+    var btn = $("runLab")
+    if (!btn) return
+    btn.addEventListener("click", runLabTest)
+    populateLabStrategies()
+  }
+
+  function init(opts) {
+    if (!opts) return
+    lang = opts.lang || "zh"
+    getOptions = opts.getOptions || getOptions
+    saveOptions = opts.saveOptions || saveOptions
+
+    var clearBtn = $("clearCaptures")
+    if (clearBtn) clearBtn.addEventListener("click", clearCaptures)
+
+    bindBack()
+    bindLab()
+    loadCaptures()
+
+    // 轮询更新
+    setInterval(loadCaptures, 5000)
+  }
+
+  globalThis.CompressAudit = { init: init, reload: loadCaptures }
 })()
