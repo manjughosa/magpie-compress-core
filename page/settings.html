@@ -6,78 +6,154 @@
 </head>
 <body class="panel" data-panel="settings">
 
-  <!-- ═══ 第一层：压缩策略 ═══ -->
-  <section class="layer" id="layerStrategies">
-    <header class="layer-head">
-      <h2 class="layer-title">压缩策略</h2>
-      <div class="segs" id="presets"></div>
-    </header>
-    <p class="hint" id="presetHint"></p>
-    <p class="message" id="message" hidden></p>
-    <div id="rows" class="strategy-list"></div>
-  </section>
+  <!-- ═══ 视图容器：主面板 / 自定义策略 / 实验室 ═══ -->
+  <div class="view-container" id="viewContainer">
 
-  <!-- ═══ 第一层：试压实验室 ═══ -->
-  <section class="layer" id="layerLab">
-    <details class="fold" id="labFold">
-      <summary class="layer-summary">
-        <span class="layer-icon">⚗</span>
-        <span class="layer-label">试压实验室</span>
-        <span class="layer-desc">单策略 · 本地运行 · 不耗 token</span>
-        <span class="chev">›</span>
-      </summary>
-      <div class="layer-body">
-        <div class="lab-grid">
-          <div class="lab-input-side">
-            <label class="lab-label" for="labStrategy">选择策略</label>
-            <div class="lab-controls">
-              <select id="labStrategy" aria-label="试压策略"></select>
-              <button id="runLab" class="action primary" type="button">运行试压</button>
+    <!-- ═══ 主面板视图 ═══ -->
+    <div class="view view-main" id="viewMain">
+      <!-- 头部：预设切换 + 齿轮 + 实验室入口 -->
+      <header class="main-head">
+        <div class="segs" id="presets"></div>
+        <div class="head-actions">
+          <button type="button" class="icon-btn" id="btnCustom" title="自定义策略">
+            <span class="icon">⚙</span>
+          </button>
+          <button type="button" class="icon-btn" id="btnLab" title="试压实验室">
+            <span class="icon">⚗</span>
+          </button>
+        </div>
+      </header>
+
+      <p class="hint" id="presetHint"></p>
+      <p class="message" id="message" hidden></p>
+
+      <!-- 已处理会话列表 -->
+      <section class="session-section">
+        <h3 class="section-title">已处理会话</h3>
+        <div class="session-list" id="sessionList">
+          <!-- 动态填充 -->
+        </div>
+        <p class="hint" id="sessionHint">暂无记录。发一条消息触发网关请求后，这里会显示压缩前后的快照。</p>
+      </section>
+    </div>
+
+    <!-- ═══ 自定义策略视图（原策略列表 + 高级设置） ═══ -->
+    <div class="view view-custom" id="viewCustom" hidden>
+      <header class="view-head">
+        <button type="button" class="back-btn" id="backFromCustom">
+          <span class="icon">‹</span> 返回
+        </button>
+        <h2 class="view-title">自定义策略</h2>
+        <button type="button" class="icon-btn" id="btnLabFromCustom" title="试压实验室">
+          <span class="icon">⚗</span>
+        </button>
+      </header>
+
+      <!-- 策略列表 -->
+      <div class="strategy-list" id="rows"></div>
+
+      <!-- 高级设置（合并进来） -->
+      <details class="fold" id="advanced">
+        <summary class="fold-summary">
+          <span>高级设置</span>
+          <span class="chev">›</span>
+        </summary>
+        <div class="fold-body">
+          <div class="fields">
+            <div class="field">
+              <div class="fh">
+                <div class="fname">压缩预算（毫秒）</div>
+                <span class="fhint">单次请求允许的最大压缩耗时</span>
+              </div>
+              <div class="fctl">
+                <input id="budget" type="number" class="num-in" min="50" max="10000" step="10">
+              </div>
             </div>
-            <label class="lab-label" for="labInput">输入原文</label>
-            <textarea id="labInput" rows="8" spellcheck="false" placeholder="粘贴一段对话或文本…"></textarea>
-            <p class="hint">使用网关同一份引擎和当前策略参数，不调用模型，不保存试压文本。</p>
-            <p id="labStatus" class="hint" aria-live="polite"></p>
-          </div>
-          <div class="lab-result-side" id="labResult">
-            <div class="lab-empty">
-              <span class="lab-empty-icon">◈</span>
-              <p>运行试压后，这里显示压缩前后的对比</p>
+            <div class="field">
+              <div class="fh">
+                <div class="fname">保留系统消息</div>
+                <span class="fhint">系统提示词不参与压缩</span>
+              </div>
+              <div class="fctl">
+                <button id="preserveSystem" class="sw" type="button" role="switch" aria-checked="true"></button>
+              </div>
+            </div>
+            <div class="field">
+              <div class="fh">
+                <div class="fname">保留最近轮数</div>
+                <span class="fhint">最近 N 轮对话不参与压缩</span>
+              </div>
+              <div class="fctl">
+                <input id="lastTurns" type="number" class="num-in" min="0" max="50" step="1">
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </details>
-  </section>
-
-  <!-- ═══ 第一层：真实压缩前后 ═══ -->
-  <section class="layer" id="layerCaptures">
-    <details class="fold" id="captureFold">
-      <summary class="layer-summary">
-        <span class="layer-icon">⇄</span>
-        <span class="layer-label">真实压缩前后</span>
-        <span class="layer-desc">最近 50 次 · 本地保存</span>
-        <button type="button" class="link" id="clearCaptures">清空</button>
-        <span class="chev">›</span>
-      </summary>
-      <div class="layer-body">
-        <p class="hint">点击一条记录查看完整的压缩前后差异。数据在下一次网关请求时载入。</p>
-        <div id="captures" class="capture-list"></div>
-        <p id="captureStatus" class="hint"></p>
-      </div>
-    </details>
-  </section>
-
-  <!-- ═══ 第二层：差异详情（点击后展开） ═══ -->
-  <section class="layer layer-detail" id="layerDiff" hidden>
-    <header class="layer-head">
-      <button type="button" class="back-btn" id="diffBack">‹ 返回列表</button>
-      <h2 class="layer-title" id="diffTitle">压缩前后差异</h2>
-    </header>
-    <div class="diff-container" id="captureDetail">
-      <!-- 动态填充 -->
+      </details>
     </div>
-  </section>
+
+    <!-- ═══ 实验室视图（全窗口） ═══ -->
+    <div class="view view-lab" id="viewLab" hidden>
+      <header class="view-head">
+        <button type="button" class="back-btn" id="backFromLab">
+          <span class="icon">‹</span> 返回
+        </button>
+        <h2 class="view-title">试压实验室</h2>
+        <div class="lab-badge">本地运行 · 不耗 token</div>
+      </header>
+
+      <div class="lab-container">
+        <!-- 左侧：输入区 -->
+        <div class="lab-input-panel">
+          <div class="lab-panel-head">
+            <span class="lab-panel-title">输入</span>
+          </div>
+          <div class="lab-panel-body">
+            <label class="lab-field">
+              <span class="lab-label">选择策略</span>
+              <select id="labStrategy" class="lab-select"></select>
+            </label>
+            <label class="lab-field">
+              <span class="lab-label">输入原文</span>
+              <textarea id="labInput" class="lab-textarea" rows="12" placeholder="粘贴一段对话或文本…"></textarea>
+            </label>
+            <button id="runLab" class="lab-run-btn" type="button">
+              <span class="icon">▶</span> 运行试压
+            </button>
+            <p id="labStatus" class="lab-status"></p>
+          </div>
+        </div>
+
+        <!-- 右侧：结果区 -->
+        <div class="lab-result-panel" id="labResult">
+          <div class="lab-empty-state">
+            <span class="lab-empty-icon">⚗</span>
+            <p class="lab-empty-text">运行试压后<br>这里显示压缩前后的对比</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ 差异对比弹窗 ═══ -->
+  <div class="diff-modal" id="diffModal" hidden>
+    <div class="diff-modal-backdrop" id="diffBackdrop"></div>
+    <div class="diff-modal-content">
+      <header class="diff-modal-head">
+        <div class="diff-modal-info">
+          <h3 class="diff-modal-title" id="diffTitle">压缩前后差异</h3>
+          <div class="diff-modal-meta" id="diffMeta"></div>
+        </div>
+        <button type="button" class="icon-btn close-btn" id="diffClose">
+          <span class="icon">✕</span>
+        </button>
+      </header>
+      <div class="diff-modal-body" id="diffBody">
+        <!-- 动态填充 -->
+      </div>
+    </div>
+  </div>
 
   <script src="_magpie/bridge.js"></script>
   <script src="engines.js"></script>

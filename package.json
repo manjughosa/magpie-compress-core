@@ -82,5 +82,8 @@
       },
       "gatewayTimeoutMs": 4000
     }
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
   }
 }
