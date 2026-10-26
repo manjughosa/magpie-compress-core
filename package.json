@@ -1,0 +1,86 @@
+{
+  "name": "magpie-compress-core",
+  "version": "0.4.0",
+  "description": "OmniRoute 压缩引擎的 magpie 移植：15 个策略、四档预设、独立面板。",
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "page",
+    "engines",
+    "adapter.js",
+    "hash.js",
+    "pipeline.js",
+    "telemetry-store.js",
+    "observability.hooks.js",
+    "compress-core.middleware.js",
+    "README.md"
+  ],
+  "keywords": [
+    "magpie",
+    "magpie-middleware",
+    "magpie-hooks",
+    "magpie-page",
+    "compression"
+  ],
+  "magpie": {
+    "middleware": "./compress-core.middleware.js",
+    "hooks": "./observability.hooks.js",
+    "page": {
+      "title": "Compression",
+      "titles": {
+        "zh": "压缩",
+        "zh-TW": "壓縮",
+        "ja": "圧縮"
+      },
+      "file": "page/index.html",
+      "icon": "page/icon.svg"
+    },
+    "panels": [
+      {
+        "slot": "settings",
+        "title": "Compression",
+        "titles": {
+          "zh": "压缩",
+          "zh-TW": "壓縮",
+          "ja": "圧縮"
+        },
+        "file": "page/settings.html"
+      },
+      {
+        "slot": "usage",
+        "title": "Compression",
+        "titles": {
+          "zh": "压缩",
+          "zh-TW": "壓縮",
+          "ja": "圧縮"
+        },
+        "file": "page/usage.html"
+      }
+    ],
+    "options": {
+      "strategies": {
+        "session-dedup": true,
+        "ccr": true,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": true,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false,
+        "llm": false,
+        "omniglyph": false
+      },
+      "budgetMs": 600,
+      "preserve": {
+        "system": true,
+        "lastTurns": 2
+      },
+      "gatewayTimeoutMs": 4000
+    }
+  }
+}

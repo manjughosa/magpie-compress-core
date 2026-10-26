@@ -1,0 +1,4 @@
+node_modules/
+page/captures/
+*.tmp
+*.log
