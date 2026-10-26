@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto"
 import { readFile, rename, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { runLab } from "./lab.js"
-import { clearCaptures, readCapture } from "./capture-store.js"
+import { clearCaptures } from "./capture-store.js"
 import { configDir, flush, snapshot, sync } from "./stats-writer.js"
 
 let queue = Promise.resolve()
@@ -63,19 +63,6 @@ export function processLabCommand(options) {
   const command = options?.labCommand
   if (!command || typeof command.id !== "string" || command.id.length > 80 || completed.has(command.id)) return false
   remember(command.id)
-  if (command.action === "capture") {
-    return later(async () => {
-      let success = false
-      try {
-        const record = await readCapture(command.captureId)
-        await patch({ captureResult: { id: command.id, status: "done", record }, labCommand: undefined })
-        success = true
-      } catch (error) {
-        await patch({ captureResult: { id: command.id, status: "error", error: error.message } }).catch(() => {})
-      }
-      return success
-    })
-  }
   if (command.action !== "test") return false
   return later(async () => {
     let success = false

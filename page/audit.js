@@ -117,32 +117,63 @@
     var selectedCapture = null
     var expanded = false
     var known = ""
-    var requestedCapture = null
-    var captureResultId = ""
-    function requestCapture(id) {
-      selectedCapture = id
-      requestedCapture = id
-      var opts = Object.assign({}, getOptions())
-      opts.labCommand = { id: `view-${Date.now()}`, action: "capture", captureId: id }
-      options.saveOptions(opts)
-      $("captureStatus").textContent = "正在读取本地快照；下一次网关请求后载入。"
-    }
-    function pollCaptureResult() {
-      var result = getOptions().captureResult
-      if (!result || result.id === captureResultId || !requestedCapture) return
-      captureResultId = result.id
-      if (result.status === "done" && result.record) {
-        renderDetail($("captureDetail"), result.record)
-        $("captureStatus").textContent = "已载入完整前后文。"
-      } else if (result.status === "error") {
-        $("captureStatus").textContent = "快照读取失败：" + (result.error || "未知错误")
+    var loadingCapture = null
+    var captureCache = {}
+    // The detail is published beside this page as a script, so a <script> tag
+    // loads it directly. That is the one outbound the page CSP allows, and it
+    // needs no host round trip: the detail is there on the first click.
+    // Published beside the captures themselves: loading this re-renders the
+    // list from what the store holds instead of from the options snapshot.
+    function loadCaptureIndex() {
+      var script = document.createElement("script")
+      script.src = "captures/index.js?v=" + Date.now()
+      script.onload = function () {
+        script.remove()
+        var list = globalThis.__COMPRESS_CAPTURES_INDEX__
+        if (!Array.isArray(list)) return
+        captureIndex = list
+        paintCaptures()
       }
+      script.onerror = function () { script.remove() }
+      document.head.append(script)
     }
-    options.onOptions(pollCaptureResult)
-    $("captureDiff").addEventListener("toggle", function () { if (this.open && requestedCapture) pollCaptureResult() })
+    function loadCapture(id) {
+      selectedCapture = id
+      if (captureCache[id]) {
+        renderDetail($("captureDetail"), captureCache[id])
+        $("captureStatus").textContent = "已载入完整前后文。"
+        return
+      }
+      if (loadingCapture === id) return
+      loadingCapture = id
+      $("captureStatus").textContent = "正在载入本地快照…"
+      var script = document.createElement("script")
+      script.src = "captures/" + encodeURIComponent(id) + ".js?v=" + Date.now()
+      script.onload = function () {
+        loadingCapture = null
+        var store = globalThis.__COMPRESS_CAPTURES__ || {}
+        var record = store[id]
+        script.remove()
+        if (!record) { $("captureStatus").textContent = "这条快照的详情已随轮换清理，只剩索引。"; return }
+        captureCache[id] = record
+        renderDetail($("captureDetail"), record)
+        $("captureStatus").textContent = "已载入完整前后文。"
+      }
+      script.onerror = function () {
+        loadingCapture = null
+        script.remove()
+        $("captureStatus").textContent = "这条快照的详情已失效（插件重装或轮换后只剩索引）。"
+      }
+      document.head.append(script)
+    }
+    $("captureDiff").addEventListener("toggle", function () { if (this.open && selectedCapture) loadCapture(selectedCapture) })
+    // The list is published beside the page straight from the store, so it
+    // cannot drift from the captures that are actually on disk. Until that
+    // script arrives the options index is used, which is the older channel.
+    var captureIndex = null
     function paintCaptures() {
       var stats = getOptions().stats || {}
-      var records = Array.isArray(stats.captures) ? stats.captures : []
+      var records = captureIndex || (Array.isArray(stats.captures) ? stats.captures : [])
       var signature = JSON.stringify(records)
       if (signature === known) return
       known = signature
@@ -167,11 +198,11 @@
           $("captureDiff").open = true
           host.querySelectorAll(".capture-row").forEach(function (item) { item.classList.remove("selected") })
           row.classList.add("selected")
-          requestCapture(record.id)
+          loadCapture(record.id)
         })
         host.append(row)
       })
-      if ($("captureDiff").open && !requestedCapture) $("captureDetail").replaceChildren(el("p", "hint", "点击一条快照后，在下一次网关请求时载入完整前后文。"))
+      if ($("captureDiff").open && !selectedCapture) $("captureDetail").replaceChildren(el("p", "hint", "点击任意一条快照即可就地载入完整前后文。"))
     }
     $("clearCaptures").addEventListener("click", function () {
       var opts = Object.assign({}, getOptions())
@@ -182,6 +213,7 @@
     })
     options.onOptions(paintCaptures)
     paintCaptures()
+    loadCaptureIndex()
   }
   globalThis.CompressAudit = { init: init, renderDetail: renderDetail }
 })()

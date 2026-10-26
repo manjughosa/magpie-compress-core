@@ -3,8 +3,18 @@
 // Usage: node test/run.mjs [onlyThisTestName]
 
 import { failedCount } from "./helpers.mjs"
+import { mkdtempSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join as joinPath } from "node:path"
 
-const suites = ["lite.test.mjs", "session-dedup.test.mjs", "headroom.test.mjs", "codex-responses.test.mjs", "rtk.test.mjs", "observability.test.mjs", "relevance.test.mjs", "ultra.test.mjs", "caveman.test.mjs", "aggressive.test.mjs", "ionizer.test.mjs", "llm.test.mjs", "ccr.test.mjs", "read-lifecycle.test.mjs", "audit.test.mjs"] // all strategies + observability
+// Every suite runs against throwaway folders. Saving a capture writes a script
+// beside the page, so a suite that isolates only its data directory would drop
+// its fixtures into the live plugin folder.
+const sandbox = mkdtempSync(joinPath(tmpdir(), "compress-core-suites-"))
+process.env.COMPRESS_CORE_PAGE_DIR = joinPath(sandbox, "page", "captures")
+process.env.COMPRESS_CORE_DATA_DIR = joinPath(sandbox, "data")
+
+const suites = ["capture-store.test.mjs", "lite.test.mjs", "session-dedup.test.mjs", "headroom.test.mjs", "codex-responses.test.mjs", "rtk.test.mjs", "observability.test.mjs", "relevance.test.mjs", "ultra.test.mjs", "caveman.test.mjs", "aggressive.test.mjs", "ionizer.test.mjs", "llm.test.mjs", "ccr.test.mjs", "read-lifecycle.test.mjs", "audit.test.mjs"] // storage + all strategies + observability
 
 const only = process.argv[2]
 let any = false
