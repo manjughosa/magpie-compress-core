@@ -85,6 +85,14 @@ magpie 给页面和面板的沙箱是 `connect-src 'none'`，页面拿不到网�
 
 引擎本身写在 `engines/`，契约见 `engines/CONTRACT.md`：纯函数、无 Node API、无 fetch、无定时器、只能相对 import、250ms 预算、必须 fail-open。
 
+## 会话记录
+
+页面上的「已处理会话」列表来自 `options.stats.captures[]`，钩子在**每一次**经过网关的请求上都会写一条（`capture` 默认开，设成 `false` 才关），只保留最新 50 条；每条同时把完整快照发布到 `page/captures/<id>.js`，点开才加载，所以列表本身很轻。
+
+行上会标出 `agent`（`dsh`、`pi` 等），也就是这条请求是哪一路 harness 发的——和脱敏页看到的语言是一致的。
+
+页面每 5 秒读一次 `magpie.options`，有变化就重绘，不需要手动刷新；写回设置时会把最新的 `stats` 一起带上，避免整包替换把钩子刚写进去的数字覆盖掉。
+
 ## 开发
 
 ```bash

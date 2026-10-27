@@ -56,19 +56,23 @@ export async function onRequest(body, ctx) {
     recordCompression(record)
     // Capture stores the full conversation text on disk and republishes it to
     // the page, so it stays off unless the operator asks for it explicitly.
-    if (options.capture === true) {
+    // Capture defaults on: the page's session list is built from these
+    // snapshots, so an off default would leave the list frozen on whatever
+    // was recorded last. It stays off only when the operator turns it off.
+    if (options.capture !== false) {
       const beforeText = conversationView(before, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || ""
       const afterText = conversationView(working, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || ""
       const captureId = captureCommandId()
-      const snapshotRecord = { id: captureId, at: record.ts, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), beforeText, afterText, beforeBytes: record.beforeBytes, afterBytes: record.afterBytes, savedBytes: record.savedBytes, report: record }
+      const agent = String(ctx.agent || "").slice(0, 40)
+      const snapshotRecord = { id: captureId, at: record.ts, agent, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), beforeText, afterText, beforeBytes: record.beforeBytes, afterBytes: record.afterBytes, savedBytes: record.savedBytes, report: record }
       let saved = await saveCapture(snapshotRecord)
       if (saved.saved) {
         const current = statsSnapshot()
-        current.captures.unshift({ id: captureId, at: record.ts, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), before: record.beforeBytes, after: record.afterBytes, saved: record.savedBytes, summary: false })
+        current.captures.unshift({ id: captureId, at: record.ts, agent, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), before: record.beforeBytes, after: record.afterBytes, saved: record.savedBytes, summary: false })
         current.captures = current.captures.slice(0, 50)
       } else {
         const current = statsSnapshot()
-        current.captures.unshift({ id: captureId, at: record.ts, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), before: record.beforeBytes, after: record.afterBytes, saved: record.savedBytes, summary: true, reason: saved.reason })
+        current.captures.unshift({ id: captureId, at: record.ts, agent, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), before: record.beforeBytes, after: record.afterBytes, saved: record.savedBytes, summary: true, reason: saved.reason })
         current.captures = current.captures.slice(0, 50)
       }
       await flushStats(true)

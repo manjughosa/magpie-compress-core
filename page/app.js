@@ -66,8 +66,14 @@
     var patch = options
     pending = null
     writeAt = Date.now()
+    // 写回是整包替换，会把钩子刚写进 stats 的更新一起覆盖回去。
+    // 所以先取一次最新的 stats 并进这次写，让它只动设置、不动数字。
     magpie.options
-      .set(patch)
+      .get()
+      .then(function (fresh) {
+        if (fresh && fresh.stats) patch.stats = fresh.stats
+        return magpie.options.set(patch)
+      })
       .then(function (fresh) {
         if (fresh) options = fresh
         notifyOptions()
@@ -221,7 +227,7 @@
     }
     var captureFull = $("captureFull")
     if (captureFull) {
-      captureFull.setAttribute("aria-checked", options.capture === true ? "true" : "false")
+      captureFull.setAttribute("aria-checked", options.capture !== false ? "true" : "false")
     }
   }
 
@@ -245,7 +251,7 @@
     U.clear(host)
 
     if (!captures.length) {
-      if (hint) hint.textContent = "暂无记录。发一条消息触发网关请求后，这里会显示压缩前后的快照。"
+      if (hint) hint.textContent = "暂无记录。每一次经过网关的请求都会留一条，保留最新 " + KEEP_CAPTURES + " 条。"
       return
     }
     if (hint) hint.textContent = captures.length + " / " + KEEP_CAPTURES + " 条记录 · 点击一条查看差异"
@@ -275,6 +281,12 @@
       var protoSpan = document.createElement("span")
       protoSpan.textContent = cap.protocol || "chat"
       metaRow.append(timeSpan, protoSpan)
+      if (cap.agent) {
+        var agentSpan = document.createElement("span")
+        agentSpan.className = "session-agent"
+        agentSpan.textContent = cap.agent
+        metaRow.append(agentSpan)
+      }
       info.append(preview, metaRow)
 
       var tags = document.createElement("div")

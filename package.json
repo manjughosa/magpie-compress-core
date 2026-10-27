@@ -85,7 +85,7 @@
         "lastTurns": 2
       },
       "gatewayTimeoutMs": 4000,
-      "capture": false
+      "capture": true
     }
   },
   "dependencies": {

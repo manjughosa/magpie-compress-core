@@ -61,6 +61,7 @@ function indexEntry(record) {
     id: record.id,
     at: record.at || "",
     protocol: record.protocol || "",
+    agent: record.agent || "",
     model: record.model || "",
     before: record.beforeBytes || 0,
     after: record.afterBytes || 0,

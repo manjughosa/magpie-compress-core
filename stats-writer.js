@@ -16,7 +16,7 @@ import { homedir } from "node:os"
 
 const FLUSH_MS = 30_000        // at most one write every half minute
 const QUIET_MS = 1_500         // skip if magpie wrote the file this recently
-const KEEP_RECENT = 12
+const KEEP_RECENT = 50
 const MAX_BYTES = 4_000_000    // refuse to rewrite an implausibly large file
 
 let selfDir = ""

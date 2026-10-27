@@ -212,6 +212,15 @@ body.panel { padding: 0 16px 20px; }
   color: var(--muted);
 }
 
+/* 哪一路 harness 发的请求：脱敏页也是按这个区分的。 */
+.session-agent {
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
 .session-strategies {
   display: flex;
   align-items: center;

@@ -13,6 +13,9 @@ import { join as joinPath } from "node:path"
 const sandbox = mkdtempSync(joinPath(tmpdir(), "compress-core-suites-"))
 process.env.COMPRESS_CORE_PAGE_DIR = joinPath(sandbox, "page", "captures")
 process.env.COMPRESS_CORE_DATA_DIR = joinPath(sandbox, "data")
+// A suite that isolates only the data folder would still write its counters
+// into the operator's own plugins.json; the config folder is sandboxed too.
+process.env.MAGPIE_CONFIG_DIR = joinPath(sandbox, "config")
 
 const suites = ["capture-store.test.mjs", "lite.test.mjs", "session-dedup.test.mjs", "headroom.test.mjs", "codex-responses.test.mjs", "rtk.test.mjs", "observability.test.mjs", "relevance.test.mjs", "ultra.test.mjs", "caveman.test.mjs", "aggressive.test.mjs", "ionizer.test.mjs", "llm.test.mjs", "ccr.test.mjs", "read-lifecycle.test.mjs", "audit.test.mjs"] // storage + all strategies + observability
 
