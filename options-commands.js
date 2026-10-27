@@ -5,7 +5,7 @@ import { readFile, rename, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { runLab } from "./lab.js"
 import { clearCaptures } from "./capture-store.js"
-import { configDir, flush, snapshot, sync } from "./stats-writer.js"
+import { configDir, clearCaptureIndex, flush } from "./stats-writer.js"
 
 let queue = Promise.resolve()
 const completed = new Set()
@@ -43,11 +43,9 @@ export function processCaptureCommand(options) {
     let success = false
     try {
       await flush(true)
-      await sync()
       if (command.action === "clear") {
         await clearCaptures()
-        const current = snapshot()
-        current.captures = []
+        clearCaptureIndex()
         await flush(true)
       }
       await patch({ captureCommand: { id: command.id, action: command.action, status: "done" } })

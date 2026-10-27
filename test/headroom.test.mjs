@@ -297,8 +297,9 @@ export function run() {
     check("W-11 未知协议 no-op", apply({ messages: [{ role: "user", content: js }] }, ctxFor("mystery"), {}) === false)
 
     // 全管线经 middleware（lite+sessionDedup+headroom 已接）
+    // preserve 默认保护 system 与最近 2 轮，单消息请求会被整条保护住，这里显式关掉。
     const mwBody = { messages: [{ role: "user", content: js }] }
-    middleware.onRequest(mwBody, ctxFor("chat", { strategies: { lite: false, "session-dedup": false, headroom: true } }))
+    middleware.onRequest(mwBody, ctxFor("chat", { preserve: { system: false, lastTurns: 0 }, strategies: { lite: false, "session-dedup": false, headroom: true } }))
     check("W-12 经middleware只开headroom", mwBody.messages[0].content.startsWith("```gcf-generic"))
 
     // restoreText 无围栏不动

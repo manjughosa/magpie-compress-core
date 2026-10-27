@@ -13,9 +13,12 @@ import * as hooks from "../observability.hooks.js"
 export const name = "observability"
 const block = Array.from({ length: 6 }, (_, i) => `stable diagnostic line ${i} ${"x".repeat(28)}`).join("\n")
 // ccr 是 defaultOn:true 的引擎：不显式列 false 它就会跑，破坏下面 "全部 disabled" 的断言。
-const allOff = { strategies: Object.fromEntries(ENGINES.map((e) => [e.id, false])) }
-const dedupOnly = { strategies: { ...allOff.strategies, "session-dedup": true } }
-const headroomOnly = { strategies: { ...allOff.strategies, headroom: true } }
+// preserve 默认保护 system 与最近 2 轮（preserve 专项测试在 pipeline.test.mjs），
+// 这里的用例只关心单个引擎的行为，所以显式关掉它。
+const noPreserve = { preserve: { system: false, lastTurns: 0 } }
+const allOff = { ...noPreserve, strategies: Object.fromEntries(ENGINES.map((e) => [e.id, false])) }
+const dedupOnly = { ...noPreserve, strategies: { ...allOff.strategies, "session-dedup": true } }
+const headroomOnly = { ...noPreserve, strategies: { ...allOff.strategies, headroom: true } }
 function repeatedBody(model = "observe-test") {
   return { model, messages: [{ role: "system", content: "answer briefly" }, { role: "user", content: block }, { role: "user", content: block }, { role: "assistant", content: "I have read the repeated diagnostic lines." }, { role: "user", content: "continue" }] }
 }
@@ -130,5 +133,33 @@ export async function run() {
     const clean = summarize([{ type: "request", ts: new Date().toISOString(), failOpen: 0, savedBytes: 0, beforeBytes: 5, afterBytes: 5, strategies: [] }], allOff)
     assert.equal(clean.periods.today.failOpen, 0)
     check("OBS-10 failOpen:0 不再被 || 1 聚合为失败", true)
+  }
+  // OBS-11/12: the preserve switch must actually protect system + the newest
+  // turns, and the internal placeholder must never reach the caller.
+  {
+    const noisy = "para one\n\n\n\npara two\n\n\n\n"
+    const makeBody = () => ({ model: "preserve-test", messages: [
+      { role: "system", content: "sys\n\n\n\n" },
+      { role: "user", content: noisy },
+      { role: "assistant", content: "a" },
+      { role: "user", content: noisy },
+      { role: "assistant", content: "a" },
+      { role: "user", content: noisy },
+    ] })
+    const liteOnly = { strategies: { ...allOff.strategies, lite: true } }
+    const guarded = makeBody()
+    const report = runPipeline(guarded, { protocol: "chat", state: {} }, { ...liteOnly, preserve: { system: true, lastTurns: 2 } }, clone(guarded))
+    const texts = guarded.messages.map((m) => m.content)
+    assert.equal(report.preserved.rolledBack, false)
+    assert.ok(report.preserved.segments >= 3)
+    assert.equal(texts[0], "sys\n\n\n\n")
+    assert.equal(texts[5], noisy)
+    assert.ok(!texts.some((t) => typeof t === "string" && t.includes("\u0000")))
+    check("OBS-11 preserve 保住 system 与最近 2 轮", texts[1] !== noisy && texts[1] === "para one\n\npara two\n\n")
+
+    const free = makeBody()
+    runPipeline(free, { protocol: "chat", state: {} }, { ...liteOnly, preserve: { system: false, lastTurns: 0 } }, clone(free))
+    check("OBS-12 关掉 preserve 后 system 也参与折叠",
+      free.messages[0].content === "sys\n\n" && free.messages[5].content !== noisy)
   }
 }

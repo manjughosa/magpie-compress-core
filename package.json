@@ -8,8 +8,12 @@
     "page",
     "engines",
     "adapter.js",
+    "catalog.js",
+    "capture-store.js",
+    "options-commands.js",
     "hash.js",
     "pipeline.js",
+    "stats-writer.js",
     "telemetry-store.js",
     "observability.hooks.js",
     "compress-core.middleware.js",
@@ -80,7 +84,8 @@
         "system": true,
         "lastTurns": 2
       },
-      "gatewayTimeoutMs": 4000
+      "gatewayTimeoutMs": 4000,
+      "capture": false
     }
   },
   "dependencies": {

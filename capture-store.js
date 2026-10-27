@@ -4,6 +4,9 @@ import { randomUUID } from "node:crypto"
 import { telemetryDir } from "./telemetry-store.js"
 
 export const MAX_CAPTURE_BYTES = 2000000
+// How many sessions are kept: newest first, everything older is dropped from
+// both the store and the page. The viewer mirrors this number for its hint.
+export const KEEP_CAPTURES = 50
 const ID_PATTERN = /^[A-Za-z0-9-]{8,80}$/
 const encoder = new TextEncoder()
 const directory = () => join(telemetryDir(), "captures")
@@ -93,6 +96,7 @@ async function loadIndex() {
 
 async function writeIndex() {
   if (!index) return
+  if (index.length > KEEP_CAPTURES) index = index.slice(0, KEEP_CAPTURES)
   const body = `globalThis.__COMPRESS_CAPTURES_INDEX__=${JSON.stringify(index)};\n`
   const page = pageDirectory()
   try {
@@ -123,11 +127,22 @@ async function prune() {
     } catch { /* A concurrently removed capture needs no further work. */ }
   }
   captures.sort((a, b) => b.mtime - a.mtime || b.name.localeCompare(a.name))
-  const expired = captures.slice(50)
+  const kept = captures.slice(0, KEEP_CAPTURES)
+  const expired = captures.slice(KEEP_CAPTURES)
   await Promise.all(expired.map(async capture => {
     try { await rm(capture.path, { force: true }) } catch { /* Retention is best effort. */ }
     await unpublish(capture.id)
   }))
+  // A published script whose capture is gone can only be a leftover from an
+  // interrupted run; it would still load into the page and show a dead entry.
+  try {
+    const alive = new Set(kept.map(capture => capture.id))
+    for (const name of await readdir(pageDirectory())) {
+      if (!name.endsWith(".js") || name === "index.js") continue
+      if (alive.has(name.slice(0, -".js".length))) continue
+      try { await rm(join(pageDirectory(), name), { force: true }) } catch { /* Best effort. */ }
+    }
+  } catch { /* The page directory may not exist yet. */ }
   return expired.map(capture => capture.id)
 }
 
@@ -158,7 +173,7 @@ export function saveCapture(record) {
       const published = await publish(record)
       // Keep the page's list in step with the store: the viewer renders this.
       const listed = await loadIndex()
-      index = [indexEntry(record), ...listed.filter(entry => entry.id !== record.id && !expired.includes(entry.id))].slice(0, 50)
+      index = [indexEntry(record), ...listed.filter(entry => entry.id !== record.id && !expired.includes(entry.id))].slice(0, KEEP_CAPTURES)
       await writeIndex()
       return { saved: true, published }
     } catch {

@@ -88,26 +88,25 @@ export async function run() {
   r = compressToolResults({ messages: [toolMsg(3000), { role: "assistant", content: "a" }] }, { maxToolLength: 2000 })
   {
     const c = r.body.messages[0].content
-    check("15 tool超长截断", r.applied && c.length <= 2000 + 15 && c.endsWith("\n...[truncated]"))
-    check("16 截断后缀逐字", c.endsWith("\n...[truncated]"))
+    const expected = big(3000).slice(0, 1000) + "\n...[truncated]" + big(3000).slice(2000)
+    check("15 tool超长截断", r.applied && c.length <= 2000 + 40 && c.includes("\n...[truncated]"))
+    check("16 头尾各留一半且逐字", c === expected)
   }
   {
-    // 词边界：前80字符无空白→向后找词尾（>2000）
+    // 头尾各取一半预算（各 1000）；±80 窗口内没有空白 → 两段都硬切在预算上。
     const noEarlySpace = "x".repeat(2000) + " tail"
     const rr = compressToolResults({ messages: [
       { role: "tool", content: noEarlySpace },
       { role: "assistant", content: "a" },
     ] }, { maxToolLength: 2000 })
     const c = rr.body.messages[0].content
-    // 1999落在词中间（前后皆x）→ 向后找空白（位于2000）→ 切到2000
-    check("17 词边界向后找", c === noEarlySpace.slice(0, 2000) + "\n...[truncated]")
-    // ±80都无空白→硬切
+    check("17 无空白时头尾各硬切一半", c === noEarlySpace.slice(0, 1000) + "\n...[truncated]" + noEarlySpace.slice(1005))
     const hard = "x".repeat(3000)
     const rr2 = compressToolResults({ messages: [
       { role: "tool", content: hard },
       { role: "assistant", content: "a" },
     ] }, { maxToolLength: 2000 })
-    check("17b 无空白硬切", rr2.body.messages[0].content === hard.slice(0, 2000) + "\n...[truncated]")
+    check("17b 无空白硬切", rr2.body.messages[0].content === hard.slice(0, 1000) + "\n...[truncated]" + hard.slice(2000))
   }
   r = compressToolResults({ messages: [
     { role: "assistant", content: "a" },
@@ -117,7 +116,7 @@ export async function run() {
   r = compressToolResults({ messages: [toolMsg(3000)] }, { maxToolLength: 2000 })
   // 源码 lite.ts:202 — 无 assistant 时 currentTurnStart=messages.length，
   // 即没有「当前轮保护区」，所有消息都可截（规格书 §8-19 注释写反，以源码公式为准）
-  check("19 无assistant仍可截", r.applied && r.body.messages[0].content.endsWith("\n...[truncated]"))
+  check("19 无assistant仍可截", r.applied && r.body.messages[0].content.includes("\n...[truncated]"))
   r = compressToolResults({ messages: [toolMsg(2000), { role: "assistant", content: "a" }] }, { maxToolLength: 2000 })
   check("20 恰等上限放行", !r.applied)
   r = compressToolResults({ messages: [
@@ -129,7 +128,7 @@ export async function run() {
     { role: "user", content: [{ type: "tool_result", content: big(3000) }] },
     { role: "assistant", content: "a" },
   ] }, { maxToolLength: 2000 })
-  check("22 anthropic tool_result字符串截断", r.applied && r.body.messages[0].content[0].content.endsWith("\n...[truncated]"))
+  check("22 anthropic tool_result字符串截断", r.applied && r.body.messages[0].content[0].content.includes("\n...[truncated]"))
   r = compressToolResults({ messages: [
     { role: "user", content: [{ type: "tool_result", content: [
       { type: "text", text: big(3000) },
@@ -141,7 +140,7 @@ export async function run() {
   {
     const inner = r.body.messages[0].content[0].content
     check("23 只截长text part", r.applied &&
-      inner[0].text.endsWith("\n...[truncated]") &&
+      inner[0].text.includes("\n...[truncated]") &&
       inner[1].text === "short" &&
       inner[2].data === "x")
   }

@@ -54,7 +54,9 @@ export async function onRequest(body, ctx) {
     if (options.telemetry?.enabled !== false) await persist(record)
     // Keep the page's numbers current; a failure here never reaches the caller.
     recordCompression(record)
-    if (options.capture !== false && ctx.origin === "local") {
+    // Capture stores the full conversation text on disk and republishes it to
+    // the page, so it stays off unless the operator asks for it explicitly.
+    if (options.capture === true) {
       const beforeText = conversationView(before, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || ""
       const afterText = conversationView(working, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || ""
       const captureId = captureCommandId()

@@ -57,7 +57,7 @@ export async function run() {
     const hookCtx = {
       protocol: "chat", model: "provider/" + "m".repeat(220), stream: false,
       path: "/v1/chat/completions", origin: "local", agent: "audit-test",
-      session: "audit-test", query: "Latest stays.", options: requestOptions,
+      session: "audit-test", query: "Latest stays.", options: { ...requestOptions, capture: true },
       state: {}, signal: new AbortController().signal, report() {},
     }
     const beforeHook = { model: "m", messages: [
@@ -80,10 +80,14 @@ export async function run() {
     const diskOptions = JSON.parse(await readFile(join(dir, "plugins.json"), "utf8")).plugins[0].options
     // Prior capture commands create a baseline; the important invariant is
     // that the new hook capture is also persisted, not an absolute list size.
-    assert.ok(diskOptions.stats.captures.some(r => r.id === snapshot().captures.at(-1).id))
+    // Read the persisted index instead of the in-memory summary: a successful
+    // flush resets that summary, so it is empty by the time we assert here.
+    assert.ok(diskOptions.stats.captures.length > 0)
+    const newest = diskOptions.stats.captures[0]
+    assert.ok(typeof newest.id === "string" && newest.id.startsWith("capture-"))
     assert.equal(afterHook.messages.at(-1).content, "Latest stays.")
-    assert.ok(snapshot().captures[0].model.length <= 160)
-    const storedHook = await readCapture(snapshot().captures[0].id)
+    assert.ok(newest.model.length <= 160)
+    const storedHook = await readCapture(newest.id)
     assert.ok(storedHook.afterText.includes("Latest stays."))
     check("AUDIT-04 真实钩子保存完整快照、写回索引且保留最新提问", true)
   } finally {

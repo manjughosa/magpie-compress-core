@@ -269,8 +269,16 @@ interface ChatBody {
 
 ### 5.11 `truncateToolText(text, maxLength)` — 内部
 
-- **行为**：`cutIndex = backOffToWordBoundary(text, maxLength)`；返回 `text.slice(0, cutIndex) + "\n...[truncated]"`。
-- **注意**：调用方保证 `text.length > maxLength` 才进入。`maxLength ≥ 256` 保证后缀（14 字符）不会反超。
+- **行为（本插件与 OmniRoute 原版唯一的语义差异）**：头尾各留一半预算 ——
+  `headBudget = floor(maxLength/2)`，`tailBudget = maxLength - headBudget`；
+  `headCut = backOffToWordBoundary(text, headBudget)`，`tailStart = text.length - tailBudget`，
+  `tailCut = backOffToWordBoundary(text, tailStart)`；返回
+  `text.slice(0, headCut) + "\n...[truncated]" + text.slice(tailCut)`。
+  若 `tailCut <= headCut`（文本只超上限一点点）→ 退回首部截断
+  `text.slice(0, headCut) + "\n...[truncated]"`。
+  原版只留头部；改的原因：工具输出的结尾（报错行、结论、命令最后一段）才是模型要看的，
+  只留头部会让模型重读同一文件。
+- **注意**：调用方保证 `text.length > maxLength` 才进入（函数内也做了同样的短路）。`maxLength ≥ 256` 保证后缀（15 字符）不会反超。
 
 ### 5.12 `truncateToolResultBlocks(msg, maxLength)` — 内部
 
@@ -466,9 +474,9 @@ function createCompressionStats(originalBody, compressedBody, mode, techniquesUs
 14. system 与 user 内容相同 → 不互查（只 system 对 system）。
 
 **compressToolResults / truncateToolText**
-15. `role:"tool"`、`content` 长 3000、`maxToolLength:2000`，且其后存在 assistant → 截到 ≤2000 的词边界 + `"\n...[truncated]"`，`applied:true`。
-16. 截断后缀逐字为 `"\n...[truncated]"`（`\n` + 3 点 + `[truncated]`，共 14 字符）。
-17. 词边界：第 2000 字符落在单词中间 → 截到该词前空白处（< 2000）；前 80 字符内无空白 → 向后找词尾（> 2000）；±80 窗口都无空白 → 硬切 2000。
+15. `role:"tool"`、`content` 长 3000、`maxToolLength:2000`，且其后存在 assistant → 头尾各留 1000 字符 + 中间 `"\n...[truncated]"`，`applied:true`。
+16. 省略标记逐字为 `"\n...[truncated]"`（`\n` + 3 点 + `[truncated]`，共 15 字符）。
+17. 词边界：两段切点各自 `backOffToWordBoundary(预算)`；±80 窗口内无可回退/前伸的空白 → 硬切在预算上（头 1000 / 尾 1000）。
 18. `role:"tool"` 消息位于**最后一条 assistant 之后**（index ≥ lastAssistant+1）→ 永不截断。
 19. 消息列表无 assistant → 无任何截断（`currentTurnStart = messages.length`）。
 20. `role:"tool"`、`content.length === 2000`（恰好等于上限）→ 不截断（`<=` 放行）。

@@ -5,6 +5,9 @@
 //   1. process.env.OMNIROUTE_LITE_MAX_TOOL_LENGTH → 配置注入（resolveLiteMaxToolLength 的 fallback 固定 2000）。
 //   2. Array.prototype.findLastIndex（ES2023）→ 手写从尾扫描循环。
 //   3. createCompressionStats 用 chars/4 最小版（原版 tiktoken/omniglyph 只影响遥测，不影响压缩行为）。
+//   4. truncateToolText 改为头尾各留一半（原版只留头部）。工具输出的结尾（报错行、结论、
+//      命令最后一段、tail 日志）往往正是模型要的；只留头部会让模型重读同一文件。
+//      词边界规则不变，超长文本的总长度仍是 maxLength + 标记长度。
 //
 // 协议覆盖：OmniRoute 原版只认 body.messages（chat 与 anthropic 都有 messages；
 // anthropic 的 content blocks / tool_result 原版原生支持）。responses / gemini 没有
@@ -14,6 +17,7 @@ const DEFAULT_MAX_TOOL_LENGTH = 2000
 const MIN_MAX_TOOL_LENGTH = 256
 const MAX_MAX_TOOL_LENGTH = 1000000
 const TOOL_TRUNCATION_LOOKBACK = 80
+// 中间省略标记：拼接在「保留下来的头部」之后、「保留下来的尾部」之前。
 const TRUNCATION_SUFFIX = "\n...[truncated]"
 
 // ---------------------------------------------------------------------------
@@ -143,8 +147,16 @@ function backOffToWordBoundary(content, cutIndex) {
 }
 
 function truncateToolText(text, maxLength) {
-  const cutIndex = backOffToWordBoundary(text, maxLength)
-  return text.slice(0, cutIndex) + TRUNCATION_SUFFIX
+  if (typeof text !== "string" || text.length <= maxLength) return text
+  // 头尾各分一半预算：开头留结构与定位信息，结尾留报错行/结论（模型真正要看的东西）。
+  const headBudget = Math.max(1, Math.floor(maxLength / 2))
+  const tailBudget = Math.max(1, maxLength - headBudget)
+  const headCut = backOffToWordBoundary(text, headBudget)
+  const tailStart = text.length - tailBudget
+  const tailCut = backOffToWordBoundary(text, tailStart)
+  // 文本只超出上限一点点时两段会重叠，此时退回头部截断，避免重复内容。
+  if (tailCut <= headCut) return text.slice(0, headCut) + TRUNCATION_SUFFIX
+  return text.slice(0, headCut) + TRUNCATION_SUFFIX + text.slice(tailCut)
 }
 
 function truncateToolResultBlocks(msg, maxLength) {
