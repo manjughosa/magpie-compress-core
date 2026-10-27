@@ -29,9 +29,10 @@ const asst = (text = "ok") => ({ role: "assistant", content: text })
 export async function run() {
   // A-01 两条消息，后者替换
   {
-    const r = applySessionDedup({ messages: [user(BLOCK), asst(), user(BLOCK)] })
-    // 当前轮(2)豁免 → 无替换
-    check("A-01a 当前轮豁免", !r.compressed)
+    const guarded = { preserveCurrentTurn: true }
+    const r = applySessionDedup({ messages: [user(BLOCK), asst(), user(BLOCK)] }, guarded)
+    // 显式保护当前轮(2) → 无替换
+    check("A-01a preserveCurrentTurn: true 时当前轮豁免", !r.compressed)
     const r2 = applySessionDedup({ messages: [user(BLOCK), user(BLOCK), asst()] })
     check("A-01b 后者替换为marker", r2.compressed &&
       r2.body.messages[0].content === BLOCK &&
@@ -95,21 +96,27 @@ export async function run() {
     check("A-10 不同块互不替换", !r2.compressed)
   }
 
-  // A-11/A-12 当前轮保护
+  // A-11/A-12 当前轮保护（显式 preserveCurrentTurn: true 才有）
   {
-    const r = applySessionDedup({ messages: [user(BLOCK), asst(), user(BLOCK)] })
-    check("A-11 当前轮不换", !r.compressed)
-    const r2 = applySessionDedup({ messages: [user(BLOCK), asst(), user(BLOCK), asst(), user(BLOCK)] })
-    check("A-12 中间轮换末轮换", r2.compressed &&
+    const r = applySessionDedup({ messages: [user(BLOCK), asst(), user(BLOCK)] }, { preserveCurrentTurn: true })
+    check("A-11 显式保护时当前轮不换", !r.compressed)
+    const r2 = applySessionDedup(
+      { messages: [user(BLOCK), asst(), user(BLOCK), asst(), user(BLOCK)] },
+      { preserveCurrentTurn: true },
+    )
+    check("A-12 显式保护时中间轮换末轮不换", r2.compressed &&
       r2.body.messages[2].content === MARK &&
       r2.body.messages[4].content === BLOCK)
   }
 
-  // A-13 无 assistant → currentTurnStart=0 → 全部豁免
+  // A-13 无 assistant 且显式保护当前轮 → currentTurnStart=0 → 全部豁免
   {
-    const r = applySessionDedup({ messages: [user(BLOCK), user(BLOCK)] })
+    const r = applySessionDedup({ messages: [user(BLOCK), user(BLOCK)] }, { preserveCurrentTurn: true })
     // 两个 slot → 走多消息路径,currentTurnStart=0 → 都跳过
-    check("A-13 无assistant全豁免", !r.compressed)
+    check("A-13 显式保护时无assistant全豁免", !r.compressed)
+    // 默认（前缀稳定）则照常替换后者
+    const r2 = applySessionDedup({ messages: [user(BLOCK), user(BLOCK)] })
+    check("A-13b 默认时后者替换为marker", r2.body.messages[1].content === MARK)
   }
 
   // A-14/A-15 system 保护

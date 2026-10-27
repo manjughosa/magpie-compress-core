@@ -35,15 +35,15 @@
     },
     "engines/headroom/index.ts": {
       "ported_to": "engines/headroom.js",
-      "sha256": "26f857a729e81e6d6aa66f4f2275467e17812c73c12b9dd4d49388157f9de18d"
+      "sha256": "28143ce31472c03672eb151c93dcd16b2e153abaa75da6622bb25e511ac220da"
     },
     "engines/headroom/smartcrusher.ts": {
       "ported_to": "engines/headroom.js",
-      "sha256": "26f857a729e81e6d6aa66f4f2275467e17812c73c12b9dd4d49388157f9de18d"
+      "sha256": "28143ce31472c03672eb151c93dcd16b2e153abaa75da6622bb25e511ac220da"
     },
     "engines/headroom/tabular.ts": {
       "ported_to": "engines/headroom.js",
-      "sha256": "26f857a729e81e6d6aa66f4f2275467e17812c73c12b9dd4d49388157f9de18d"
+      "sha256": "28143ce31472c03672eb151c93dcd16b2e153abaa75da6622bb25e511ac220da"
     },
     "engines/ionizer/index.ts": {
       "ported_to": "engines/ionizer.js",
@@ -112,6 +112,18 @@
     "rules/{lang}/*.json": {
       "ported_to": "engines/rules-data.js",
       "sha256": "13278a975860f33d6a9d10500894a993967bcbbb0f97e89e391d068da7e84f5a"
+    },
+    "engines/headroom/gcf/generic.ts": {
+      "ported_to": "engines/gcf/encode.js",
+      "sha256": "f44d740197c9fb17576e81bf9ebc62485c81a2949e6f69d6092993a572118d17"
+    },
+    "engines/headroom/gcf/decode_generic.ts": {
+      "ported_to": "engines/gcf/decode.js",
+      "sha256": "6d4807a45660df40b5a0d85134129e485ae31e1028e3ed4ec8773f888480eefa"
+    },
+    "engines/headroom/gcf/scalar.ts": {
+      "ported_to": "engines/gcf/scalar.js",
+      "sha256": "7d97cd3aa532d6a4a60cb4361ffb8e390c244a3a6a72aedaaafae4def95abcb0"
     }
   },
   "upstreams": [
@@ -123,19 +135,24 @@
         "engines/caveman-rules.js",
         "engines/rules-data.js"
       ],
-      "note": "Credited by repository: the port came through OmniRoute's copy of this project."
+      "note": "Credited by repository: the port came through OmniRoute's copy of this project.",
+      "license": "Apache-2.0"
     },
     {
       "name": "headroom",
       "repository": "https://github.com/headroomlabs-ai/headroom",
       "used_by": [
-        "engines/headroom.js"
+        "engines/headroom.js",
+        "engines/gcf/encode.js",
+        "engines/gcf/decode.js",
+        "engines/gcf/scalar.js"
       ],
-      "note": "Credited by repository: the GCF columnar encoding in engines/headroom.js is this project's format."
+      "note": "Credited by repository: the GCF columnar encoding that engines/headroom.js emits, and the codec vendored under engines/gcf/, are this project's format.",
+      "license": "Apache-2.0"
     },
     {
       "name": "rtk",
-      "repository": "https://github.com/denneulin/rtk",
+      "repository": "https://github.com/rtk-ai/rtk",
       "used_by": [
         "engines/rtk/index.js",
         "engines/rtk/commandDetector.js",
@@ -147,7 +164,8 @@
         "engines/rtk/splitCommand.js",
         "engines/rtk/builtinFilters.js"
       ],
-      "note": "Credited by repository: the port came through OmniRoute's copy of this project."
+      "note": "Credited by repository: the port came through OmniRoute's copy of this project. An earlier revision of this file credited 'dennenulin/rtk', which does not resolve; rtk-ai/rtk is the repository that does.",
+      "license": "Apache-2.0"
     }
   ],
   "changes": [
@@ -157,7 +175,13 @@
     "Progress and trace logging removed; the engines report through ctx.state instead.",
     "Hashes identify the ported copies in this package, not the upstream originals.",
     "License kept as MIT, carrying both the OmniRoute copyright line and this plugin's.",
-    "Same turn semantics as history-trim (#423): the turn being sent (everything after the last assistant message, or the whole body when there is none) is left exactly as it arrived. The 21 cases in test/fixtures/approved-lite-cases.json are copied from that package and pass unmodified.",
-    "preserve.lastTurns defaults to 0 and the lite engine's preserveCurrentTurn defaults to true: no sliding window rewrites a prefix that was already sent. preserveCurrentTurn: false exists for callers who prefer strict prefix stability over leaving the current turn alone; README says which is which."
+    "Same turn semantics as history-trim (#423) when asked for them: the turn being sent (everything after the last assistant message, or the whole body when there is none) is left exactly as it arrived. The 21 cases copied from that package in test/fixtures/approved-lite-cases.json and cases.json now say preserveCurrentTurn: true out loud, because that mode is no longer the default; their expected bodies are unchanged.",
+    "preserve.lastTurns defaults to 0 and the lite engine's preserveCurrentTurn defaults to false: nothing that has already been sent is rewritten, so the review's prompt-cache failure — first divergence at message 12 in the Anthropic diff, message 2 with lastTurns at its old default of 2 — is gone. preserveCurrentTurn: true restores the conservative mode that leaves the turn being sent exactly as it arrived, rewriting it once when it becomes history; README says which is which.",
+    "The vendored GCF codec under engines/gcf/ is recorded in files like every other port, and the Apache-2.0 upstreams behind headroom and rtk carry their licence text in LICENSES/Apache-2.0.txt with the attribution in NOTICE.",
+    "session-dedup reads the same preserveCurrentTurn switch as lite and defaults the same way. Protecting only the current turn means the message is rewritten once in the next request, which moves the prefix with it; the switch is now the single place where that choice is made.",
+    "cases.json holds 23 cases: the 21 from history-trim plus two that pin the default preset's own behaviour (the turn being sent is folded too; a tabular tool result becomes a gcf-generic block).",
+    "test/prefix-stability.test.mjs is the acceptance test for the prompt-cache finding: the transcript grows turn by turn and the prefix sent each round must be byte-identical to the previous round, for the default preset, the safe preset, and each lossless engine on its own.",
+    "page/engines.js and page/lab-engine.bundle.js left version control: they are built by `npm run prepack` before publishing, so the repository carries no generated files while installs still get them.",
+    "The package is named @magpie-community/middleware-compress-core, matching the middleware-* convention the registry's dist step checks for."
   ]
 }

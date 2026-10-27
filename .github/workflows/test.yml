@@ -1,0 +1,22 @@
+# test/run.mjs and bun test run the same 22 suites; both are here so a change
+# that breaks either entry point fails the build. HOME is moved into a throwaway
+# folder the way magpie's own CI does it: a suite that resolves the config
+# directory from HOME must not touch the runner's real one.
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - name: bun test
+        run: HOME=$(mktemp -d) bun test
+      - name: node test/run.mjs
+        run: HOME=$(mktemp -d) node test/run.mjs

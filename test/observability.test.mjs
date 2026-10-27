@@ -158,8 +158,15 @@ export async function run() {
     check("OBS-11 preserve 保住 system 与最近 2 轮", texts[1] !== noisy && texts[1] === "para one\n\npara two\n\n")
 
     const free = makeBody()
-    runPipeline(free, { protocol: "chat", state: {} }, { ...liteOnly, preserve: { system: false, lastTurns: 0 } }, clone(free))
-    check("OBS-12 preserve 全关后历史都折叠，正在发送的那一轮仍原样",
+    // 引擎配置走 strategies.lite 的对象形态；顶层的同名键 pipeline 不看。
+    const liteGuarded = { strategies: { ...allOff.strategies, lite: { enabled: true, preserveCurrentTurn: true } } }
+    runPipeline(
+      free,
+      { protocol: "chat", state: {} },
+      { ...liteGuarded, preserve: { system: false, lastTurns: 0 } },
+      clone(free),
+    )
+    check("OBS-12 preserve 全关 + preserveCurrentTurn: true 后历史都折叠，正在发送的那一轮仍原样",
       free.messages[0].content === "sys\n\n" && free.messages[5].content === noisy)
   }
 }

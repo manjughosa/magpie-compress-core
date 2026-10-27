@@ -345,17 +345,18 @@ export function createCompressionStats(originalBody, compressedBody, mode, techn
 export function applyLiteCompression(body, options) {
   options = options || {}
   const originalBody = body
-  // 模型已经读过的那部分才改写：一条消息的字节一旦发出去，这次变换的结果就是它
-  // 永久的样子（折叠空白是幂等的），前缀因此只在它从「正在发送」变成「历史」的那
-  // 一轮变过一次，之后不再动。正在发送的这一轮原样送出——用户刚打的字不该被改。
+  // 默认全量改写：每条消息从第一轮起就走同一套确定性变换（折叠空白是幂等的），
+  // 字节一旦发出去就永远是同一个结果——严格的前缀稳定，prompt cache 一次都不 miss。
+  // 代价是正在发送的这一轮、包括用户刚打的字，也会被折叠空白与去重。
   //
-  // preserveCurrentTurn: false 关掉这道守卫，让每条消息从第一轮起就走同一套确定性
-  // 变换，做到严格的前缀稳定：缓存一次都不 miss。代价是正在发送的那一轮也会被改。
+  // preserveCurrentTurn: true 换回保守模式：最后一条 assistant 之后的消息原样送出，
+  // 只在它从「当前轮」变成「历史」的那一轮被改写一次（前缀失配一次）。
+  // 缺省（既不是 true 也不是 false）与 false 一样走全量改写——只有显式写 true 才保护。
   // 两种模式的取舍写在 README「缓存与前缀」。
   const messages = Array.isArray(body.messages) ? body.messages : null
   let historyLength = 0
   if (messages) {
-    if (options.preserveCurrentTurn !== false && options.treatAllAsHistory !== true) {
+    if (options.preserveCurrentTurn === true && options.treatAllAsHistory !== true) {
       historyLength = turnStart(messages)
     } else {
       historyLength = messages.length
@@ -419,9 +420,9 @@ export function apply(body, ctx, cfg) {
     preserveSystemPrompt: cfg && cfg.preserveSystemPrompt === true,
     compressToolResults: !(cfg && cfg.compressToolResults === false),
     maxToolLength: cfg ? cfg.maxToolLength : undefined,
-    // 模型已经读过的段才动，正在发送的这一轮原样送出（默认）。显式
-    // preserveCurrentTurn: false 时全量改写，追求严格前缀稳定。
-    preserveCurrentTurn: !(cfg && cfg.preserveCurrentTurn === false),
+    // 默认全量改写，严格前缀稳定（reviewer 的 blocking 项）。显式
+    // preserveCurrentTurn: true 换回「当前轮原样送出」的保守模式。
+    preserveCurrentTurn: !!(cfg && cfg.preserveCurrentTurn === true),
     // 试压台专用：语义上等价于默认行为，保留是为了让旧的 lab 配置继续工作。
     treatAllAsHistory: !!(cfg && cfg.treatAllAsHistory === true),
     // supportsVision 默认按目标模型自动判定；配置可显式覆盖（true/false）

@@ -1,11 +1,17 @@
 {
-  "name": "magpie-compress-core",
+  "name": "@magpie-community/middleware-compress-core",
   "version": "0.4.0",
-  "description": "OmniRoute 压缩引擎的 magpie 移植：15 个策略、四档预设、独立面板。",
+  "description": "magpie middleware: OmniRoute's context-compression engines, ported. 15 strategies, four presets, two panels.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manjughosa/magpie-compress-core.git"
+  },
   "type": "module",
   "license": "MIT",
   "files": [
     "LICENSE",
+    "NOTICE",
+    "LICENSES",
     "PROVENANCE.json",
     "README.md",
     "README.en.md",
@@ -94,6 +100,12 @@
     }
   },
   "scripts": {
-    "build:page": "node scripts/build-lab-bundle.mjs"
+    "build:catalog": "node scripts/gen-page-catalog.mjs",
+    "build:page": "node scripts/build-lab-bundle.mjs",
+    "prepack": "npm run build:catalog && npm run build:page",
+    "test": "node test/run.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
   }
 }

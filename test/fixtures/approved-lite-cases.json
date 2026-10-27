@@ -34,6 +34,9 @@
           "content": "next"
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
@@ -55,6 +58,9 @@
           "content": "a\n\n\n\nb\n \t "
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
@@ -92,6 +98,9 @@
           "content": "next"
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
@@ -139,6 +148,9 @@
           "content": "next"
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
@@ -176,6 +188,9 @@
           "content": "apply this patch:\n+foo \n+bar\t\n\n\n\nend"
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
@@ -225,6 +240,9 @@
           "content": "next"
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
@@ -278,6 +296,9 @@
           "content": "next"
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
@@ -323,12 +344,16 @@
           "content": "You are a coding agent."
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
     "name": "preserveSystemPrompt keeps every system message, folded or repeated",
     "options": {
-      "preserveSystemPrompt": true
+      "preserveSystemPrompt": true,
+      "preserveCurrentTurn": true
     },
     "request": {
       "model": "m",
@@ -384,7 +409,8 @@
   {
     "name": "a long past tool result is cut at a word boundary",
     "options": {
-      "maxToolLength": 256
+      "maxToolLength": 256,
+      "preserveCurrentTurn": true
     },
     "request": {
       "model": "m",
@@ -440,7 +466,8 @@
   {
     "name": "the turn being sent is never cut",
     "options": {
-      "maxToolLength": 256
+      "maxToolLength": 256,
+      "preserveCurrentTurn": true
     },
     "request": {
       "model": "m",
@@ -481,7 +508,8 @@
     "name": "compressToolResults false leaves the history whole",
     "options": {
       "maxToolLength": 256,
-      "compressToolResults": false
+      "compressToolResults": false,
+      "preserveCurrentTurn": true
     },
     "request": {
       "model": "m",
@@ -529,7 +557,8 @@
   {
     "name": "an Anthropic tool_result block is cut inside",
     "options": {
-      "maxToolLength": 256
+      "maxToolLength": 256,
+      "preserveCurrentTurn": true
     },
     "request": {
       "model": "m",
@@ -599,7 +628,8 @@
   {
     "name": "text parts inside a tool_result are cut too",
     "options": {
-      "maxToolLength": 256
+      "maxToolLength": 256,
+      "preserveCurrentTurn": true
     },
     "request": {
       "model": "m",
@@ -669,7 +699,8 @@
   {
     "name": "a cut never splits a surrogate pair",
     "options": {
-      "maxToolLength": 257
+      "maxToolLength": 257,
+      "preserveCurrentTurn": true
     },
     "request": {
       "model": "m",
@@ -745,6 +776,9 @@
           "content": "ok"
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
@@ -790,6 +824,9 @@
           "content": "continue"
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
@@ -887,6 +924,9 @@
           "content": "rb"
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
@@ -936,12 +976,16 @@
           "content": "next"
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   },
   {
     "name": "a maxToolLength below the floor falls back to 2000",
     "options": {
-      "maxToolLength": 100
+      "maxToolLength": 100,
+      "preserveCurrentTurn": true
     },
     "request": {
       "model": "m",
@@ -1018,6 +1062,9 @@
           ]
         }
       ]
+    },
+    "options": {
+      "preserveCurrentTurn": true
     }
   }
 ]

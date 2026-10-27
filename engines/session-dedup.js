@@ -280,7 +280,7 @@ function applyTextSlots(msg, baseKey, deduped) {
   return changed ? { ...msg, content: newContent } : { ...msg }
 }
 
-function processMessages(messages, minBlockChars, blockMap, deadline) {
+function processMessages(messages, minBlockChars, blockMap, deadline, preserveCurrentTurn) {
   const msgTexts = []
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i]
@@ -292,12 +292,18 @@ function processMessages(messages, minBlockChars, blockMap, deadline) {
   }
   if (msgTexts.length === 0) return { messages, dedupCount: 0 }
 
-  // 当前轮 = 最后一条 assistant 之后；无 assistant → currentTurnStart=0 → 全部豁免
-  let currentTurnStart = 0
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role === "assistant") {
-      currentTurnStart = i + 1
-      break
+  // 当前轮 = 最后一条 assistant 之后；无 assistant → currentTurnStart=0 → 全部豁免。
+  // 豁免只在 preserveCurrentTurn 打开时生效：豁免的代价是消息「从当前轮变成历史」的
+  // 那一刻被改写一次，前缀随之改变，provider 的缓存从那一点起全部作废（review
+  // blocking 第 2 条）。默认不豁免，同一份原文前缀永远压成同一串字节。
+  let currentTurnStart = messages.length
+  if (preserveCurrentTurn) {
+    currentTurnStart = 0
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") {
+        currentTurnStart = i + 1
+        break
+      }
     }
   }
   const { deduped, dedupCount } = dedupMessageTexts(msgTexts, minBlockChars, currentTurnStart, blockMap, deadline)
@@ -457,6 +463,11 @@ export function applySessionDedup(body, stepConfig) {
   const minBlockChars =
     typeof stepConfig["minBlockChars"] === "number" ? stepConfig["minBlockChars"] : DEFAULT_MIN_BLOCK_CHARS
 
+  // 与 lite 同一个开关，默认 false：正在发送的这一轮也照常处理。只保护当前轮会让
+  // 同一条消息在下一轮请求里被改写，前缀一变，provider 的缓存全部作废（review
+  // blocking 第 2 条）。
+  const preserveCurrentTurn = stepConfig["preserveCurrentTurn"] === true
+
   const messages = body["messages"]
   if (!Array.isArray(messages) || messages.length === 0) {
     return { body, compressed: false, stats: null }
@@ -477,7 +488,13 @@ export function applySessionDedup(body, stepConfig) {
         ? start + budgetMs
         : 0 // <=0 表示不限
   const blockMap = new Map()
-  const { messages: exactMessages, dedupCount, dedupMap } = processMessages(messages, minBlockChars, blockMap, deadline)
+  const { messages: exactMessages, dedupCount, dedupMap } = processMessages(
+    messages,
+    minBlockChars,
+    blockMap,
+    deadline,
+    preserveCurrentTurn
+  )
   const store = new Map()
   const { messages: finalMessages, fuzzyCount } = runFuzzyPass(
     exactMessages,

@@ -112,8 +112,10 @@ export async function run() {
     { role: "assistant", content: "a" },
     toolMsg(3000),
   ] }, { maxToolLength: 2000 })
-  // 默认只动历史：最后一条 assistant 之后的消息（正在发送的这一轮）原样送出，
-  // 与 PR #423 合并进去的实现同一语义。preserveCurrentTurn: false 才整段都动。
+  // compressToolResults 这个纯函数不看当前轮；保护当前轮由主编排 apply 负责。
+  // history-trim (#423) 的语义（正在发送的这一轮原样送出）现在是显式开的
+  // preserveCurrentTurn: true：默认整段都动，因为一条消息下一轮就成历史，
+  // 改与不改的差别会落在前缀上（review blocking 第 2 条）。
   check("18 纯函数整段可截", r.applied && r.body.messages[1].content.length < 3000)
   const fullTurn = {
     messages: [
@@ -122,10 +124,13 @@ export async function run() {
       { role: "tool", content: big(3000) },
     ],
   }
-  check("18b 默认把正在发送的那一轮留下来", applyLiteCompression(fullTurn, { maxToolLength: 2000 }).compressed === false)
   check(
-    "18c preserveCurrentTurn: false 时整段都可截",
-    applyLiteCompression(fullTurn, { maxToolLength: 2000, preserveCurrentTurn: false }).compressed === true,
+    "18b preserveCurrentTurn: true 时把正在发送的这一轮留下来",
+    applyLiteCompression(fullTurn, { maxToolLength: 2000, preserveCurrentTurn: true }).compressed === false,
+  )
+  check(
+    "18c 默认不缺省保护当前轮，整段都可截（前缀稳定）",
+    applyLiteCompression(fullTurn, { maxToolLength: 2000 }).compressed === true,
   )
   r = compressToolResults({ messages: [toolMsg(3000)] }, { maxToolLength: 2000 })
   check("19 无assistant仍可截", r.applied && r.body.messages[0].content.includes("\n...[truncated]"))
@@ -341,7 +346,8 @@ export async function run() {
     }
     check(
       "53 segments 首轮原样",
-      apply(first, ctxFor("responses"), {}) === false && first.input[0].content[0].text === "hello\n\n\n\nworld",
+      apply(first, ctxFor("responses"), { preserveCurrentTurn: true }) === false &&
+        first.input[0].content[0].text === "hello\n\n\n\nworld",
     )
 
     // 有 assistant 之后：历史段折叠，instructions 与正在发送的这一轮不动
@@ -354,7 +360,7 @@ export async function run() {
         { type: "message", role: "user", content: [{ type: "input_text", text: "now\n\n\n\nthen" }] },
       ],
     }
-    const changed = apply(body, ctxFor("responses"), {})
+    const changed = apply(body, ctxFor("responses"), { preserveCurrentTurn: true })
     check("54 segments 历史段折叠", changed && body.input[0].content[0].text === "old\n\nturn")
     check("55 segments instructions 不动", body.instructions === "Be  terse.\n\n\n\nAlways.")
     check("56 segments 当前轮不动", body.input[2].content[0].text === "now\n\n\n\nthen")
@@ -368,7 +374,7 @@ export async function run() {
         { role: "user", parts: [{ text: "now\n\n\n\nthen" }] },
       ],
     }
-    const gemChanged = apply(gem, ctxFor("gemini"), {})
+    const gemChanged = apply(gem, ctxFor("gemini"), { preserveCurrentTurn: true })
     check("57 gemini 历史段折叠", gemChanged && gem.contents[0].parts[0].text === "old\n\nturn")
     check("58 gemini system 段不动", gem.systemInstruction.parts[0].text === "a\n\n\n\nb")
     check("59 gemini 当前轮不动", gem.contents[2].parts[0].text === "now\n\n\n\nthen")

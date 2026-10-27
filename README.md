@@ -7,8 +7,9 @@
 ## 装
 
 ```bash
-magpie plugin add <本目录>                              # 本地目录
-magpie plugin add github:manjughosa/magpie-compress-core # 从 GitHub 装
+magpie plugin add @magpie-community/middleware-compress-core  # 从 registry 装
+magpie plugin add <本目录>                                    # 本地目录
+magpie plugin add github:magpie-community/plugins             # 从仓库装（packages/compress-core）
 ```
 
 装完 `magpie plugin list` 里应该能看到这个插件声明了 `middleware`、`hooks`、`page` 和两个 `panels`。
@@ -52,9 +53,13 @@ magpie plugin add github:manjughosa/magpie-compress-core # 从 GitHub 装
 
 提供方按**请求前缀**命中 prompt cache：前缀里有一个字节变了，后面整段都按未命中计费。
 
-lite 的规则是「历史才动，正在发送的这一轮原样送出去」：最后一条 assistant 之后的消息（没有 assistant 时整段）一律不改。同一条消息在历史里每次都是同一个结果，历史一旦写过就不再变；唯一的代价是它从「当前轮」变成「历史」的那一次请求会被改写一次，那一次前缀失配，之后重新稳定。
+lite 默认**全量改写、严格前缀稳定**：每条消息从第一轮起就走同一套确定性变换（折叠空白本身幂等），一条消息一旦发出去，此后每个字节都是同一个结果，前缀不再变化，缓存一次都不失配。代价是正在发送的这一轮也会被折叠空白与去重——用户刚打的字同样会被压缩。
 
-要一次都不失配，把 `preserveCurrentTurn` 设成 `false`：每条消息从第一轮起就走同一套确定性变换，代价是用户刚打的字也会被折叠与截断。
+把 `preserveCurrentTurn` 设成 `true` 换回保守模式：最后一条 assistant 之后的消息（没有 assistant 时整段）原样送出，只在它从「当前轮」变成「历史」的那一轮被改写一次，那一次前缀失配，之后重新稳定。代价是这条消息被改写了一次，缓存那次 miss。
+
+`session-dedup` 认同一个开关：默认也把正在发送的这一轮照常处理，显式 `preserveCurrentTurn: true` 才保护它。理由是同一个——只保护当前轮，等于让那条消息在下一轮里被改写一次，前缀跟着变。
+
+`test/prefix-stability.test.mjs` 就是这条验收：逐轮追加原文，每一轮发出的前缀必须与上一轮逐字节相同，默认档、稳妥档与每个无损引擎各测一遍。
 
 `preserve.lastTurns` 默认 `0`（不额外保护任何轮次）。设成 N 会把最近 N 轮排除在所有改写之外；那一轮滑出窗口时同样被改写一次，这是窗口本身带来的，不是 lite 的。
 
@@ -125,11 +130,18 @@ magpie 给页面和面板的沙箱是 `connect-src 'none'`，也没有文件系�
 
 没命中时面板会写出原因（中文），不留一句「前后一样」让人猜。
 
+## 许可与来源
+
+MIT（`LICENSE`，保留 OmniRoute 的版权行）。每个引擎都是 OmniRoute `open-sse/services/compression` 的移植；来源仓库、对应文件与移植副本的 sha256 在 `PROVENANCE.json`。
+
+经由 OmniRoute 触达、本身是 Apache-2.0 的上游：`caveman`（github.com/JuliusBrussee/caveman）、`headroom`（github.com/headroomlabs-ai/headroom，含 `engines/gcf/` 里的 GCF 列式编解码）、`rtk`（github.com/rtk-ai/rtk）。三者的许可全文在 `LICENSES/Apache-2.0.txt`，署名在 `NOTICE`。
+
 ## 开发
 
 ```bash
-node test/run.mjs                 # 全部测试
+node test/run.mjs                 # 全部测试（22 套）
 node test/run.mjs lite            # 只跑一套
+bun test                          # 同一个入口的 bun 版：CI 就是它
 node scripts/gen-page-catalog.mjs # 改完 catalog.js 后重新生成 page/engines.js
 npm run build:page                # 改完 lab.js / engines 后重新打包 page/lab-engine.bundle.js
 node test/live-probe.mjs          # 对着真的 magpie 打一次
@@ -143,7 +155,7 @@ node test/live-probe.mjs          # 对着真的 magpie 打一次
 
 `test/lite-spec.md` 和 `test/session-dedup-spec.md` 是这两个策略的行为契约，改引擎之前先看。
 
-`cases.json` 是对外契约：21 条用例与 magpie-community/plugins 里被合并的 history-trim (#423) 逐字一致。它回答一个具体问题——同一份输入经过这个中间件之后，body 是否与那份实现留下的完全一致；不一致就是语义分叉，要么这里改，要么去那边论证。magpie 仓库跑它用 `bun scripts/check.mjs`，这边等价的入口是 `node test/run.mjs gateway`。
+`cases.json` 是对外契约：23 条用例里，21 条与 magpie-community/plugins 里被合并的 history-trim (#423) 逐字一致，另外 2 条是这一包自己的默认档行为（正在发送的这一轮同样被改写、表格化的工具结果转成 `gcf-generic` 块）。它回答一个具体问题——同一份输入经过这个中间件之后，body 是否与那份实现留下的完全一致；不一致就是语义分叉，要么这里改，要么去那边论证。那 21 条显式写成保守模式（`preserveCurrentTurn: true`），因为 history-trim 的语义就是「正在发送的这一轮原样送出」，而这里默认是全量改写。magpie 仓库跑它用 `bun scripts/check.mjs`，这边等价的入口是 `node test/run.mjs gateway`。
 
 ## 卸载
 

@@ -60,6 +60,10 @@ const SECRET_RULES = [
   [/\b([a-z][a-z0-9+.-]*:\/\/[^\s:@/]+:)([^\s@/]{3,})(@)/gi, "$1[redacted]$3"],
   // A whole Cookie / Set-Cookie header; the session ids are the value.
   [/^[ \t]*((?:set-)?cookie[ \t]*:)[^\r\n]*/gim, "$1 [redacted:cookie]"],
+  // The same header inside a JSON body, where nothing sits on its own line:
+  // {"cookie":"session=…"} or {"headers":{"Cookie":"…"}}. The line-anchored rule
+  // above cannot see those, and a capture stores whole request bodies verbatim.
+  [/("(?:set-)?cookie"\s*:\s*")(?:[^"\\]|\\.)*/gi, "$1[redacted:cookie]"],
   // A password is short often enough that the 8-character floor below would miss it.
   [/(password|passwd|pwd)(["'\s:=]+)([^\s,"'}\[]{3,})/gi, "$1$2[redacted]"],
   [/\b(?:Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{12,}/gi, "[redacted:credential]"],

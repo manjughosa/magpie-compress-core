@@ -5,7 +5,6 @@ import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const root = await mkdtemp(join(tmpdir(), "compress-core-captures-"))
-process.env.COMPRESS_CORE_DATA_DIR = root
 const { clearCaptures, MAX_CAPTURE_BYTES, readCapture, saveCapture } = await import("../capture-store.js")
 
 export const name = "capture-store"
@@ -17,6 +16,12 @@ const index = async () => JSON.parse(await readFile(join(root, "captures-index.j
 const strays = async () => (await readdir(root).catch(() => [])).filter(name => name.endsWith(".js"))
 
 export async function run() {
+  // The store folder is read from the environment when it is used, not when this
+  // module loads, so the switch belongs here. Bun loads every test file before
+  // running any of them: a top-level assignment here would be overwritten by
+  // whichever file loads last, and this suite would write into one folder while
+  // reading from another.
+  process.env.COMPRESS_CORE_DATA_DIR = root
   await clearCaptures()
   const original = { id: id(0), before: { text: "完整原文" }, after: { text: "完整结果" } }
   assert.deepEqual(await saveCapture(original), { saved: true })

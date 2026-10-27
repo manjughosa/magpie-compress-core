@@ -72,4 +72,4 @@ stats-writer.js、telemetry-store.js、observability.hooks.js、compress-core.mi
 
 ## 源码位置
 
-E:\LLM_Config\OmniRouteDesktop\resources\app\open-sse\services\compression\
+open-sse/services/compression/ (github.com/diegosouzapw/OmniRoute)

@@ -5,7 +5,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -59,7 +61,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -97,7 +101,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -151,7 +157,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -215,7 +223,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -269,7 +279,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -335,7 +347,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -405,7 +419,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -468,7 +484,8 @@
         "session-dedup": false,
         "ccr": false,
         "lite": {
-          "preserveSystemPrompt": true
+          "preserveSystemPrompt": true,
+          "preserveCurrentTurn": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -540,7 +557,8 @@
         "session-dedup": false,
         "ccr": false,
         "lite": {
-          "maxToolLength": 256
+          "maxToolLength": 256,
+          "preserveCurrentTurn": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -612,7 +630,8 @@
         "session-dedup": false,
         "ccr": false,
         "lite": {
-          "maxToolLength": 256
+          "maxToolLength": 256,
+          "preserveCurrentTurn": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -669,7 +688,8 @@
         "ccr": false,
         "lite": {
           "maxToolLength": 256,
-          "compressToolResults": false
+          "compressToolResults": false,
+          "preserveCurrentTurn": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -733,7 +753,8 @@
         "session-dedup": false,
         "ccr": false,
         "lite": {
-          "maxToolLength": 256
+          "maxToolLength": 256,
+          "preserveCurrentTurn": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -819,7 +840,8 @@
         "session-dedup": false,
         "ccr": false,
         "lite": {
-          "maxToolLength": 256
+          "maxToolLength": 256,
+          "preserveCurrentTurn": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -905,7 +927,8 @@
         "session-dedup": false,
         "ccr": false,
         "lite": {
-          "maxToolLength": 257
+          "maxToolLength": 257,
+          "preserveCurrentTurn": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -968,7 +991,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -1018,7 +1043,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -1080,7 +1107,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -1194,7 +1223,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -1261,7 +1292,8 @@
         "session-dedup": false,
         "ccr": false,
         "lite": {
-          "maxToolLength": 100
+          "maxToolLength": 100,
+          "preserveCurrentTurn": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -1327,7 +1359,9 @@
       "strategies": {
         "session-dedup": false,
         "ccr": false,
-        "lite": true,
+        "lite": {
+          "preserveCurrentTurn": true
+        },
         "rtk": false,
         "codex-responses": false,
         "headroom": false,
@@ -1363,6 +1397,96 @@
             {
               "type": "input_text",
               "text": "a\n\n\n\nb"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "the default preset folds the turn being sent as well (preserveCurrentTurn defaults to false)",
+    "options": {},
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "a\n\n\n\nb   \nc\t\n"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "a\n\nb\nc\n"
+        }
+      ]
+    }
+  },
+  {
+    "name": "the default preset turns a tabular JSON tool result into a gcf-generic block",
+    "options": {},
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "查一下用户表"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "t1",
+              "name": "sql",
+              "input": {
+                "q": "select * from users"
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "t1",
+              "content": "[{\"id\":1,\"user\":\"user1\",\"email\":\"user1@example.com\",\"active\":true},{\"id\":2,\"user\":\"user2\",\"email\":\"user2@example.com\",\"active\":false},{\"id\":3,\"user\":\"user3\",\"email\":\"user3@example.com\",\"active\":true},{\"id\":4,\"user\":\"user4\",\"email\":\"user4@example.com\",\"active\":false},{\"id\":5,\"user\":\"user5\",\"email\":\"user5@example.com\",\"active\":true},{\"id\":6,\"user\":\"user6\",\"email\":\"user6@example.com\",\"active\":false},{\"id\":7,\"user\":\"user7\",\"email\":\"user7@example.com\",\"active\":true},{\"id\":8,\"user\":\"user8\",\"email\":\"user8@example.com\",\"active\":false},{\"id\":9,\"user\":\"user9\",\"email\":\"user9@example.com\",\"active\":true},{\"id\":10,\"user\":\"user10\",\"email\":\"user10@example.com\",\"active\":false},{\"id\":11,\"user\":\"user11\",\"email\":\"user11@example.com\",\"active\":true},{\"id\":12,\"user\":\"user12\",\"email\":\"user12@example.com\",\"active\":false}]"
+            }
+          ]
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "查一下用户表"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "t1",
+              "name": "sql",
+              "input": {
+                "q": "select * from users"
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "t1",
+              "content": "```gcf-generic\nGCF profile=generic\n## [12]{id,user,email,active}\n1|user1|user1@example.com|true\n2|user2|user2@example.com|false\n3|user3|user3@example.com|true\n4|user4|user4@example.com|false\n5|user5|user5@example.com|true\n6|user6|user6@example.com|false\n7|user7|user7@example.com|true\n8|user8|user8@example.com|false\n9|user9|user9@example.com|true\n10|user10|user10@example.com|false\n11|user11|user11@example.com|true\n12|user12|user12@example.com|false\n\n```"
             }
           ]
         }

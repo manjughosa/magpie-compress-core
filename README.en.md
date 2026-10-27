@@ -7,8 +7,9 @@ This is a full port of OmniRoute's compression strategies: same ids, names, prio
 ## Install
 
 ```bash
-magpie plugin add <this directory>                       # from a local directory
-magpie plugin add github:manjughosa/magpie-compress-core   # from GitHub
+magpie plugin add @magpie-community/middleware-compress-core   # from the registry
+magpie plugin add <this directory>                            # from a local directory
+magpie plugin add github:magpie-community/plugins             # from the repo (packages/compress-core)
 ```
 
 Afterwards `magpie plugin list` should show this plugin declaring `middleware`, `hooks`, `page` and two `panels`.
@@ -52,9 +53,13 @@ The three unavailable ones still appear in the panel, marked `unavailable` with 
 
 Providers match prompt cache by **request prefix**: one byte changing inside the prefix makes everything after it bill as uncached input.
 
-lite's rule is "move history, send the current turn as it arrived": everything after the last assistant message (or the whole body when there is none) is left alone. A message produces the same result every time it sits in history, so history never changes once written; the one cost is that the request where it stops being the current turn rewrites it once, misses there, and is stable again after that.
+lite rewrites everything by default, which makes the prefix strictly stable: every message goes through the same deterministic transform from its first turn (whitespace folding is idempotent), so a message that has been sent renders byte-identically forever and the cache never misses. The price is that the turn being sent right now is folded and deduped too — what the user just typed included.
 
-Set `preserveCurrentTurn` to `false` to never miss at all: every message goes through the same deterministic transform from its first turn, at the price of folding and cutting what the user just typed.
+Set `preserveCurrentTurn` to `true` for the conservative mode: everything after the last assistant message (or the whole body when there is none) is sent as it arrived, and gets rewritten exactly once — in the request where it stops being the current turn — missing the cache that once and stable after that.
+
+`session-dedup` reads the same switch: by default it treats the turn being sent like any other, and only an explicit `preserveCurrentTurn: true` protects it. Same reason — protecting just that turn means the message is rewritten once in the next request, and the prefix moves with it.
+
+`test/prefix-stability.test.mjs` is the acceptance test for this: the transcript grows turn by turn and the prefix sent in each round must be byte-identical to the previous round — checked for the default preset, the safe preset, and every lossless engine on its own.
 
 `preserve.lastTurns` defaults to `0` (no extra protection). Setting it to N keeps the newest N turns out of every rewrite; the turn rewrites itself once when it slides out of that window — that comes from the window, not from lite.
 
@@ -123,11 +128,18 @@ Two input shapes: **plain text** is treated as one user message; **request body 
 
 When nothing hits, the panel says why, rather than leaving "identical before and after" to be guessed at.
 
+## Licence and provenance
+
+MIT (`LICENSE`, which keeps OmniRoute's copyright line). Every engine is a port of OmniRoute's `open-sse/services/compression`; the repository each one came from, the file it reaches, and a sha256 of the ported copy are in `PROVENANCE.json`.
+
+The Apache-2.0 upstreams reached through OmniRoute: `caveman` (github.com/JuliusBrussee/caveman), `headroom` (github.com/headroomlabs-ai/headroom, including the GCF columnar codec under `engines/gcf/`) and `rtk` (github.com/rtk-ai/rtk). Their licence text is in `LICENSES/Apache-2.0.txt` and the attribution is in `NOTICE`.
+
 ## Development
 
 ```bash
-node test/run.mjs                 # every test
+node test/run.mjs                 # every test (22 suites)
 node test/run.mjs lite            # one suite
+bun test                          # the same suites the way CI runs them
 node scripts/gen-page-catalog.mjs # regenerate page/engines.js after editing catalog.js
 npm run build:page                # re-bundle page/lab-engine.bundle.js after editing lab.js / engines
 node test/live-probe.mjs          # one shot against a real magpie
@@ -141,7 +153,7 @@ If a panel button does nothing, or you are about to change how the page renders,
 
 `test/lite-spec.md` and `test/session-dedup-spec.md` are the behaviour contracts for those two strategies; read them before touching the engines.
 
-`cases.json` is the outward contract: its 21 cases are copied verbatim from the history-trim package merged into magpie-community/plugins (#423). It answers one concrete question — after a body goes through this middleware, is it exactly the body that implementation leaves? A difference is a semantic fork: either fix it here or argue for it there. In the magpie repo it runs as `bun scripts/check.mjs`; the local equivalent is `node test/run.mjs gateway`.
+`cases.json` is the outward contract: of its 23 cases, 21 are copied verbatim from the history-trim package merged into magpie-community/plugins (#423) and 2 record this package's own default-preset behaviour (the turn being sent is folded too; a tabular tool result becomes a `gcf-generic` block). It answers one concrete question — after a body goes through this middleware, is it exactly the body that implementation leaves? A difference is a semantic fork: either fix it here or argue for it there. Those 21 cases ask for the conservative mode explicitly (`preserveCurrentTurn: true`), because "send the turn being sent as it arrived" is what history-trim did, and this middleware now rewrites everything by default. In the magpie repo it runs as `bun scripts/check.mjs`; the local equivalent is `node test/run.mjs gateway`.
 
 ## Uninstall
 

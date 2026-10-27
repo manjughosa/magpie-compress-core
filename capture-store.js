@@ -28,6 +28,12 @@ function enqueue(operation) {
 // the captures on disk and published beside the page with them.
 const indexEntries = () => join(telemetryDir(), "captures-index.json")
 let index = null
+// Which folder the cached list was built from. The store folder is read from the
+// environment, that value can move under a long-lived process (tests, the lab,
+// a host that reloads with a different config dir), and an empty array is a
+// perfectly valid cache — so keying on the folder is the only way to tell a
+// stale list from a current one.
+let indexDir = ""
 
 function indexEntry(record) {
   return {
@@ -46,7 +52,10 @@ function indexEntry(record) {
 }
 
 async function loadIndex() {
-  if (index) return index
+  const dir = directory()
+  if (index !== null && indexDir === dir) return index
+  indexDir = dir
+  index = null
   try {
     const stored = JSON.parse(await readFile(indexEntries(), "utf8"))
     if (Array.isArray(stored)) { index = stored; return index }
@@ -69,7 +78,7 @@ async function loadIndex() {
 }
 
 async function writeIndex() {
-  if (!index) return
+  if (index === null) return
   if (index.length > KEEP_CAPTURES) index = index.slice(0, KEEP_CAPTURES)
   // One copy, in our own folder: `captures-index.json`. The viewer used to load a
   // script written beside the page; the page no longer reads either of them.

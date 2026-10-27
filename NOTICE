@@ -1,0 +1,26 @@
+compress-core
+Copyright (c) 2026 Manjughosa
+
+This product includes software developed by other projects. The full text of
+each licence is kept in LICENSES/; the repository each port came from, the files
+it reaches, and a hash of every ported copy are recorded in PROVENANCE.json.
+
+  OmniRoute — https://github.com/diegosouzapw/OmniRoute
+    MIT. Copyright (c) 2026 diegosouzapw. Every engine in this package — the
+    strategies, the rule packs, the preset table — is a port of OmniRoute's
+    open-sse/services/compression, read from an installed copy of that release.
+
+  caveman — https://github.com/JuliusBrussee/caveman
+    Apache-2.0, see LICENSES/Apache-2.0.txt. Reaches engines/caveman.js,
+    engines/caveman-rules.js and engines/rules-data.js.
+
+  headroom — https://github.com/headroomlabs-ai/headroom
+    Apache-2.0, see LICENSES/Apache-2.0.txt. Reaches engines/headroom.js and the
+    GCF columnar codec vendored under engines/gcf/.
+
+  rtk — https://github.com/rtk-ai/rtk
+    Apache-2.0, see LICENSES/Apache-2.0.txt. Reaches engines/rtk/.
+
+These projects were reached through OmniRoute's copies of them. Where an
+upstream keeps its own copyright line or NOTICE file, that is the one in its own
+repository; nothing here strips or replaces it.
