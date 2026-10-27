@@ -56,7 +56,10 @@
     btn.disabled = true
     if (status) status.textContent = "正在运行…"
 
-    globalThis.CompressLab.run(text, strategy.value, getOptions())
+    var modeEl = $("labMode")
+    var mode = modeEl ? modeEl.value : "text"
+
+    globalThis.CompressLab.run(text, strategy.value, getOptions(), mode)
       .then(function (res) {
         if (status) status.textContent = ""
         renderLabResult(result, res)
@@ -77,13 +80,22 @@
     // 头部统计
     var head = U.el("div", "lab-result-head")
     var stat = U.el("div", "lab-stat")
+    var rate = res.before ? Math.round((res.saved / res.before) * 100) : 0
     stat.append(
       U.el("span", "from", fmtBytes(res.before)),
       U.el("span", "arrow", "→"),
       U.el("span", "to", fmtBytes(res.after)),
-      U.el("span", "rate", "−" + Math.round((res.saved / res.before) * 100) + "%")
+      U.el("span", "rate" + (rate > 0 ? "" : " is-flat"), rate > 0 ? "−" + rate + "%" : "没改动")
     )
     head.append(stat)
+
+    // 这次为什么动 / 为什么没动——「前后一样」必须有个交代
+    var note = U.el("div", "lab-note" + (rate > 0 ? "" : " is-miss"))
+    note.append(U.el("p", "lab-note-line", (res.label || res.strategy) + "：" + (res.why || "")))
+    note.append(U.el("p", "lab-note-line", rate > 0
+      ? "这次命中了 · " + res.ms + " ms"
+      : "这次没命中 —— " + (res.reasonText || "输入里没有它要的东西")))
+    head.append(note)
 
     // 差异对比
     var panes = U.el("div", "diff-panes")
@@ -147,6 +159,20 @@
     var btn = $("runLab")
     if (!btn) return
     btn.addEventListener("click", runLabTest)
+
+    // 换个形态就换个例子，免得对着 textarea 猜该粘什么
+    var modeEl = $("labMode")
+    var input = $("labInput")
+    if (modeEl && input) {
+      var syncPlaceholder = function () {
+        input.placeholder = modeEl.value === "json"
+          ? '{"model":"lab","messages":[{"role":"user","content":"…"},{"role":"tool","content":"…"}]}'
+          : "粘贴一段对话或文本…"
+      }
+      modeEl.addEventListener("change", syncPlaceholder)
+      syncPlaceholder()
+    }
+
     populateLabStrategies()
   }
 

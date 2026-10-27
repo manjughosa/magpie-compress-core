@@ -47,23 +47,30 @@ export async function runLab(request, options = {}) {
 
   const strategies = Object.fromEntries(ENGINES.map(engine => [engine.id, false]))
   strategies[strategy] = true
+  // 试压台要回答的是「这个策略对这段文本做了什么」，所以这台上不挂 preserve：
+  // 实验室的输入是单独一条 user 消息，它永远落在「保护最近 N 轮」的窗口里；
+  // 一旦挂上 preserve，每个策略看到的都只是占位符，结果必然「压缩前后没区别」。
+  // preserve 本身由 observability.hooks.js 的套件单独覆盖。
+  const bench = { ...options, strategies, preserve: { system: false, lastTurns: 0 } }
   const before = clone(body)
   const beforeText = conversationText(before, protocol)
   try {
     const ctx = { protocol, state: {}, origin: "local" }
-    const result = await runPipeline(body, ctx, { ...options, strategies })
+    const result = await runPipeline(body, ctx, bench)
     const report = result
+    const record = report.strategies.find(item => item.id === strategy) || null
     removeInternalMarker(body, options, strategy)
     const after = body
     return {
       id, ok: true, at: new Date().toISOString(), mode, protocol, strategy,
       before, after, beforeText, afterText: conversationText(after, protocol),
-      report, error: null,
+      record, report, error: null,
     }
   } catch (error) {
     return {
       id, ok: false, at: new Date().toISOString(), mode, protocol, strategy,
-      before, after: before, beforeText, afterText: beforeText, report: null,
+      before, after: before, beforeText, afterText: beforeText,
+      record: null, report: null,
       error: error instanceof Error ? error.message : String(error),
     }
   }

@@ -121,6 +121,13 @@
           </div>
           <div class="lab-panel-body">
             <label class="lab-field">
+              <span class="lab-label">输入形态</span>
+              <select id="labMode" class="lab-select">
+                <option value="text">纯文本（当成一条 user 消息）</option>
+                <option value="json">请求体 JSON（工具输出、重复块）</option>
+              </select>
+            </label>
+            <label class="lab-field">
               <span class="lab-label">选择策略</span>
               <select id="labStrategy" class="lab-select"></select>
             </label>

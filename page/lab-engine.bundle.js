@@ -494,8 +494,16 @@
     return cutIndex;
   }
   function truncateToolText(text, maxLength) {
-    const cutIndex = backOffToWordBoundary(text, maxLength);
-    return text.slice(0, cutIndex) + TRUNCATION_SUFFIX;
+    if (typeof text !== "string" || text.length <= maxLength)
+      return text;
+    const headBudget = Math.max(1, Math.floor(maxLength / 2));
+    const tailBudget = Math.max(1, maxLength - headBudget);
+    const headCut = backOffToWordBoundary(text, headBudget);
+    const tailStart = text.length - tailBudget;
+    const tailCut = backOffToWordBoundary(text, tailStart);
+    if (tailCut <= headCut)
+      return text.slice(0, headCut) + TRUNCATION_SUFFIX;
+    return text.slice(0, headCut) + TRUNCATION_SUFFIX + text.slice(tailCut);
   }
   function truncateToolResultBlocks(msg, maxLength) {
     if (msg.role !== "user" || !Array.isArray(msg.content)) {
@@ -9417,6 +9425,74 @@ Files: ` + [...paths].join(", ");
       delete target[key];
     Object.assign(target, snapshot);
   }
+  var PRESERVE_PREFIX = "\x00pcc:";
+  var PRESERVE_SUFFIX = "\x00";
+  function preserveSettings(options) {
+    const preserve = options && typeof options.preserve === "object" && options.preserve ? options.preserve : {};
+    const turns = Number(preserve.lastTurns);
+    return {
+      system: preserve.system !== false,
+      lastTurns: Number.isFinite(turns) ? Math.max(0, Math.min(50, Math.floor(turns))) : 2
+    };
+  }
+  function guardPreservedSegments(body, ctx, options) {
+    const settings = preserveSettings(options);
+    const plan = { system: settings.system, lastTurns: settings.lastTurns, turns: 0, segments: 0, bytes: 0 };
+    const idle = { plan, restore: () => ({ ...plan, restored: 0, markers: 0, rolledBack: false }) };
+    const view = conversationView(body, ctx && ctx.protocol);
+    if (!view || view.segments.length === 0)
+      return idle;
+    const order = [];
+    const groups = new Map;
+    for (const seg of view.segments) {
+      if (!groups.has(seg.index)) {
+        groups.set(seg.index, []);
+        order.push(seg.index);
+      }
+      groups.get(seg.index).push(seg);
+    }
+    const userStarts = order.filter((index) => (groups.get(index) || []).some((seg) => seg.role === "user"));
+    let guardFrom = null;
+    if (settings.lastTurns > 0 && userStarts.length > 0) {
+      guardFrom = userStarts.length > settings.lastTurns ? userStarts[userStarts.length - settings.lastTurns] : userStarts[0];
+      plan.turns = Math.min(settings.lastTurns, userStarts.length);
+    }
+    const markers = new Map;
+    const snapshot = clone(body);
+    for (const seg of view.segments) {
+      const keepSystem = settings.system && seg.role === "system";
+      const keepTurn = guardFrom !== null && seg.index >= 0 && seg.index >= guardFrom;
+      if (!keepSystem && !keepTurn)
+        continue;
+      plan.segments += 1;
+      plan.bytes += seg.text.length;
+      const marker = PRESERVE_PREFIX + markers.size + PRESERVE_SUFFIX;
+      markers.set(marker, seg.text);
+      seg.set(marker);
+    }
+    if (markers.size === 0)
+      return idle;
+    return {
+      plan,
+      restore() {
+        const after = conversationView(body, ctx && ctx.protocol);
+        if (after) {
+          for (const seg of after.segments) {
+            const original = markers.get(seg.text);
+            if (original !== undefined)
+              seg.set(original);
+          }
+        }
+        const scan = conversationView(body, ctx && ctx.protocol);
+        const leftover = scan ? scan.segments.some((seg) => typeof seg.text === "string" && seg.text.includes(PRESERVE_PREFIX)) : false;
+        if (leftover) {
+          restore(body, snapshot);
+          return { ...plan, restored: 0, markers: markers.size, rolledBack: true };
+        }
+        return { ...plan, restored: markers.size, markers: markers.size, rolledBack: false };
+      }
+    };
+  }
   function reasonFor(engine, ctx) {
     if (engine.available === false)
       return "unavailable";
@@ -9481,11 +9557,21 @@ Files: ` + [...paths].join(", ");
     const beforeBytes = byteLength2(body);
     const records = [];
     ctx.state = ctx.state || {};
-    let failOpen = 0, roundTripsChecked = 0, roundTripsPassed = 0;
+    const guard = guardPreservedSegments(body, ctx, options);
+    const budget = Number(options.budgetMs);
+    const budgetMs = Number.isFinite(budget) && budget > 0 ? Math.floor(budget) : 0;
+    let failOpen = 0, roundTripsChecked = 0, roundTripsPassed = 0, budgetHit = 0;
     for (const engine of PIPELINE) {
       const record = { id: engine.id, label: engine.label || engine.id, available: engine.available !== false, enabled: strategyEnabled(engine, options), status: "skipped", reason: engine.available === false ? "unavailable" : "disabled", beforeBytes: byteLength2(body), afterBytes: 0, ms: 0 };
       if (!record.enabled) {
         record.afterBytes = record.beforeBytes;
+        records.push(record);
+        continue;
+      }
+      if (budgetMs > 0 && Date.now() - started > budgetMs) {
+        record.reason = "budget_exceeded";
+        record.afterBytes = record.beforeBytes;
+        budgetHit += 1;
         records.push(record);
         continue;
       }
@@ -9522,6 +9608,7 @@ Files: ` + [...paths].join(", ");
       }
       records.push(record);
     }
+    const preserved = guard.restore();
     const afterBytes = byteLength2(body);
     return {
       version: TELEMETRY_VERSION,
@@ -9537,10 +9624,12 @@ Files: ` + [...paths].join(", ");
       estimatedBeforeTokens: Math.ceil(beforeBytes / 4),
       estimatedAfterTokens: Math.ceil(afterBytes / 4),
       totalMs: Date.now() - started,
-      budgetMs: 250,
+      budgetMs: budgetMs || 250,
+      budgetExceeded: budgetHit,
       failOpen,
       roundTripsChecked,
       roundTripsPassed,
+      preserved,
       strategies: records
     };
   }
@@ -9606,12 +9695,14 @@ Files: ` + [...paths].join(", ");
       inputError("options 必须是对象");
     const strategies = Object.fromEntries(ENGINES.map((engine) => [engine.id, false]));
     strategies[strategy] = true;
+    const bench = { ...options, strategies, preserve: { system: false, lastTurns: 0 } };
     const before = clone(body);
     const beforeText = conversationText(before, protocol);
     try {
       const ctx = { protocol, state: {}, origin: "local" };
-      const result = await runPipeline(body, ctx, { ...options, strategies });
+      const result = await runPipeline(body, ctx, bench);
       const report = result;
+      const record = report.strategies.find((item) => item.id === strategy) || null;
       removeInternalMarker(body, options, strategy);
       const after = body;
       return {
@@ -9625,6 +9716,7 @@ Files: ` + [...paths].join(", ");
         after,
         beforeText,
         afterText: conversationText(after, protocol),
+        record,
         report,
         error: null
       };
@@ -9640,6 +9732,7 @@ Files: ` + [...paths].join(", ");
         after: before,
         beforeText,
         afterText: beforeText,
+        record: null,
         report: null,
         error: error instanceof Error ? error.message : String(error)
       };
@@ -9648,24 +9741,58 @@ Files: ` + [...paths].join(", ");
 
   // page/lab-engine.js
   var encoder2 = new TextEncoder;
+  var REASON_ZH = {
+    no_repeat_eligible_block: "输入里没有重复出现的块——去重要靠同一会话里已经发过的文本。",
+    no_whitespace_or_tool_result_change: "输入里没有多余空白、重复行或可以精简的工具输出。",
+    no_matching_tool_output_filter: "输入里没有识别到命令输出——这个策略只处理工具结果。",
+    no_eligible_json_array_or_not_smaller: "没有够大的 JSON 数组可折叠，或者压完反而更大。",
+    no_eligible_response_item: "这条请求里没有 Responses 协议的 shell / patch / search 工具输出。",
+    protocol_not_responses: "这个策略只对 Responses 协议生效，实验室目前按 chat 跑。",
+    budget_exceeded: "超出了这次试压的时间预算。",
+    round_trip_mismatch: "压完还原不回去，已按 fail-open 回滚。",
+    engine_error: "策略内部报错，已按 fail-open 回滚。",
+    unavailable: "这个策略在当前环境里跑不了。",
+    disabled: "这次没启用这个策略。",
+    changed: "改动了。"
+  };
   globalThis.CompressLab = {
     engines: ENGINES.map(function(e) {
-      return { id: e.id, label: e.label, available: e.available !== false };
+      return { id: e.id, label: e.label, available: e.available !== false, why: e.why || "" };
     }),
-    async run(input, strategy, options) {
+    async run(input, strategy, options, mode) {
       if (typeof input !== "string" || !input.trim())
         throw new Error("请输入要试压的文本。");
       if (encoder2.encode(input).length > 256000)
         throw new Error("试压文本不能超过 256 KB。");
-      if (!engineById(strategy) || engineById(strategy).available === false)
+      const meta = engineById(strategy);
+      if (!meta || meta.available === false)
         throw new Error("这个策略当前不可用。");
-      const result = await runLab({ id: `lab-${Date.now()}`, mode: "text", input, protocol: "chat", strategy }, options);
+      const shape = mode === "json" ? "json" : "text";
+      if (shape === "json") {
+        let parsed = null;
+        try {
+          parsed = JSON.parse(input);
+        } catch {
+          throw new Error("请求体 JSON 解析失败，检查一下括号和引号。");
+        }
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+          throw new Error("请求体 JSON 的顶层必须是对象。");
+      }
+      const result = await runLab({ id: `lab-${Date.now()}`, mode: shape, input, protocol: "chat", strategy }, options);
       if (!result.ok)
         throw new Error(result.error || "试压失败");
+      const record = result.record || {};
       return {
         id: result.id,
         at: result.at,
         strategy,
+        label: meta.label || strategy,
+        why: meta.why || "",
+        mode: shape,
+        status: record.status || "skipped",
+        reason: record.reason || "",
+        reasonText: REASON_ZH[record.reason] || "",
+        ms: record.ms || 0,
         before: result.report.beforeBytes,
         after: result.report.afterBytes,
         saved: result.report.savedBytes,

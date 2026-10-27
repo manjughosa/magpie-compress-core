@@ -706,6 +706,27 @@ select:focus { border-color: var(--accent); }
 .lab-stat .arrow { font-size: 11px; color: var(--muted); }
 .lab-stat .to { font-size: 16px; font-weight: 600; }
 .lab-stat .rate { font-size: 14px; font-weight: 600; color: var(--green); }
+.lab-stat .rate.is-flat { color: var(--muted); font-weight: 500; }
+
+/* 「前后一样」要给个交代：这一栏说清这个策略是干什么的、这次为什么没动 */
+.lab-note {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 16px;
+  text-align: right;
+}
+
+.lab-note-line {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.lab-note.is-miss .lab-note-line:last-child { color: var(--fg); }
 
 .lab-result-body {
   flex: 1;
