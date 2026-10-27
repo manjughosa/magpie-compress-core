@@ -221,7 +221,7 @@
     }
     var captureFull = $("captureFull")
     if (captureFull) {
-      captureFull.setAttribute("aria-checked", options.capture !== false ? "true" : "false")
+      captureFull.setAttribute("aria-checked", options.capture === true ? "true" : "false")
     }
   }
 
@@ -245,7 +245,7 @@
     U.clear(host)
 
     if (!captures.length) {
-      if (hint) hint.textContent = "暂无记录。每一次经过网关的请求都会留一条，保留最新 " + KEEP_CAPTURES + " 条。"
+      if (hint) hint.textContent = "暂无记录。打开「记录完整快照」后，每条经过网关的请求都会留一条，保留最新 " + KEEP_CAPTURES + " 条。"
       return
     }
     if (hint) hint.textContent = captures.length + " / " + KEEP_CAPTURES + " 条记录 · 点击一条查看差异"

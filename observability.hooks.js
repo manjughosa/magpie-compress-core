@@ -5,7 +5,7 @@
 import { createHash, randomUUID } from "node:crypto"
 import { runPipeline, clone, byteLength, INTERNAL_MARKER, removeInternalMarker } from "./pipeline.js"
 import { conversationView } from "./adapter.js"
-import { persist, redact } from "./telemetry-store.js"
+import { persist, redact, redactSecrets } from "./telemetry-store.js"
 import { record as recordCompression, setSelfDir, flush as flushStats, snapshot as statsSnapshot } from "./stats-writer.js"
 import { saveCapture } from "./capture-store.js"
 import { processCaptureCommand, processLabCommand, captureCommandId } from "./options-commands.js"
@@ -56,12 +56,13 @@ export async function onRequest(body, ctx) {
     recordCompression(record)
     // Capture stores the full conversation text on disk and republishes it to
     // the page, so it stays off unless the operator asks for it explicitly.
-    // Capture defaults on: the page's session list is built from these
-    // snapshots, so an off default would leave the list frozen on whatever
-    // was recorded last. It stays off only when the operator turns it off.
-    if (options.capture !== false) {
-      const beforeText = conversationView(before, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || ""
-      const afterText = conversationView(working, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || ""
+    // The page's session list is built from these snapshots, so with capture
+    // off that list is simply empty — the intended default.
+    if (options.capture === true) {
+      // A capture is the one place the whole conversation is written out, so
+      // every credential in it is masked before it reaches disk or the page.
+      const beforeText = redactSecrets(conversationView(before, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || "")
+      const afterText = redactSecrets(conversationView(working, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || "")
       const captureId = captureCommandId()
       const agent = String(ctx.agent || "").slice(0, 40)
       const snapshotRecord = { id: captureId, at: record.ts, agent, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), beforeText, afterText, beforeBytes: record.beforeBytes, afterBytes: record.afterBytes, savedBytes: record.savedBytes, report: record }

@@ -64,6 +64,7 @@ export async function run() {
       { role: "system", content: "Audit." }, { role: "user", content: repeat },
       { role: "assistant", content: "Reply." }, { role: "user", content: repeat },
       { role: "assistant", content: "Reply again." }, { role: "user", content: repeat },
+      { role: "user", content: "token is sk-live-abcdef0123456789abcdef0123456789 here" },
       { role: "user", content: "Latest stays." },
     ] }
     // Only this isolated hook test writes; its config root is the temp dir.
@@ -89,7 +90,12 @@ export async function run() {
     assert.ok(newest.model.length <= 160)
     const storedHook = await readCapture(newest.id)
     assert.ok(storedHook.afterText.includes("Latest stays."))
-    check("AUDIT-04 真实钩子保存完整快照、写回索引且保留最新提问", true)
+    // A capture is the one place the whole conversation reaches disk, so a key
+    // pasted into it must arrive masked on both sides of the snapshot.
+    assert.ok(!storedHook.beforeText.includes("sk-live-abcdef0123456789abcdef0123456789"))
+    assert.ok(!storedHook.afterText.includes("sk-live-abcdef0123456789abcdef0123456789"))
+    assert.ok(storedHook.beforeText.includes("[redacted:key]"))
+    check("AUDIT-04 真实钩子保存完整快照、凭据已打码、写回索引且保留最新提问", true)
   } finally {
     if (old === undefined) delete process.env.COMPRESS_CORE_DATA_DIR
     else process.env.COMPRESS_CORE_DATA_DIR = old

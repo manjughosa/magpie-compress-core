@@ -1,4 +1,11 @@
 node_modules/
+
+# What this plugin writes on the machine it runs on, none of it belongs in the repo:
+# per-request byte counts, captured requests, temp files.
+requests.jsonl
+*.jsonl
+captures/
 page/captures/
 *.tmp
 *.log
+.DS_Store

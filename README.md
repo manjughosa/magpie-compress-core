@@ -87,11 +87,25 @@ magpie 给页面和面板的沙箱是 `connect-src 'none'`，页面拿不到网�
 
 ## 会话记录
 
-页面上的「已处理会话」列表来自 `options.stats.captures[]`，钩子在**每一次**经过网关的请求上都会写一条（`capture` 默认开，设成 `false` 才关），只保留最新 50 条；每条同时把完整快照发布到 `page/captures/<id>.js`，点开才加载，所以列表本身很轻。
+页面上的「已处理会话」列表来自 `options.stats.captures[]`。这个列表默认是空的：`capture` 默认**关**，设成 `true` 之后钩子才会在**每一次**经过网关的请求上写一条，只保留最新 50 条；每条同时把完整快照发布到 `page/captures/<id>.js`，点开才加载，所以列表本身很轻。
 
 行上会标出 `agent`（`dsh`、`pi` 等），也就是这条请求是哪一路 harness 发的——和脱敏页看到的语言是一致的。
 
 页面每 5 秒读一次 `magpie.options`，有变化就重绘，不需要手动刷新；写回设置时会把最新的 `stats` 一起带上，避免整包替换把钩子刚写进去的数字覆盖掉。
+
+## 隐私
+
+落盘只发生在插件自己的目录（`MAGPIE_CONFIG_DIR` 优先，其次 `XDG_CONFIG_HOME/magpie`，默认 `~/.config/magpie` 下的 `compress-core/`；`COMPRESS_CORE_DATA_DIR` 可整体改掉）：
+
+- `requests.jsonl`：每个请求一行统计（原始/压缩后字节、命中哪个策略、模型、客户端），**不含正文**。开关 `telemetry.samples` 打开后才额外存最多 8 对问答，每段 1600 字符，存前先过下面这套打码。
+- `captures/`：只在 `capture` 打开时才有，是完整请求正文，单条上限 2MB（超了整条不落盘，索引里标 `too_large`），只保留最新 50 条。
+- `captures-index.json`、`options-override.json`：索引与本地覆盖，不含正文。
+
+打码在 `telemetry-store.js` 的 `SECRET_RULES`，快照与样本共用一套：私钥块整段、`ghp_`/`github_pat_`/`AKIA`/`AIza`/`sk-`/`xox?-` 形态的令牌、`eyJ…` 的 JWT、`Bearer …`、以及 `authorization`、`api_key`、`password`、`client_secret` 这类字段的值，全部换成 `[redacted:…]`；邮箱和 `C:\Users\…` 这类路径只在样本里替换（快照要能看清代码原文）。字段名保留、值丢掉，所以仍然看得出这条请求带了什么凭据。
+
+两个开关都不碰代码本身——它们要回答的是「压缩对这段文本做了什么」。一段对话里如果有不能落盘的东西，就别打开 `capture` 和 `telemetry.samples`。
+
+清空：页面上点「清空快照」，钩子删掉两个目录并清索引；`requests.jsonl` 直接删文件，下一次请求会重建。
 
 ## 实验室
 

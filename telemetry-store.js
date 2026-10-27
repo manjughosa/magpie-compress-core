@@ -18,13 +18,38 @@ export function persist(event) {
   }).catch(error => console.error("compress-core telemetry:", error.message))
   return queue
 }
+// A capture keeps the whole conversation text, so a key pasted into a prompt
+// must not follow it onto disk or into a script the page loads. Each rule
+// leaves a short tag: a reader can tell what was removed without seeing it.
+// Ordered most specific first, so "sk-proj-…" becomes [redacted:key] and not
+// the generic [credential] the word-shape rule below would produce.
+const SECRET_RULES = [
+  [/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g, "[redacted:private-key]"],
+  [/\bgithub_pat_[A-Za-z0-9_]{20,}/g, "[redacted:github-token]"],
+  [/\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}/g, "[redacted:github-token]"],
+  [/\bAKIA[0-9A-Z]{16}\b/g, "[redacted:aws-key]"],
+  [/\bxox[abprs]-[A-Za-z0-9-]{10,}/g, "[redacted:slack-token]"],
+  [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, "[redacted:jwt]"],
+  [/\b(?:sk|rk|pk|ak)-[A-Za-z0-9_-]{16,}/g, "[redacted:key]"],
+  [/\b(?:Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{12,}/gi, "[redacted:credential]"],
+  [/\b(?:sk|rk|pk|ak|key|token|bearer)[-_ ][A-Za-z0-9._-]{8,}/gi, "[credential]"],
+  // The value must not start with "[" so a rule never re-masks a tag an earlier
+  // rule just wrote ("Authorization: [redacted:credential]" stays legible).
+  [/(authorization|api[-_ ]?key|access[-_ ]?token|password|passwd|client[-_ ]?secret|secret)(["'\s:=]+)([^\s,"'}\[]{8,})/gi, "$1$2[redacted]"],
+]
+
+// Masking only: no truncation, so a capture's before/after view stays whole.
+export function redactSecrets(text) {
+  let out = String(text)
+  for (const [pattern, replacement] of SECRET_RULES) out = out.replace(pattern, replacement)
+  return out
+}
+
 export function redact(text, limit = 1600) {
-  return String(text)
+  const masked = String(text)
     .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
-    .replace(/\b(?:sk|rk|pk|ak|key|token|bearer)[-_ ][A-Za-z0-9._-]{8,}/gi, "[credential]")
-    .replace(/(authorization|api[-_ ]?key|access[-_ ]?token|password|secret)(["'\s:=]+)[^\s,"'}]+/gi, "$1$2[redacted]")
     .replace(/(?:[A-Za-z]:\\|\/(?:home|Users)\/)[^\s"']+/g, "[path]")
-    .slice(0, limit)
+  return redactSecrets(masked).slice(0, limit)
 }
 export async function readEvents() {
   try {

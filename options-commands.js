@@ -6,6 +6,31 @@ import { join } from "node:path"
 import { runLab } from "./lab.js"
 import { clearCaptures } from "./capture-store.js"
 import { configDir, clearCaptureIndex, flush } from "./stats-writer.js"
+import { redactSecrets } from "./telemetry-store.js"
+
+// A lab run result is written into plugins.json so the page can read it, and it
+// carries the text the operator pasted plus the full request body. Both are
+// masked before they land in the config file, and a result too large to belong
+// in a config file keeps only the report.
+const LAB_RESULT_LIMIT = 2_000_000
+
+function maskDeep(value) {
+  if (typeof value === "string") return redactSecrets(value)
+  if (Array.isArray(value)) return value.map(maskDeep)
+  if (value && typeof value === "object") {
+    const out = {}
+    for (const [key, item] of Object.entries(value)) out[key] = maskDeep(item)
+    return out
+  }
+  return value
+}
+
+export function maskLabResult(result) {
+  if (!result || typeof result !== "object") return result
+  const masked = maskDeep(result)
+  if (JSON.stringify(masked).length <= LAB_RESULT_LIMIT) return masked
+  return { ...masked, before: null, after: null, truncated: true }
+}
 
 let queue = Promise.resolve()
 const completed = new Set()
@@ -66,7 +91,7 @@ export function processLabCommand(options) {
     let success = false
     try {
       const result = await runLab(command.request, options)
-      await patch({ labResult: { id: command.id, status: "done", result }, labCommand: undefined })
+      await patch({ labResult: { id: command.id, status: "done", result: maskLabResult(result) }, labCommand: undefined })
       success = true
     } catch (error) {
       await patch({ labResult: { id: command.id, status: "error", error: error.message } }).catch(() => {})
