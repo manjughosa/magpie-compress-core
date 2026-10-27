@@ -181,7 +181,7 @@
     "session-dedup reads the same preserveCurrentTurn switch as lite and defaults the same way. Protecting only the current turn means the message is rewritten once in the next request, which moves the prefix with it; the switch is now the single place where that choice is made.",
     "cases.json holds 23 cases: the 21 from history-trim plus two that pin the default preset's own behaviour (the turn being sent is folded too; a tabular tool result becomes a gcf-generic block).",
     "test/prefix-stability.test.mjs is the acceptance test for the prompt-cache finding: the transcript grows turn by turn and the prefix sent each round must be byte-identical to the previous round, for the default preset, the safe preset, and each lossless engine on its own.",
-    "page/engines.js and page/lab-engine.bundle.js left version control: they are built by `npm run prepack` before publishing, so the repository carries no generated files while installs still get them.",
+    "page/engines.js and page/lab-engine.bundle.js are committed. They are built by `npm run prepack` (esbuild is a devDependency) and the files here are the built output: magpie installs a plugin from the dist branch, and scripts/dist.mjs packs with `npm pack --ignore-scripts`, so a lifecycle script cannot be the only thing that produces them — an install that skips scripts would find neither file and the three pages would 404.",
     "The package is named @magpie-community/middleware-compress-core, matching the middleware-* convention the registry's dist step checks for."
   ]
 }
