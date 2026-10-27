@@ -70,6 +70,43 @@ export function resolveLiteMaxToolLength(maxToolLength) {
 // 步骤1 collapseWhitespace（§5.3 / §5.5）
 // ---------------------------------------------------------------------------
 
+// 正在发送的这一轮 = 最后一条 assistant 之后的消息；没有 assistant 时整段都算当前轮。
+// 这条语义与社区 history-trim 0.1.0 的 turnStart() 一致：那一轮已经发出去了，不该被改写。
+function turnStart(messages) {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i] && messages[i].role === "assistant") return i + 1
+  }
+  return 0
+}
+
+function isHighSurrogate(code) {
+  return code >= 0xd800 && code <= 0xdbff
+}
+
+function isLowSurrogate(code) {
+  return code >= 0xdc00 && code <= 0xdfff
+}
+
+// 切点落在 emoji 等代理对中间时回退一位，避免切出半个字符。
+function avoidSplitSurrogate(text, cutIndex) {
+  if (cutIndex <= 0 || cutIndex >= text.length) return cutIndex
+  if (isHighSurrogate(text.charCodeAt(cutIndex - 1)) && isLowSurrogate(text.charCodeAt(cutIndex))) {
+    return cutIndex - 1
+  }
+  return cutIndex
+}
+
+// 键排序后的深拷贝，用于「整条消息每个字段都相等」的判断。
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical)
+  if (value && typeof value === "object") {
+    const out = {}
+    for (const key of Object.keys(value).sort()) out[key] = canonical(value[key])
+    return out
+  }
+  return value
+}
+
 function normalizeMessageWhitespace(content) {
   if (!content) return ""
   return content.replace(/\n{3,}/g, "\n\n").replace(/[ \t]+$/gm, "")
@@ -101,7 +138,8 @@ export function dedupSystemPrompt(body, options) {
   let applied = false
   const messages = body.messages.filter((msg) => {
     if (msg.role !== "system" || typeof msg.content !== "string") return true
-    const key = msg.content.trim().slice(0, 200)
+    // 整段文本相同才算重复：只比前 200 字符会丢掉「开头相同、正文不同」的另一块 system。
+    const key = msg.content.trim()
     if (seen.has(key)) {
       applied = true
       return false
@@ -151,9 +189,9 @@ function truncateToolText(text, maxLength) {
   // 头尾各分一半预算：开头留结构与定位信息，结尾留报错行/结论（模型真正要看的东西）。
   const headBudget = Math.max(1, Math.floor(maxLength / 2))
   const tailBudget = Math.max(1, maxLength - headBudget)
-  const headCut = backOffToWordBoundary(text, headBudget)
+  const headCut = avoidSplitSurrogate(text, backOffToWordBoundary(text, headBudget))
   const tailStart = text.length - tailBudget
-  const tailCut = backOffToWordBoundary(text, tailStart)
+  const tailCut = avoidSplitSurrogate(text, backOffToWordBoundary(text, tailStart))
   // 文本只超出上限一点点时两段会重叠，此时退回头部截断，避免重复内容。
   if (tailCut <= headCut) return text.slice(0, headCut) + TRUNCATION_SUFFIX
   return text.slice(0, headCut) + TRUNCATION_SUFFIX + text.slice(tailCut)
@@ -235,14 +273,15 @@ export function removeRedundantContent(body, options) {
       messages.push(msg)
       continue
     }
-    const contentStr = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content)
     const prev = i > 0 ? body.messages[i - 1] : undefined
+    // 整条消息每个字段都相等才算重复：只比 content 会误删「只有 tool_calls 不同」的两条。
     if (
       i > 0 &&
       msg.role !== "tool" &&
       prev && prev.role === msg.role &&
       typeof prev.content === "string" &&
-      prev.content === contentStr
+      typeof msg.content === "string" &&
+      JSON.stringify(canonical(prev)) === JSON.stringify(canonical(msg))
     ) {
       applied = true
       continue
@@ -317,7 +356,14 @@ export function createCompressionStats(originalBody, compressedBody, mode, techn
 export function applyLiteCompression(body, options) {
   options = options || {}
   const originalBody = body
-  let current = body
+  // 正在发送的这一轮原样不动（turnStart 语义）。没有 assistant 时整段都算当前轮，
+  // 所以「首轮请求」不会被改写。试压台的输入天生只有一条 user 消息，它属于当前轮，
+  // 因此 lab 用 treatAllAsHistory 明确声明「把这段输入当作历史」。
+  const messages = Array.isArray(body.messages) ? body.messages : null
+  let historyLength = 0
+  if (messages) historyLength = options.treatAllAsHistory === true ? messages.length : turnStart(messages)
+  const sending = messages ? messages.slice(historyLength) : null
+  let current = messages ? { ...body, messages: messages.slice(0, historyLength) } : body
   const techniquesApplied = []
 
   let r = collapseWhitespace(current, options)
@@ -338,16 +384,19 @@ export function applyLiteCompression(body, options) {
   if (r.applied) techniquesApplied.push("redundant-remove")
   current = r.body
 
-  r = replaceImageUrls(current, options)
+  const merged = messages ? { ...current, messages: [...current.messages, ...sending] } : current
+  // 剥图不是压缩，而是「这个模型读不了图」的兼容处理：正在发送的这一轮也必须剥，
+  // 否则请求会带着目标模型读不了的图片发出去。
+  r = replaceImageUrls(merged, options)
   if (r.applied) techniquesApplied.push("image-placeholder")
-  current = r.body
+  const final = r.body
 
   const compressed = techniquesApplied.length > 0
   return {
-    body: current,
+    body: final,
     compressed,
     techniquesApplied,
-    stats: compressed ? createCompressionStats(originalBody, current, "lite", techniquesApplied) : null,
+    stats: compressed ? createCompressionStats(originalBody, final, "lite", techniquesApplied) : null,
   }
 }
 
@@ -371,6 +420,8 @@ export function apply(body, ctx, cfg) {
     preserveSystemPrompt: cfg && cfg.preserveSystemPrompt === true,
     compressToolResults: !(cfg && cfg.compressToolResults === false),
     maxToolLength: cfg ? cfg.maxToolLength : undefined,
+    // 试压台专用：把输入整段当作历史（生产路径不设，正在发送的那一轮不动）。
+    treatAllAsHistory: !!(cfg && cfg.treatAllAsHistory === true),
     // supportsVision 默认按目标模型自动判定；配置可显式覆盖（true/false）
     supportsVision:
       cfg && typeof cfg.supportsVision === "boolean"

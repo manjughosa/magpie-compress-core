@@ -65,7 +65,7 @@ export async function run() {
       { role: "system", content: a },
       { role: "system", content: b },
     ] })
-    check("11 前200字符同即去重", r.body.messages.length === 1 && r.applied)
+    check("11 开头相同正文不同都保留", r.body.messages.length === 2 && !r.applied)
   }
   r = dedupSystemPrompt({ messages: [
     { role: "system", content: [{ type: "text", text: "same" }] },
@@ -254,13 +254,31 @@ export async function run() {
   }
   {
     // 44 管线串联：whitespace 先改，redundant-remove 看到后步骤产物
+    // （末尾必须有 assistant：最后一条 assistant 之后是「正在发送的这一轮」，不参与改写）
     const rr = applyLiteCompression({ messages: [
       { role: "user", content: "a\n\nb" },
       { role: "user", content: "a\n\n\nb" },
+      { role: "assistant", content: "ok" },
     ] })
-    check("44 串联看到前步产物", rr.body.messages.length === 1 &&
+    check("44 串联看到前步产物", rr.body.messages.length === 2 &&
       rr.techniquesApplied.includes("whitespace") &&
       rr.techniquesApplied.includes("redundant-remove"))
+  }
+  {
+    // 44b 头尾截断不能把 emoji 从中间劈开：半个代理对会让请求体在 UTF-8 层非法
+    const rr = applyLiteCompression({ messages: [
+      { role: "tool", content: "\u{1F600}".repeat(200) },
+      { role: "assistant", content: "ok" },
+      { role: "user", content: "hi" },
+    ] }, { maxToolLength: 257 })
+    const cut = rr.body.messages[0].content
+    let valid = true
+    try {
+      new TextDecoder("utf-8", { fatal: true }).decode(new TextEncoder().encode(cut))
+    } catch {
+      valid = false
+    }
+    check("44b 截断不劈 emoji", valid && cut.length < 400)
   }
 
   // ---- isVisionModelId (46–50) ----

@@ -51,7 +51,15 @@ export async function runLab(request, options = {}) {
   // 实验室的输入是单独一条 user 消息，它永远落在「保护最近 N 轮」的窗口里；
   // 一旦挂上 preserve，每个策略看到的都只是占位符，结果必然「压缩前后没区别」。
   // preserve 本身由 observability.hooks.js 的套件单独覆盖。
-  const bench = { ...options, strategies, preserve: { system: false, lastTurns: 0 } }
+  // 试压台的输入是单独一条 user 消息，按生产语义它属于「正在发送的这一轮」，本来不该被改写。
+  // 这台要回答的是「这个策略对这段文本做了什么」，所以用 treatAllAsHistory 把输入当作历史；
+  // 生产路径上没有这个开关，当前轮保持原样。
+  const bench = {
+    ...options,
+    strategies,
+    preserve: { system: false, lastTurns: 0 },
+    lite: { ...(options.lite && typeof options.lite === "object" ? options.lite : {}), treatAllAsHistory: true },
+  }
   const before = clone(body)
   const beforeText = conversationText(before, protocol)
   try {
