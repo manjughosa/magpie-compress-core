@@ -85,7 +85,7 @@ const TOOL_TRUNCATION_LOOKBACK = 80;
 
 ```js
 // dedupSystemPrompt：system 消息去重键
-msg.content.trim().slice(0, 200)        // 键 = trim 后前 200 字符
+msg.content.trim()                     // 键 = 整段 trim 文本（维护者 PR #423 复核后改）
 
 // truncateToolText：截断后缀
 "\n...[truncated]"                       // 固定拼接在截断文本之后
@@ -146,7 +146,7 @@ lite 引擎**没有** caveman 那样的"模式→替换串"规则表。全部替
 | R2 | `/[ \t]+$/gm` → `""` | `normalizeMessageWhitespace` | 每行行尾空格/tab → 删除 |
 | R3 | 超长 tool 文本 → `text.slice(0, cut) + "\n...[truncated]"` | `truncateToolText` | 截断+固定后缀 |
 | R4 | 连续重复同 role 消息（content 全等）→ 删除后者 | `removeRedundantContent` | 整条消息移除 |
-| R5 | 重复 system 消息（trim 后前 200 字符相同）→ 删除后者 | `dedupSystemPrompt` | 整条消息移除 |
+| R5 | 重复 system 消息（整段 trim 文本相同）→ 删除后者 | `dedupSystemPrompt` | 整条消息移除 |
 | R6 | `{type:"image_url", image_url:{url:"data:image/<fmt>;base64,..."}}` → `{type:"text", text:"[image: <fmt>]"}` | `replaceImageUrls` | 块替换 |
 
 ---
@@ -235,11 +235,11 @@ interface ChatBody {
   3. `seen = new Set()`；`applied = false`。
   4. `filter` 每条 `msg`：
      - `msg.role !== "system"` 或 `typeof msg.content !== "string"` → 保留。
-     - `key = msg.content.trim().slice(0, 200)`。
+     - `key = msg.content.trim()`（整段 trim 文本）。
      - `seen.has(key)` → `applied = true`，**丢弃**。
      - 否则 `seen.add(key)`，保留。
   5. 返回 `{ body: { ...body, messages }, applied }`。
-- **边界**：**第一条**出现的 system 总是保留；去重是全局的（`filter` 不限相邻）。键是 trim 后前 200 字符，所以"仅 200 字符之后不同的超长 system"会被误判为重复 —— 源码行为，原样保留。
+- **边界**：**第一条**出现的 system 总是保留；去重是全局的（`filter` 不限相邻）。键是整段 trim 文本，所以"开头相同、正文不同"的两块 system 都会保留。
 
 ### 5.7 `isWordChar(char)` — 内部
 
@@ -300,11 +300,11 @@ interface ChatBody {
   2. `MAX_TOOL_LENGTH = resolveLiteMaxToolLength(options.maxToolLength)`。
   3. `lastAssistant = body.messages.findLastIndex(m => m.role === "assistant")`。
      - **`findLastIndex` 是 ES2023 API**；沙箱若无，需 polyfill（从尾到头扫）。
-  4. `currentTurnStart = lastAssistant === -1 ? body.messages.length : lastAssistant + 1`。
+  4. 本层不再自己算当前轮：`applyLiteCompression` 已把 history 切出来传进来，整段可截。
      - **含义**：最后一条 assistant 及其之后的所有消息**永不截断**（模型本轮刚要的工具结果不能切，否则无限重读）。
-     - 没有 assistant 时 `currentTurnStart = messages.length`，即**没有任何消息被截断**。
+     - 首次请求（无 assistant）由 `applyLiteCompression` 的 `turnStart` 返回 0 兜住，整段原样。
   5. 遍历 `(msg, index)`：
-     - `index >= currentTurnStart` → 原样。
+     - 当前轮守卫在 `applyLiteCompression`：`index >= turnStart(messages)` 的段不进入本层的输入。
      - `msg.role === "tool" && typeof msg.content === "string"`：`msg.content.length <= MAX_TOOL_LENGTH` → 原样；否则 `applied=true`，`{ ...msg, content: truncateToolText(msg.content, MAX_TOOL_LENGTH) }`。
      - 其他 → `truncateToolResultBlocks(msg, MAX_TOOL_LENGTH)`，合并 `applied`。
   6. 返回 `{ body: { ...body, messages }, applied }`。
@@ -327,7 +327,7 @@ interface ChatBody {
      - 否则 push。
   3. 返回 `{ body: { ...body, messages }, applied }`。
 - **边界**：
-  - 数组 content 消息实际永不因重复被删（要求前一条 `typeof content === "string"` 且全等）。
+  - 数组 content 的两条消息只要每个字段全等，同样被删（`canonical` 比全字段，不看 content 类型）。
   - `i=0` 永不删。
   - 三连重复 `A A A`：`i=1` 删（与原始 `i=0` 比），`i=2` 与**原始** `i=1`（也是 A）比 → 也删。结果剩 1 条。
 
@@ -468,7 +468,7 @@ function createCompressionStats(originalBody, compressedBody, mode, techniquesUs
 **dedupSystemPrompt**
 9. 两条 system `content:"hello"`（连续或不连续）→ 第 2 条被删，`applied:true`；第 1 条保留。
 10. 两条 system `"  hello  "` 与 `"hello"` → trim 后键相同 → 删第 2 条。
-11. 两条 system 共享 trim 后前 200 字符但第 201 字符不同 → **仍被去重**（键只取前 200）。
+11. 两条 system 共享前 200 字符但正文不同 → **两块都保留**（键是整段 trim 文本）。
 12. system 的 content 是数组 → 不参与去重，永远保留。
 13. `preserveSystemPrompt=true` → 即使两条完全相同 system 也全保留，`applied:false`。
 14. system 与 user 内容相同 → 不互查（只 system 对 system）。
@@ -478,7 +478,7 @@ function createCompressionStats(originalBody, compressedBody, mode, techniquesUs
 16. 省略标记逐字为 `"\n...[truncated]"`（`\n` + 3 点 + `[truncated]`，共 15 字符）。
 17. 词边界：两段切点各自 `backOffToWordBoundary(预算)`；±80 窗口内无可回退/前伸的空白 → 硬切在预算上（头 1000 / 尾 1000）。
 18. `role:"tool"` 消息位于**最后一条 assistant 之后**（index ≥ lastAssistant+1）→ 永不截断。
-19. 消息列表无 assistant → 无任何截断（`currentTurnStart = messages.length`）。
+19. 消息列表无 assistant → `turnStart` 返回 0，整段算当前轮，**无任何截断**。
 20. `role:"tool"`、`content.length === 2000`（恰好等于上限）→ 不截断（`<=` 放行）。
 21. `role:"tool"` 的 content 是数组 → 不截断。
 22. Anthropic 风格：`role:"user"`，`content:[{type:"tool_result", content:"<3000字符>"}]` → inner string 截断，块结构保留。

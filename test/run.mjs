@@ -17,7 +17,7 @@ process.env.COMPRESS_CORE_DATA_DIR = joinPath(sandbox, "data")
 // into the operator's own plugins.json; the config folder is sandboxed too.
 process.env.MAGPIE_CONFIG_DIR = joinPath(sandbox, "config")
 
-const suites = ["capture-store.test.mjs", "redact.test.mjs", "lab.test.mjs", "lite.test.mjs", "session-dedup.test.mjs", "headroom.test.mjs", "codex-responses.test.mjs", "rtk.test.mjs", "observability.test.mjs", "relevance.test.mjs", "ultra.test.mjs", "caveman.test.mjs", "aggressive.test.mjs", "ionizer.test.mjs", "llm.test.mjs", "ccr.test.mjs", "read-lifecycle.test.mjs", "audit.test.mjs"] // storage + redaction + lab bench + all strategies + observability
+const suites = ["capture-store.test.mjs", "redact.test.mjs", "lab.test.mjs", "approved-lite.test.mjs", "lite.test.mjs", "session-dedup.test.mjs", "headroom.test.mjs", "codex-responses.test.mjs", "rtk.test.mjs", "observability.test.mjs", "relevance.test.mjs", "ultra.test.mjs", "caveman.test.mjs", "aggressive.test.mjs", "ionizer.test.mjs", "llm.test.mjs", "ccr.test.mjs", "read-lifecycle.test.mjs", "audit.test.mjs"] // storage + redaction + lab bench + all strategies + observability
 
 const only = process.argv[2]
 let any = false

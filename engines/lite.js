@@ -127,7 +127,7 @@ export function collapseWhitespace(body, options) {
 }
 
 // ---------------------------------------------------------------------------
-// 步骤2 dedupSystemPrompt（§5.6）— 键 = trim 后前 200 字符，全局去重
+// 步骤2 dedupSystemPrompt（§5.6）— 键 = 整段 trim 文本，历史内去重
 // ---------------------------------------------------------------------------
 
 export function dedupSystemPrompt(body, options) {
@@ -229,18 +229,12 @@ export function compressToolResults(body, options) {
   options = options || {}
   if (!body.messages) return { body, applied: false }
   const MAX_TOOL_LENGTH = resolveLiteMaxToolLength(options.maxToolLength)
-  // findLastIndex 的手写替代（ES2023 → 兼容旧沙箱）
-  let lastAssistant = -1
-  for (let i = body.messages.length - 1; i >= 0; i--) {
-    if (body.messages[i] && body.messages[i].role === "assistant") {
-      lastAssistant = i
-      break
-    }
-  }
-  const currentTurnStart = lastAssistant === -1 ? body.messages.length : lastAssistant + 1
+  // 传进来的 body 已经是「历史」——正在发送的那一轮由 applyLiteCompression 切走，
+  // 所以这里整段都可截。核算一次 turnStart 会把历史末尾那截（最后一个 assistant
+  // 之后）误判成当前轮而放过，试压台的 treatAllAsHistory 就因此少截一段。
   let applied = false
-  const messages = body.messages.map((msg, index) => {
-    if (index >= currentTurnStart) return msg
+  const messages = body.messages.map((msg) => {
+    if (!msg || typeof msg !== "object") return msg
     if (msg.role === "tool" && typeof msg.content === "string") {
       if (msg.content.length <= MAX_TOOL_LENGTH) return msg
       applied = true
@@ -270,12 +264,12 @@ export function removeRedundantContent(body, options) {
     }
     const prev = i > 0 ? body.messages[i - 1] : undefined
     // 整条消息每个字段都相等才算重复：只比 content 会误删「只有 tool_calls 不同」的两条。
+    // 与维护者合并版一致：不比 content 的类型，canonical 比的是全部字段，
+    // 两条数组 content 完全相同就是真的重复。
     if (
       i > 0 &&
       msg.role !== "tool" &&
       prev && prev.role === msg.role &&
-      typeof prev.content === "string" &&
-      typeof msg.content === "string" &&
       JSON.stringify(canonical(prev)) === JSON.stringify(canonical(msg))
     ) {
       applied = true
@@ -432,8 +426,21 @@ export function apply(body, ctx, cfg) {
   }
   const view = conversationView(body, ctx && ctx.protocol)
   if (!view) return false
+  // 没有 messages 数组的协议（responses / gemini）算不出 turnStart，所以退一步：
+  // 最后一条 user 消息就是正在发送的那一轮，它和它之后的段一律原样——这是
+  // 维护者对 lite 的原话（PR #423 review 第 3 条：lite 在 Responses body 上会
+  // 改写 instructions 和最后一条用户输入）。历史里的段仍然只做空白折叠。
+  const segments = view.segments
+  let turnFrom = segments.length
+  for (let i = segments.length - 1; i >= 0; i--) {
+    if (segments[i].role === "user") {
+      turnFrom = i
+      break
+    }
+  }
   let changed = false
-  for (const seg of view.segments) {
+  for (let i = 0; i < segments.length && i < turnFrom; i++) {
+    const seg = segments[i]
     if (opts.preserveSystemPrompt === true && seg.role === "system") continue
     const next = normalizeMessageWhitespace(seg.text)
     if (next !== seg.text) {

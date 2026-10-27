@@ -112,10 +112,16 @@ export async function run() {
     { role: "assistant", content: "a" },
     toolMsg(3000),
   ] }, { maxToolLength: 2000 })
-  check("18 最后assistant之后免疫", !r.applied && r.body.messages[1].content.length === 3000)
+  // 这一层不再自己找当前轮：传进来的就是历史，整段可截。守卫在 applyLiteCompression，
+  // 维护者合并版的 onRequest 也是同一分工（先把 history 切出来，再跑四个步骤）。
+  check("18 纯函数整段可截（守卫在 apply 层）", r.applied && r.body.messages[1].content.length < 3000)
+  const guarded = applyLiteCompression({ messages: [
+    { role: "user", content: "q" },
+    { role: "assistant", content: "a" },
+    { role: "tool", content: big(3000) },
+  ] }, { maxToolLength: 2000 })
+  check("18b 正在发送的一轮不截", guarded.compressed === false)
   r = compressToolResults({ messages: [toolMsg(3000)] }, { maxToolLength: 2000 })
-  // 源码 lite.ts:202 — 无 assistant 时 currentTurnStart=messages.length，
-  // 即没有「当前轮保护区」，所有消息都可截（规格书 §8-19 注释写反，以源码公式为准）
   check("19 无assistant仍可截", r.applied && r.body.messages[0].content.includes("\n...[truncated]"))
   r = compressToolResults({ messages: [toolMsg(2000), { role: "assistant", content: "a" }] }, { maxToolLength: 2000 })
   check("20 恰等上限放行", !r.applied)
@@ -180,7 +186,7 @@ export async function run() {
     { role: "user", content: [{ type: "text", text: "same" }] },
     { role: "user", content: [{ type: "text", text: "same" }] },
   ] })
-  check("30 数组content不删", r.body.messages.length === 2 && !r.applied)
+  check("30 数组content相同也删（canonical 比全字段）", r.body.messages.length === 1 && r.applied)
   r = removeRedundantContent({ messages: [{ role: "user", content: "x" }] })
   check("31 i=0不删", r.body.messages.length === 1 && !r.applied)
   r = removeRedundantContent({ messages: [
