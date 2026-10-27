@@ -7,7 +7,8 @@
 ## 装
 
 ```bash
-magpie plugin add <本目录>
+magpie plugin add <本目录>                              # 本地目录
+magpie plugin add github:manjughosa/magpie-compress-core # 从 GitHub 装
 ```
 
 装完 `magpie plugin list` 里应该能看到这个插件声明了 `middleware`、`hooks`、`page` 和两个 `panels`。
@@ -94,6 +95,8 @@ node test/live-probe.mjs          # 对着真的 magpie 打一次
 ```
 
 `catalog.js` 是策略元数据的单一真相源；`page/engines.js` 是它的镜像（页面是 sandbox 里的普通 `<script>`，不能 import ES module），改 catalog 必须重新生成。
+
+面板按钮点不动、或者要改页面的渲染层，先读 `DEBUGGING.md`：里面记了渲染契约、会话快照的取法，以及为什么「看起来像沙箱问题」其实不是。
 
 `test/lite-spec.md` 和 `test/session-dedup-spec.md` 是这两个策略的行为契约，改引擎之前先看。
 

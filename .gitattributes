@@ -1,0 +1,5 @@
+# Keep one line ending in the repository; Windows checkouts may still be CRLF.
+* text=auto
+*.png binary
+*.webp binary
+*.woff2 binary
