@@ -653,9 +653,15 @@ select:focus { border-color: var(--accent); }
 }
 
 .lab-empty-icon {
-  font-size: 48px;
-  opacity: 0.3;
+  display: block;
+  opacity: 0.28;
   margin-bottom: 16px;
+}
+.lab-empty-icon svg {
+  display: block;
+  width: 46px;
+  height: 46px;
+  margin: 0 auto;
 }
 
 .lab-empty-text {
@@ -940,4 +946,131 @@ select:focus { border-color: var(--accent); }
   .diff-modal-content { max-height: 90vh; }
   .diff-header { flex-direction: column; align-items: flex-start; }
   .diff-stats { gap: 16px; }
+}
+
+/* 差异行：行号列 + 整行条状高亮。前面窗口按公共前缀定位，只渲染差异附近的行。 */
+.diff-pane-body .diff-line { display: block; }
+.diff-pane-body .diff-line.is-added { background: color-mix(in srgb, var(--green) 15%, transparent); }
+.diff-pane-body .diff-line.is-removed { background: color-mix(in srgb, var(--red) 12%, transparent); }
+.diff-lineno {
+  display: inline-block;
+  width: 3.4em;
+  margin-right: 10px;
+  text-align: right;
+  color: var(--muted);
+  opacity: 0.55;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+.diff-note {
+  margin: 0;
+  padding: 10px 16px 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* 差异弹窗里的策略贡献表：密集、等宽数字、命中项单独着色。 */
+.diff-report { padding: 0 16px 14px; }
+.diff-report-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.diff-report-head .muted { font-weight: 400; }
+.diff-report-rows {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.diff-report-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 7px 12px;
+  background: var(--card);
+  font-size: 12px;
+}
+.diff-report-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diff-report-verdict.hit { color: var(--green); font-weight: 600; }
+.diff-report-verdict.skip { color: var(--muted); }
+.diff-report-saved {
+  min-width: 68px;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.diff-report-ms {
+  min-width: 52px;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 弹窗整体滚动：两栏 diff 与策略贡献表共用一根滚动条，左右行永远对齐。 */
+.diff-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 86vh;
+}
+.diff-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.diff-modal-body .diff-pane {
+  min-width: 0;
+}
+.diff-modal-body .diff-pane-body {
+  max-height: none;
+  overflow: visible;
+}
+.diff-panes {
+  align-items: start;
+}
+
+/* 预设条与齿轮：齿轮紧贴「全开」右边一点点，只有 4px 呼吸。 */
+.preset-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+/* 齿轮不要底盘：去掉卡片底与描边，只留齿轮本身，直接融进页面背景。 */
+.preset-group .icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+.preset-group .icon-btn:hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--fg);
+}
+.preset-group .icon-btn:active {
+  background: transparent;
+  color: var(--fg);
+}
+.preset-group .icon-btn:focus-visible {
+  outline-offset: 1px;
+}
+/* 图标统一走内联 SVG，颜色跟随按钮文字色，不依赖系统字体里有没有 ⚙ / ⚗。 */
+.icon svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+}
+.preset-group .icon-btn .icon svg {
+  width: 14px;
+  height: 14px;
 }

@@ -113,28 +113,39 @@
     paintSessions()
   }
 
+  // view.js 的 V.engines() 返回数组（每项带 id），V.cards() 产出卡片，列表统一交给 U.rows 渲染。
+  // 旧的 map 假设是交互全灭的根因：registerView 只暴露 engines（数组），没有 presetOf/configOf/map。
+
+  function safePaint() {
+    try {
+      paint()
+    } catch (err) {
+      setMessage("渲染失败：" + (err && err.message ? err.message : err), "err")
+      if (globalThis.console) console.error("[Compress] paint failed", err)
+    }
+  }
+
   function paintPresets() {
     var host = $("presets")
     if (!host) return
     U.clear(host)
-    var presets = V.presets()
-    presets.forEach(function (p) {
-      var b = U.el("button", "opt" + (state.preset === p.id ? " on" : ""), p.label)
-      b.type = "button"
-      b.setAttribute("aria-selected", state.preset === p.id ? "true" : "false")
-      b.addEventListener("click", function () {
-        if (p.id === "custom") return
-        var next = {}
-        Object.keys(V.engines()).forEach(function (id) { next[id] = p.on(id) })
+    ;["off", "safe", "custom", "all"].forEach(function (id) {
+      var label = (T.presets && T.presets[id]) || id
+      var btn = U.el("button", "opt" + (state.preset === id ? " on" : ""), label)
+      btn.type = "button"
+      btn.setAttribute("aria-selected", state.preset === id ? "true" : "false")
+      btn.addEventListener("click", function () {
+        if (id === "custom") return
+        var next = V.presetStrategies(id)
         options.strategies = next
-        state.preset = p.id
+        state.preset = id
         save({ strategies: next })
-        paint()
+        safePaint()
       })
-      host.append(b)
+      host.append(btn)
     })
     var hint = $("presetHint")
-    if (hint) hint.textContent = V.presetHint(state.preset, lang)
+    if (hint) hint.textContent = (T.presetHint && T.presetHint[state.preset]) || ""
   }
 
   function paintMeter() {
@@ -147,49 +158,27 @@
   function paintRows() {
     var host = $("rows")
     if (!host) return
-    U.clear(host)
-    var engines = V.engines()
-    var order = V.order(engines)
-    var all = strategies()
-    order.forEach(function (id, i) {
-      var eng = engines[id]
-      var row = U.row({
-        index: i,
-        id: id,
-        eng: eng,
-        on: all[id] !== false,
-        open: state.open[id],
-        stats: statsFor(id),
-        lang: lang,
-        T: T,
-      })
-      row.addEventListener("click", function () { toggleOpen(id) })
-      host.append(row)
-      var detail = U.detail({
-        id: id,
-        eng: eng,
-        config: configOf(id),
-        stats: statsFor(id),
-        lang: lang,
-        T: T,
-        onField: function (key, value) {
-          var cfg = Object.assign({}, configOf(id))
-          cfg[key] = value
-          options[id] = cfg
-          save({ [id]: cfg })
-        },
-        onSwitch: function (next) {
-          var all = Object.assign({}, strategies())
-          all[id] = next
-          options.strategies = all
-          state.preset = V.presetOf(all)
-          save({ strategies: all })
-          paint()
-        },
-      })
-      detail.id = "d-" + id
-      detail.hidden = !state.open[id]
-      host.append(detail)
+    U.rows(host, V.cards(strategies(), options.stats, lang), {
+      T: T,
+      open: state.open,
+      config: configMap(),
+      onToggle: toggleOpen,
+      onSwitch: function (id, next) {
+        var all = strategies()
+        all[id] = next
+        options.strategies = all
+        state.preset = V.presetOf(all)
+        save({ strategies: all })
+        safePaint()
+      },
+      onField: function (id, key, value) {
+        var cfg = Object.assign({}, configOf(id))
+        cfg[key] = value
+        options[id] = cfg
+        var patch = {}
+        patch[id] = cfg
+        save(patch)
+      },
     })
   }
 
@@ -202,11 +191,29 @@
   }
 
   function paintAdvanced() {
-    var s = options.stats || {}
-    if (document.activeElement !== $("budget")) $("budget").value = options.budgetMs != null ? options.budgetMs : 600
-    if (document.activeElement !== $("lastTurns")) $("lastTurns").value = options.preserve && options.preserve.lastTurns != null ? options.preserve.lastTurns : 2
-    var keepSystem = !(options.preserve && options.preserve.system === false)
-    $("preserveSystem").setAttribute("aria-checked", keepSystem ? "true" : "false")
+    var budget = $("budget")
+    var lastTurns = $("lastTurns")
+    var keep = $("preserveSystem")
+    if (budget && document.activeElement !== budget) {
+      budget.value = options.budgetMs != null ? options.budgetMs : 600
+    }
+    if (lastTurns && document.activeElement !== lastTurns) {
+      var turns = options.preserve && options.preserve.lastTurns != null ? options.preserve.lastTurns : 2
+      lastTurns.value = turns
+    }
+    if (keep) {
+      var keepSystem = !(options.preserve && options.preserve.system === false)
+      keep.setAttribute("aria-checked", keepSystem ? "true" : "false")
+    }
+  }
+
+  // 索引条目：{ id, at, protocol, model, before, after, saved, summary }（字节数 + ISO 时间）
+  // 完整 before/after 文本不在这里，按需从 captures/<id>.js 用 <script> 载入。
+
+  function sessionRate(cap) {
+    var before = Number(cap.before) || 0
+    if (!before) return 0
+    return (before - (Number(cap.after) || 0)) / before
   }
 
   function paintSessions() {
@@ -214,8 +221,8 @@
     var hint = $("sessionHint")
     if (!host) return
 
-    var captures = (options.stats && options.stats.captures) || []
-    captures = captures.slice().sort(function (a, b) { return b.ts - a.ts })
+    var captures = ((options.stats && options.stats.captures) || []).slice()
+    captures.sort(function (a, b) { return new Date(b.at).getTime() - new Date(a.at).getTime() })
 
     U.clear(host)
 
@@ -223,180 +230,342 @@
       if (hint) hint.textContent = "暂无记录。发一条消息触发网关请求后，这里会显示压缩前后的快照。"
       return
     }
-
     if (hint) hint.textContent = captures.length + " 条记录 · 点击一条查看差异"
 
     captures.forEach(function (cap) {
+      var rate = sessionRate(cap)
+      var before = Number(cap.before) || 0
+      var after = Number(cap.after) || 0
+
       var row = document.createElement("button")
       row.className = "session-row"
       row.type = "button"
       row.dataset.id = cap.id
+      row.setAttribute("aria-label", (cap.model || "请求") + "，" + fmtBytes(before) + " 压缩到 " + fmtBytes(after))
 
       var info = document.createElement("div")
       info.className = "session-info"
 
       var preview = document.createElement("div")
       preview.className = "session-preview"
-      preview.textContent = (cap.beforeText || "").slice(0, 60) + "…"
+      preview.textContent = cap.model || "(未知模型)"
 
-      var meta = document.createElement("div")
-      meta.className = "session-meta"
+      var metaRow = document.createElement("div")
+      metaRow.className = "session-meta"
+      var timeSpan = document.createElement("span")
+      timeSpan.textContent = fmtTime(cap.at)
+      var protoSpan = document.createElement("span")
+      protoSpan.textContent = cap.protocol || "chat"
+      metaRow.append(timeSpan, protoSpan)
+      info.append(preview, metaRow)
 
-      var time = document.createElement("span")
-      time.textContent = fmtTime(cap.ts)
-
-      var strategy = document.createElement("span")
-      strategy.textContent = cap.strategy || "auto"
-
-      meta.append(time, strategy)
-      info.append(preview, meta)
-
-      var strategiesDiv = document.createElement("div")
-      strategiesDiv.className = "session-strategies"
+      var tags = document.createElement("div")
+      tags.className = "session-strategies"
       var tag = document.createElement("span")
       tag.className = "strategy-tag"
-      tag.textContent = cap.strategy || "auto"
-      strategiesDiv.append(tag)
+      tag.textContent = cap.summary ? "仅摘要" : "全文"
+      tags.append(tag)
 
       var size = document.createElement("span")
       size.className = "session-size"
-      size.textContent = fmtBytes(cap.beforeBytes) + " → " + fmtBytes(cap.afterBytes)
+      size.textContent = fmtBytes(before) + " → " + fmtBytes(after)
 
-      var rate = document.createElement("span")
-      rate.className = "session-rate " + (cap.rate > 0 ? "good" : cap.rate < 0 ? "bad" : "")
-      rate.textContent = fmtRate(cap.rate)
+      var rateEl = document.createElement("span")
+      rateEl.className = "session-rate " + (rate > 0 ? "good" : rate < 0 ? "bad" : "")
+      rateEl.textContent = fmtRate(rate)
 
-      row.append(info, strategiesDiv, size, rate)
-
-      row.addEventListener("click", function () {
-        showDiffModal(cap)
-      })
-
+      row.append(info, tags, size, rateEl)
+      row.addEventListener("click", function () { showDiffModal(cap) })
       host.append(row)
     })
   }
 
   // ═══ 差异弹窗 ═══
 
+  // 完整快照按需加载：页面 CSP 只允许同源脚本，所以用 <script> 而不是 fetch。
+  var captureCache = {}
+
+  function ensureCapture(id) {
+    if (captureCache[id]) return Promise.resolve(captureCache[id])
+    var store = globalThis.__COMPRESS_CAPTURES__
+    if (store && store[id]) {
+      captureCache[id] = store[id]
+      return Promise.resolve(store[id])
+    }
+    return new Promise(function (resolve) {
+      var done = false
+      var finish = function (value) {
+        if (done) return
+        done = true
+        resolve(value || null)
+      }
+      var script = document.createElement("script")
+      script.src = "captures/" + encodeURIComponent(id) + ".js"
+      script.onload = function () {
+        var got = globalThis.__COMPRESS_CAPTURES__ ? globalThis.__COMPRESS_CAPTURES__[id] : null
+        if (got) captureCache[id] = got
+        finish(got)
+      }
+      script.onerror = function () { finish(null) }
+      document.head.append(script)
+      setTimeout(function () { finish(captureCache[id] || null) }, 6000)
+    })
+  }
+
+  function onDiffKey(ev) {
+    if (ev && ev.key === "Escape") hideDiffModal()
+  }
+
   function showDiffModal(cap) {
     var modal = $("diffModal")
     var title = $("diffTitle")
     var meta = $("diffMeta")
     var body = $("diffBody")
-
     if (!modal || !body) return
 
     if (title) title.textContent = "压缩前后差异"
     if (meta) {
-      meta.innerHTML = ""
+      U.clear(meta)
+      var rate = sessionRate(cap)
       var items = [
-        fmtTime(cap.ts),
-        cap.strategy || "auto",
-        fmtBytes(cap.beforeBytes) + " → " + fmtBytes(cap.afterBytes),
-        "压缩率 " + fmtRate(cap.rate)
+        fmtTime(cap.at),
+        cap.model || "",
+        cap.protocol || "",
+        fmtBytes(Number(cap.before) || 0) + " → " + fmtBytes(Number(cap.after) || 0),
+        "压缩率 " + fmtRate(rate),
       ]
       items.forEach(function (text) {
+        if (!text) return
         var span = document.createElement("span")
         span.textContent = text
         meta.append(span)
       })
     }
 
-    renderDiffBody(body, cap)
+    renderDiffBody(body, cap, null, "loading")
     modal.hidden = false
+    modal.removeAttribute("hidden")
+    modal.style.display = "flex"
 
     var closeBtn = $("diffClose")
     var backdrop = $("diffBackdrop")
     if (closeBtn) closeBtn.onclick = hideDiffModal
     if (backdrop) backdrop.onclick = hideDiffModal
+    document.addEventListener("keydown", onDiffKey)
+
+    if (cap.summary) {
+      renderDiffBody(body, cap, null, "summary")
+      return
+    }
+    ensureCapture(cap.id).then(function (record) {
+      if (modal.hidden) return
+      renderDiffBody(body, cap, record, record ? "ready" : "missing")
+    })
   }
 
   function hideDiffModal() {
     var modal = $("diffModal")
-    if (modal) modal.hidden = true
+    if (modal) {
+      modal.hidden = true
+      modal.setAttribute("hidden", "")
+      modal.style.display = "none"
+    }
+    document.removeEventListener("keydown", onDiffKey)
   }
 
-  function renderDiffBody(host, cap) {
+  // 实测一份 150 KB 快照有 3326 行，第一处变化在第 891 行；
+  // 所以不能只渲染开头——先按公共前缀定位，再渲染差异附近的行窗口。
+  var DIFF_WINDOW = 30
+  var MAX_LINE_CHARS = 400
+
+  // report.strategies[].reason 的实测取值，未知值原样透出，不做猜测。
+  var REASON_ZH = {
+    changed: "有改动",
+    disabled: "未启用",
+    unavailable: "不可用",
+    no_repeat_eligible_block: "没有可折叠的重复块",
+    no_whitespace_or_tool_result_change: "没有可清理的空白或工具输出",
+    no_eligible_json_array_or_not_smaller: "没有可压缩的 JSON，或压缩后不更小",
+    budget_exceeded: "超出时间预算",
+    failed_open: "出错后放行",
+  }
+
+  function renderStrategyReport(report) {
+    var rows = (report && report.strategies) || []
+    var active = rows.filter(function (row) { return row.enabled === true || row.status === "hit" })
+    var rest = rows.length - active.length
+
+    var wrap = U.el("section", "diff-report")
+    var head = U.el("div", "diff-report-head")
+    var tokens =
+      report && report.estimatedBeforeTokens != null
+        ? "约 " + report.estimatedBeforeTokens.toLocaleString("zh-CN") + " → " + report.estimatedAfterTokens.toLocaleString("zh-CN") + " token"
+        : ""
+    head.append(
+      U.el("span", "", "策略贡献"),
+      U.el("span", "muted", tokens + (report && report.totalMs != null ? " · 总耗时 " + report.totalMs + " ms" : "")),
+    )
+    wrap.append(head)
+
+    if (!active.length) {
+      wrap.append(U.el("p", "diff-note", "这次请求没有任何策略被启用。"))
+      return wrap
+    }
+
+    var list = U.el("div", "diff-report-rows")
+    active.forEach(function (row) {
+      var hit = row.status === "hit"
+      var line = U.el("div", "diff-report-row")
+      line.append(
+        U.el("span", "diff-report-name", row.label || row.id),
+        U.el("span", "diff-report-verdict " + (hit ? "hit" : "skip"), hit ? "命中" : REASON_ZH[row.reason] || row.reason || "跳过"),
+        U.el("span", "diff-report-saved", row.savedBytes ? fmtBytes(row.savedBytes) : "—"),
+        U.el("span", "diff-report-ms", (row.ms != null ? row.ms : 0) + " ms"),
+      )
+      list.append(line)
+    })
+    wrap.append(list)
+
+    if (rest > 0) wrap.append(U.el("p", "diff-note", "另有 " + rest + " 个策略未启用。"))
+    return wrap
+  }
+
+  function diffStats(beforeText, afterText) {
+    var beforeLines = (beforeText || "").split("\n")
+    var afterLines = (afterText || "").split("\n")
+    var beforeSet = new Set(beforeLines)
+    var afterSet = new Set(afterLines)
+
+    var added = 0
+    afterLines.forEach(function (line) { if (!beforeSet.has(line)) added++ })
+    var removed = 0
+    beforeLines.forEach(function (line) { if (!afterSet.has(line)) removed++ })
+
+    var prefix = 0
+    while (prefix < beforeLines.length && prefix < afterLines.length && beforeLines[prefix] === afterLines[prefix]) prefix++
+
+    var longest = Math.max(beforeLines.length, afterLines.length)
+    if (added === 0 && removed === 0) {
+      return {
+        beforeLines: beforeLines, afterLines: afterLines, beforeSet: beforeSet, afterSet: afterSet,
+        added: 0, removed: 0, prefix: prefix, start: 0, end: Math.min(40, longest),
+        note: "两段文本逐行一致（" + beforeLines.length + " 行）——这次压缩没有改动文本内容。",
+      }
+    }
+
+    return {
+      beforeLines: beforeLines, afterLines: afterLines, beforeSet: beforeSet, afterSet: afterSet,
+      added: added, removed: removed, prefix: prefix,
+      start: Math.max(0, prefix - DIFF_WINDOW),
+      end: Math.min(longest, prefix + DIFF_WINDOW * 2),
+      note: "前 " + prefix + " 行完全相同，差异从第 " + (prefix + 1) + " 行开始；"
+        + "逐行比对共新增 " + added + " 行、少了 " + removed + " 行。",
+    }
+  }
+
+  function renderLines(lines, offset, classify) {
+    return lines
+      .map(function (line, i) {
+        var text = line.length > MAX_LINE_CHARS
+          ? line.slice(0, MAX_LINE_CHARS) + " …（本行还有 " + (line.length - MAX_LINE_CHARS) + " 字符）"
+          : line
+        var cls = classify(line)
+        return (
+          '<span class="diff-line' + (cls ? " " + cls : "") + '">'
+          + '<span class="diff-lineno">' + (offset + i + 1) + "</span>"
+          + escapeHtml(text)
+          + "</span>"
+        )
+      })
+      .join("")
+  }
+
+  function renderDiffBody(host, cap, record, phase) {
     U.clear(host)
+
+    var beforeBytes = Number(cap.before) || 0
+    var afterBytes = Number(cap.after) || 0
+    var rate = sessionRate(cap)
 
     var header = U.el("div", "diff-header")
     var stats = U.el("div", "diff-stats")
-
-    var stat1 = U.el("div", "diff-stat")
-    stat1.append(U.el("span", "k", "压缩前"), U.el("span", "v", fmtBytes(cap.beforeBytes)))
-
-    var stat2 = U.el("div", "diff-stat")
-    stat2.append(U.el("span", "k", "压缩后"), U.el("span", "v", fmtBytes(cap.afterBytes)))
-
-    var stat3 = U.el("div", "diff-stat")
-    var rateV = U.el("span", "v " + (cap.rate > 0 ? "good" : ""), fmtRate(cap.rate))
-    stat3.append(U.el("span", "k", "压缩率"), rateV)
-
-    var stat4 = U.el("div", "diff-stat")
-    stat4.append(U.el("span", "k", "节省"), U.el("span", "v", fmtBytes(cap.beforeBytes - cap.afterBytes)))
-
-    stats.append(stat1, stat2, stat3, stat4)
+    var cells = [
+      ["压缩前", fmtBytes(beforeBytes), ""],
+      ["压缩后", fmtBytes(afterBytes), ""],
+      ["压缩率", fmtRate(rate), rate > 0 ? "good" : ""],
+      ["节省", fmtBytes(Math.max(0, beforeBytes - afterBytes)), ""],
+    ]
+    cells.forEach(function (cell) {
+      var box = U.el("div", "diff-stat")
+      box.append(U.el("span", "k", cell[0]), U.el("span", "v " + cell[2], cell[1]))
+      stats.append(box)
+    })
 
     var progressWrap = U.el("div", "")
     var progressBar = U.el("div", "progress-bar")
-    var progressFill = U.el("i")
-    progressFill.style.width = Math.min(100, Math.max(0, cap.rate * 100)) + "%"
-    progressBar.append(progressFill)
+    var fill = U.el("i")
+    fill.style.width = Math.min(100, Math.max(0, rate * 100)) + "%"
+    progressBar.append(fill)
     progressWrap.append(progressBar)
-
     header.append(stats, progressWrap)
+    host.append(header)
+
+    if (phase === "loading") {
+      host.append(U.el("p", "diff-note", "正在加载完整快照…"))
+      return
+    }
+    if (!record) {
+      host.append(
+        U.el(
+          "p",
+          "diff-note",
+          cap.summary
+            ? "这条记录只发布了索引（快照体积超过发布上限），完整文本没有随页面发布。"
+            : "完整快照没有随页面发布，只剩索引里的体积、模型与协议信息。",
+        ),
+      )
+      return
+    }
+
+    var st = diffStats(record.beforeText, record.afterText)
+    host.append(U.el("p", "diff-note", st.note))
 
     var panes = U.el("div", "diff-panes")
 
-    var beforePane = U.el("div", "diff-pane")
-    var beforeHead = U.el("div", "diff-pane-head")
-    beforeHead.append(
-      U.el("span", "diff-pane-title", "处理前"),
-      U.el("span", "diff-pane-size", fmtBytes(cap.beforeBytes))
+    var leftPane = U.el("div", "diff-pane")
+    var leftHead = U.el("div", "diff-pane-head")
+    leftHead.append(
+      U.el("span", "diff-pane-title", "处理前 · 第 " + (st.start + 1) + "–" + Math.min(st.end, st.beforeLines.length) + " 行"),
+      U.el("span", "diff-pane-size", fmtBytes(beforeBytes)),
     )
-    var beforeBody = U.el("div", "diff-pane-body")
-    beforeBody.textContent = cap.beforeText || "(无内容)"
-    beforePane.append(beforeHead, beforeBody)
-
-    var afterPane = U.el("div", "diff-pane")
-    var afterHead = U.el("div", "diff-pane-head")
-    afterHead.append(
-      U.el("span", "diff-pane-title", "处理后"),
-      U.el("span", "diff-pane-size", fmtBytes(cap.afterBytes))
-    )
-    var afterBody = U.el("div", "diff-pane-body")
-    afterBody.innerHTML = highlightDiff(cap.beforeText || "", cap.afterText || "")
-    afterPane.append(afterHead, afterBody)
-
-    panes.append(beforePane, afterPane)
-
-    host.append(header, panes)
-  }
-
-  function highlightDiff(before, after) {
-    if (!before || !after) return escapeHtml(after)
-
-    var beforeLines = before.split("\n")
-    var afterLines = after.split("\n")
-
-    var result = []
-    afterLines.forEach(function (line) {
-      var existsInBefore = beforeLines.some(function (bl) { return bl === line })
-      if (existsInBefore) {
-        result.push(escapeHtml(line))
-      } else {
-        result.push('<span class="diff-added">' + escapeHtml(line) + "</span>")
-      }
+    var leftBody = U.el("div", "diff-pane-body")
+    leftBody.innerHTML = renderLines(st.beforeLines.slice(st.start, st.end), st.start, function (line) {
+      return st.afterSet.has(line) ? "" : "is-removed"
     })
+    leftPane.append(leftHead, leftBody)
 
-    var removedCount = beforeLines.length - afterLines.length
-    if (removedCount > 0) {
-      result.push("")
-      result.push('<span class="diff-removed">… 已删除 ' + removedCount + " 行 …</span>")
+    var rightPane = U.el("div", "diff-pane")
+    var rightHead = U.el("div", "diff-pane-head")
+    rightHead.append(
+      U.el("span", "diff-pane-title", "处理后 · 第 " + (st.start + 1) + "–" + Math.min(st.end, st.afterLines.length) + " 行"),
+      U.el("span", "diff-pane-size", fmtBytes(afterBytes)),
+    )
+    var rightBody = U.el("div", "diff-pane-body")
+    rightBody.innerHTML = renderLines(st.afterLines.slice(st.start, st.end), st.start, function (line) {
+      return st.beforeSet.has(line) ? "" : "is-added"
+    })
+    rightPane.append(rightHead, rightBody)
+
+    panes.append(leftPane, rightPane)
+    host.append(panes)
+
+    if (st.prefix > 0) {
+      host.append(U.el("p", "diff-note", "窗口外还有 " + st.prefix + " 行完全一致的内容未显示。"))
     }
 
-    return result.join("\n")
+    host.append(renderStrategyReport(record.report))
   }
+
 
   function escapeHtml(s) {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -410,8 +579,9 @@
     return (n / 1024 / 1024).toFixed(2) + " MB"
   }
 
-  function fmtTime(ts) {
-    var d = new Date(ts)
+  function fmtTime(value) {
+    var d = new Date(value)
+    if (!value || isNaN(d.getTime())) return "—"
     var today = new Date()
     var sameDay = d.toDateString() === today.toDateString()
     return sameDay
@@ -420,12 +590,31 @@
   }
 
   function fmtRate(rate) {
-    var pct = Math.round(rate * 100)
+    var value = Number(rate) || 0
+    var pct = Math.round(value * 100)
     return (pct > 0 ? "-" : pct < 0 ? "+" : "") + Math.abs(pct) + "%"
   }
 
-  function strategies() { return options.strategies || {} }
+  function strategies() {
+    var base = V.presetStrategies("safe")
+    var raw = options.strategies
+    if (raw && typeof raw === "object") {
+      Object.keys(raw).forEach(function (id) {
+        if (Object.prototype.hasOwnProperty.call(base, id)) base[id] = raw[id] === true
+      })
+    }
+    return base
+  }
+
   function configOf(id) { return options[id] || {} }
+
+  function configMap() {
+    var out = {}
+    V.engines().forEach(function (e) {
+      if (options[e.id]) out[e.id] = options[e.id]
+    })
+    return out
+  }
   function statsFor(id) {
     var s = options.stats || {}
     return s.byStrategy && s.byStrategy[id] ? s.byStrategy[id] : null
@@ -464,7 +653,7 @@
 
     magpie.options.get().then(function (fresh) {
       if (fresh) options = fresh
-      paint()
+      safePaint()
 
       if (globalThis.CompressAudit) {
         globalThis.CompressAudit.init({

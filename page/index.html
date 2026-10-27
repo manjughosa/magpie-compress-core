@@ -15,13 +15,15 @@
         <h1>压缩</h1>
         <p class="lede">网关请求压缩 · 本地引擎 · 不耗 token</p>
         <div class="main-head">
-          <div class="segs" id="presets"></div>
-          <div class="head-actions">
+          <div class="preset-group">
+            <div class="segs" id="presets"></div>
             <button type="button" class="icon-btn" id="btnCustom" title="自定义策略">
-              <span class="icon">⚙</span>
+              <span class="icon"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/><circle cx="8" cy="8" r="2.05"/></svg></span>
             </button>
-            <button type="button" class="icon-btn" id="btnLab" title="试压实验室">
-              <span class="icon">⚗</span>
+          </div>
+          <div class="head-actions">
+            <button type="button" class="icon-btn" id="btnLab" title="实验室">
+              <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg></span>
             </button>
           </div>
         </div>
@@ -46,8 +48,8 @@
           <span class="icon">‹</span> 返回
         </button>
         <h2 class="view-title">自定义策略</h2>
-        <button type="button" class="icon-btn" id="btnLabFromCustom" title="试压实验室">
-          <span class="icon">⚗</span>
+        <button type="button" class="icon-btn" id="btnLabFromCustom" title="实验室">
+          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg></span>
         </button>
       </header>
 
@@ -99,7 +101,7 @@
         <button type="button" class="back-btn" id="backFromLab">
           <span class="icon">‹</span> 返回
         </button>
-        <h2 class="view-title">试压实验室</h2>
+        <h2 class="view-title">实验室</h2>
         <div class="lab-badge">本地运行 · 不耗 token</div>
       </header>
 
@@ -126,7 +128,7 @@
 
         <div class="lab-result-panel" id="labResult">
           <div class="lab-empty-state">
-            <span class="lab-empty-icon">⚗</span>
+            <span class="lab-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg></span>
             <p class="lab-empty-text">运行试压后<br>这里显示压缩前后的对比</p>
           </div>
         </div>
