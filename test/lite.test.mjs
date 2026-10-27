@@ -88,25 +88,25 @@ export async function run() {
   r = compressToolResults({ messages: [toolMsg(3000), { role: "assistant", content: "a" }] }, { maxToolLength: 2000 })
   {
     const c = r.body.messages[0].content
-    const expected = big(3000).slice(0, 1000) + "\n...[truncated]" + big(3000).slice(2000)
+    const expected = big(3000).slice(0, 2000) + "\n...[truncated]"
     check("15 tool超长截断", r.applied && c.length <= 2000 + 40 && c.includes("\n...[truncated]"))
-    check("16 头尾各留一半且逐字", c === expected)
+    check("16 只留头部且逐字", c === expected)
   }
   {
-    // 头尾各取一半预算（各 1000）；±80 窗口内没有空白 → 两段都硬切在预算上。
+    // 切点在预算 2000 上：向后 80 字符没有空白可退，向前看的第 2000 位本身就不是词字符。
     const noEarlySpace = "x".repeat(2000) + " tail"
     const rr = compressToolResults({ messages: [
       { role: "tool", content: noEarlySpace },
       { role: "assistant", content: "a" },
     ] }, { maxToolLength: 2000 })
     const c = rr.body.messages[0].content
-    check("17 无空白时头尾各硬切一半", c === noEarlySpace.slice(0, 1000) + "\n...[truncated]" + noEarlySpace.slice(1005))
+    check("17 无空白时停在预算上", c === noEarlySpace.slice(0, 2000) + "\n...[truncated]")
     const hard = "x".repeat(3000)
     const rr2 = compressToolResults({ messages: [
       { role: "tool", content: hard },
       { role: "assistant", content: "a" },
     ] }, { maxToolLength: 2000 })
-    check("17b 无空白硬切", rr2.body.messages[0].content === hard.slice(0, 1000) + "\n...[truncated]" + hard.slice(2000))
+    check("17b 无空白硬切在预算上", rr2.body.messages[0].content === hard.slice(0, 2000) + "\n...[truncated]")
   }
   r = compressToolResults({ messages: [
     { role: "assistant", content: "a" },

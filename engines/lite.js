@@ -186,15 +186,10 @@ function backOffToWordBoundary(content, cutIndex) {
 
 function truncateToolText(text, maxLength) {
   if (typeof text !== "string" || text.length <= maxLength) return text
-  // 头尾各分一半预算：开头留结构与定位信息，结尾留报错行/结论（模型真正要看的东西）。
-  const headBudget = Math.max(1, Math.floor(maxLength / 2))
-  const tailBudget = Math.max(1, maxLength - headBudget)
-  const headCut = avoidSplitSurrogate(text, backOffToWordBoundary(text, headBudget))
-  const tailStart = text.length - tailBudget
-  const tailCut = avoidSplitSurrogate(text, backOffToWordBoundary(text, tailStart))
-  // 文本只超出上限一点点时两段会重叠，此时退回头部截断，避免重复内容。
-  if (tailCut <= headCut) return text.slice(0, headCut) + TRUNCATION_SUFFIX
-  return text.slice(0, headCut) + TRUNCATION_SUFFIX + text.slice(tailCut)
+  // 与 #423 定下的行为逐字一致：只留头部，末尾用 suffix 标明省略。
+  // 切点先退到词边界，再避让代理对——半个代理对会让请求体在 UTF-8 层非法。
+  const cutIndex = avoidSplitSurrogate(text, backOffToWordBoundary(text, maxLength))
+  return text.slice(0, cutIndex) + TRUNCATION_SUFFIX
 }
 
 function truncateToolResultBlocks(msg, maxLength) {
