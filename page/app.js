@@ -9,7 +9,9 @@
   var lang = "zh"
   var T = V.text(lang)
   var options = {}
-  var state = { stats: null, preset: "safe", open: {}, view: "main" }
+  var state = { preset: "safe", open: {}, view: "main", pinned: null }
+  // 页面读不到 capture-store.js，保留上限在这里镜像一份，只用于提示文案。
+  var KEEP_CAPTURES = 50
   var pending = null
   var timer = 0
   var writeAt = 0
@@ -105,7 +107,9 @@
 
   function paint() {
     var all = strategies()
-    state.preset = V.presetOf(all)
+    // 档位是按策略组合回推的；只有用户点了「自定义」才用 pinned 覆盖，
+    // 因为「自定义」等于「不属于任何预设」本身没有可回推的组合。
+    state.preset = state.pinned || V.presetOf(all)
     paintPresets()
     paintMeter()
     paintRows()
@@ -135,9 +139,18 @@
       btn.type = "button"
       btn.setAttribute("aria-selected", state.preset === id ? "true" : "false")
       btn.addEventListener("click", function () {
-        if (id === "custom") return
+        // 四个档位按钮只管显示与切换，不管导航：视图切换是齿轮的事。
+        if (id === "custom") {
+          // 「自定义」不对应任何策略组合，点它只把选中态落到自定义，
+          // 具体开哪几个开关留在自定义策略屏里做。
+          state.pinned = "custom"
+          state.preset = "custom"
+          paintPresets()
+          return
+        }
         var next = V.presetStrategies(id)
         options.strategies = next
+        state.pinned = null
         state.preset = id
         save({ strategies: next })
         safePaint()
@@ -151,7 +164,7 @@
   function paintMeter() {
     var host = $("meter")
     if (!host) return
-    var m = V.meter(state.stats, lang)
+    var m = V.meter(options && options.stats, lang)
     U.meter(host, m, T)
   }
 
@@ -167,7 +180,8 @@
         var all = strategies()
         all[id] = next
         options.strategies = all
-        state.preset = V.presetOf(all)
+        // 手动改开关后档位回到真实回推，之前手点的「自定义」不再抢占显示。
+        state.pinned = null
         save({ strategies: all })
         safePaint()
       },
@@ -205,6 +219,10 @@
       var keepSystem = !(options.preserve && options.preserve.system === false)
       keep.setAttribute("aria-checked", keepSystem ? "true" : "false")
     }
+    var captureFull = $("captureFull")
+    if (captureFull) {
+      captureFull.setAttribute("aria-checked", options.capture === true ? "true" : "false")
+    }
   }
 
   // 索引条目：{ id, at, protocol, model, before, after, saved, summary }（字节数 + ISO 时间）
@@ -230,7 +248,7 @@
       if (hint) hint.textContent = "暂无记录。发一条消息触发网关请求后，这里会显示压缩前后的快照。"
       return
     }
-    if (hint) hint.textContent = captures.length + " 条记录 · 点击一条查看差异"
+    if (hint) hint.textContent = captures.length + " / " + KEEP_CAPTURES + " 条记录 · 点击一条查看差异"
 
     captures.forEach(function (cap) {
       var rate = sessionRate(cap)
@@ -651,6 +669,13 @@
       })
     }
 
+    var captureFull = $("captureFull")
+    if (captureFull) {
+      captureFull.addEventListener("click", function () {
+        save({ capture: captureFull.getAttribute("aria-checked") !== "true" })
+      })
+    }
+
     magpie.options.get().then(function (fresh) {
       if (fresh) options = fresh
       safePaint()
@@ -671,7 +696,7 @@
         if (s !== lastStats) {
           lastStats = s
           options = fresh
-          paintSessions()
+          safePaint()
         }
       })
     }, 5000)
