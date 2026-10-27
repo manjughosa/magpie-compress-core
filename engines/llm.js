@@ -1,6 +1,6 @@
 // engines/llm.js — LLM Compressor：用外部模型压缩散文段（占位实现，默认不可用）。
 //
-// 来源（E:\LLM_Config\OmniRouteDesktop\resources\app\open-sse\services\compression\）：
+// 来源（OmniRoute@ff679ab86e0113a009d8aeeeee464139bd090874 open-sse/services/compression/）：
 //   - engines\llm\index.ts  (346 行)  LlmCompressorBackend 契约 / setLlmCompressorBackend /
 //                                     processMessages / minTokens 门槛 / LLM_COMPRESSOR_SCHEMA
 //   - preservation.ts       (253 行)  extractPreservedBlocks 等墓碑化工具（见下）

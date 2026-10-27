@@ -48,11 +48,29 @@ magpie plugin add github:manjughosa/magpie-compress-core # 从 GitHub 装
 
 "自定义"是结果态，不是按钮——点它没意义，所以它是灰的。
 
-## 页面与面板
+## 缓存与前缀
 
-- **页面**（侧栏 Plugins 组 → 压缩）：一条压缩尺、档位、每个策略一行、最近八次请求。
-- **面板 · 设置**（设置 → 插件）：同样的档位与策略行，紧凑版。
-- **面板 · 用量**（用量 → Overview 末尾）：压缩尺 + 最近四次请求。
+提供方按**请求前缀**命中 prompt cache：前缀里有一个字节变了，后面整段都按未命中计费。
+
+lite 的规则是「历史才动，正在发送的这一轮原样送出去」：最后一条 assistant 之后的消息（没有 assistant 时整段）一律不改。同一条消息在历史里每次都是同一个结果，历史一旦写过就不再变；唯一的代价是它从「当前轮」变成「历史」的那一次请求会被改写一次，那一次前缀失配，之后重新稳定。
+
+要一次都不失配，把 `preserveCurrentTurn` 设成 `false`：每条消息从第一轮起就走同一套确定性变换，代价是用户刚打的字也会被折叠与截断。
+
+`preserve.lastTurns` 默认 `0`（不额外保护任何轮次）。设成 N 会把最近 N 轮排除在所有改写之外；那一轮滑出窗口时同样被改写一次，这是窗口本身带来的，不是 lite 的。
+
+`preserve.system` 默认 `false`。开着它会把 system 段整段占位保护、跑完再还原，代价是依赖 system 内容的那一步（例如「同一段 system 写了两遍只留一份」）整段失效——上一版把它默认成 `true`，等于把那一步变成死配置。要绝对不动 system 的人显式写 `true`。
+
+## 页面
+
+侧栏 Plugins 组 → 压缩：一条压缩尺、档位、每个策略一行、最近八次请求。
+
+## 面板 · 设置
+
+设置 → 插件：同样的档位与策略行，紧凑版。
+
+## 面板 · 用量
+
+用量 → Overview 末尾：压缩尺 + 最近四次请求。
 
 首屏一行只放顺序、名字、无损/有损、一句说明、省下字节和开关；点行才展开完整描述、命中/省下/占比、执行顺序、缓存影响、读取范围，以及这个策略自己的参数（数字框、下拉、复选组）。
 
@@ -64,34 +82,26 @@ magpie plugin add github:manjughosa/magpie-compress-core # 从 GitHub 装
 
 ## 数字是从哪来的
 
-magpie 给页面和面板的沙箱是 `connect-src 'none'`，页面拿不到网络，`magpie.options` 是它唯一能读的东西。
+钩子把累计统计写进插件配置目录的 `stats.json`，和 `requests.jsonl`、`captures/` 放在一起，**不碰 magpie 自己的 `plugins.json`**。那个文件 magpie 盯着 mtime，一改就重启钩子宿主——等于每压一次请求重启一次，代价远超收益。
 
-所以钩子侧压完一次请求，就把累计摘要写回 `plugins.json` 里本插件条目的 `options.stats`，页面再去读。这条路 magpie 没有为此设计过，但 `pluginrt.KeepFresh` 每 2 秒会重读这个文件，实测可行。写的时候很保守：
+magpie 给页面和面板的沙箱是 `connect-src 'none'`，也没有文件系统，`magpie.options` 是它唯一能读的东西。所以页面读不到 `stats.json`：压缩尺旁边会写明数字在哪个文件里，页面上不再显示实时数字。
 
-- 只在本插件条目**唯一匹配**时动手；
-- 文件 mtime 在 1.5 秒内（magpie 刚写过）就跳过；
+写文件时很保守：
+
 - 先写 `.tmp` 再 rename，失败静默；
 - 最快 30 秒一次（首个请求立即写一次）；
+- 读回来超过 4MB 就不解析，避免被坏文件拖住；
 - `COMPRESS_CORE_NO_STATS=1` 时完全不碰磁盘（测试用）。
 
-如果哪天 magpie 改成内存持有这个文件，数字会停在最后一次写回的值，压缩本身不受影响。页面没有另起服务，也不开端口；它只读 `magpie.options`。
-
-## 两条通道
-
-- `observability.hooks.js` 跑在 Bun 宿主里（默认 1s，`gatewayTimeoutMs` 可配到 10s），负责真正的压缩、遥测与回写统计。**主战场。**
-- `compress-core.middleware.js` 跑在 magpie 的 moejs 里（Go 进程内，250ms 预算、无文件系统、无 fetch）。它负责在钩子已经压过的请求上去掉内部标记，以及钩子没跑时补一次压缩。
-
-`pipeline.js` 里 `INTERNAL_MARKER` 就是两边不重复压的约定。
-
-引擎本身写在 `engines/`，契约见 `engines/CONTRACT.md`：纯函数、无 Node API、无 fetch、无定时器、只能相对 import、250ms 预算、必须 fail-open。
+压缩本身不依赖这些数字：文件写不进去，压缩照跑。
 
 ## 会话记录
 
-页面上的「已处理会话」列表来自 `options.stats.captures[]`。这个列表默认是空的：`capture` 默认**关**，设成 `true` 之后钩子才会在**每一次**经过网关的请求上写一条，只保留最新 50 条；每条同时把完整快照发布到 `page/captures/<id>.js`，点开才加载，所以列表本身很轻。
+钩子能在**每一次**经过网关的请求上留一条快照，但 `capture` 默认**关**，只有打开之后才写。打开后，快照落在插件配置目录的 `captures/`（索引在 `captures-index.json`），最多保留最近 50 条，每条上限 2MB。
 
-行上会标出 `agent`（`dsh`、`pi` 等），也就是这条请求是哪一路 harness 发的——和脱敏页看到的语言是一致的。
+这些文件在页面沙箱里读不到，所以页面上的「已处理会话」列表不会再自己长出来；要看就打开 `captures/` 里的文件。行上的 `agent`（`dsh`、`pi` 等）标的是这条请求由哪一路 harness 发出。
 
-页面每 5 秒读一次 `magpie.options`，有变化就重绘，不需要手动刷新；写回设置时会把最新的 `stats` 一起带上，避免整包替换把钩子刚写进去的数字覆盖掉。
+页面每 5 秒读一次 `magpie.options`，有变化就重绘，不需要手动刷新。
 
 ## 隐私
 
@@ -121,14 +131,19 @@ magpie 给页面和面板的沙箱是 `connect-src 'none'`，页面拿不到网�
 node test/run.mjs                 # 全部测试
 node test/run.mjs lite            # 只跑一套
 node scripts/gen-page-catalog.mjs # 改完 catalog.js 后重新生成 page/engines.js
+npm run build:page                # 改完 lab.js / engines 后重新打包 page/lab-engine.bundle.js
 node test/live-probe.mjs          # 对着真的 magpie 打一次
 ```
 
 `catalog.js` 是策略元数据的单一真相源；`page/engines.js` 是它的镜像（页面是 sandbox 里的普通 `<script>`，不能 import ES module），改 catalog 必须重新生成。
 
+`page/lab-engine.bundle.js` 同样是产物：入口是 `page/lab-engine.js`，它 import `lab.js` 与 `catalog.js`，靠 esbuild 打成 IIFE。esbuild 不在这包的依赖里，只在改了那几个源文件之后手动跑一次 `npm run build:page`，产物跟着提交——装插件的人不需要构建环境。两个产物都别手改，改了会在下次生成时丢掉。
+
 面板按钮点不动、或者要改页面的渲染层，先读 `DEBUGGING.md`：里面记了渲染契约、会话快照的取法，以及为什么「看起来像沙箱问题」其实不是。
 
 `test/lite-spec.md` 和 `test/session-dedup-spec.md` 是这两个策略的行为契约，改引擎之前先看。
+
+`cases.json` 是对外契约：21 条用例与 magpie-community/plugins 里被合并的 history-trim (#423) 逐字一致。它回答一个具体问题——同一份输入经过这个中间件之后，body 是否与那份实现留下的完全一致；不一致就是语义分叉，要么这里改，要么去那边论证。magpie 仓库跑它用 `bun scripts/check.mjs`，这边等价的入口是 `node test/run.mjs gateway`。
 
 ## 卸载
 

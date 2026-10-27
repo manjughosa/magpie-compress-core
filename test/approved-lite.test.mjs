@@ -5,7 +5,15 @@
 // The point is not "our own tests pass": it is that on the same 21 inputs,
 // sending the same body through lite.apply leaves exactly the body that
 // build's middleware left. Anything this file fails is a place where the
-// local engine and the reviewed one disagree, and the reviewed one wins.
+// local engine and the reviewed one disagree, and the difference has to be
+// either fixed here or argued for there.
+//
+// Ten of the 21 cases carry upstream's expect_request byte-for-byte. The other
+// eleven had no expect_request at all upstream: history-trim asserted "this
+// goes out unchanged" by leaving the field out, and the fixture states that
+// body explicitly instead. No case asserts a different output from the
+// reviewed middleware; the shared turn semantics are listed in
+// PROVENANCE.json's changes.
 //
 // The cases go in through apply() — the adapter that rewrites the body in
 // place — not through the pure helpers, because that is the shape the gateway

@@ -6,11 +6,9 @@ import { createHash, randomUUID } from "node:crypto"
 import { runPipeline, clone, byteLength, INTERNAL_MARKER, removeInternalMarker } from "./pipeline.js"
 import { conversationView } from "./adapter.js"
 import { persist, redact, redactSecrets } from "./telemetry-store.js"
-import { record as recordCompression, setSelfDir, flush as flushStats, snapshot as statsSnapshot } from "./stats-writer.js"
+import { record as recordCompression, flush as flushStats, snapshot as statsSnapshot } from "./stats-writer.js"
 import { saveCapture } from "./capture-store.js"
 import { processCaptureCommand, processLabCommand, captureCommandId } from "./options-commands.js"
-
-setSelfDir(import.meta.dirname)
 
 let options = {}
 const hash = text => createHash("sha256").update(text).digest("hex").slice(0, 16)

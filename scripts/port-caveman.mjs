@@ -13,7 +13,9 @@
 import fs from "node:fs"
 import path from "node:path"
 
-const SRC_ROOT = "E:\\LLM_Config\\OmniRouteDesktop\\resources\\app\\open-sse\\services\\compression"
+// Point this at an OmniRoute checkout (open-sse/services/compression):
+// OMNIROUTE_SRC=/path/to/OmniRoute node scripts/port-caveman.mjs
+const SRC_ROOT = process.env.OMNIROUTE_SRC || path.resolve("OmniRoute", "open-sse", "services", "compression")
 const SRC_RULES = path.join(SRC_ROOT, "rules")
 const SCRIPT_DIR = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"))
 const OUT_DIR = path.resolve(SCRIPT_DIR, "..", "engines")

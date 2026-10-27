@@ -1,0 +1,163 @@
+{
+  "source": "https://github.com/diegosouzapw/OmniRoute",
+  "commit": "ff679ab86e0113a009d8aeeeee464139bd090874",
+  "path": "open-sse/services/compression",
+  "license": "MIT",
+  "note": "The port was read from an installed OmniRoute copy, so the commit was not recorded at the time. The commit above is the OmniRoute revision this port was checked against; the hashes are of the ported files in this package, not of the upstream originals.",
+  "files": {
+    "aggressive.ts": {
+      "ported_to": "engines/aggressive.js",
+      "sha256": "8539c238c8a1cf50020f896dc4bc1c27842ebe00f6b77c6557d7da993fbcea61"
+    },
+    "progressiveAging.ts": {
+      "ported_to": "engines/aggressive.js",
+      "sha256": "8539c238c8a1cf50020f896dc4bc1c27842ebe00f6b77c6557d7da993fbcea61"
+    },
+    "summarizer.ts": {
+      "ported_to": "engines/aggressive.js",
+      "sha256": "8539c238c8a1cf50020f896dc4bc1c27842ebe00f6b77c6557d7da993fbcea61"
+    },
+    "caveman.ts": {
+      "ported_to": "engines/caveman.js",
+      "sha256": "2667043c1523dd735c1946ecd92d1ddb9e80d85619b56fcb5f205129811eb0b5"
+    },
+    "preservation.ts": {
+      "ported_to": "engines/caveman.js",
+      "sha256": "2667043c1523dd735c1946ecd92d1ddb9e80d85619b56fcb5f205129811eb0b5"
+    },
+    "validation.ts": {
+      "ported_to": "engines/caveman.js",
+      "sha256": "2667043c1523dd735c1946ecd92d1ddb9e80d85619b56fcb5f205129811eb0b5"
+    },
+    "cavemanRules.ts": {
+      "ported_to": "engines/caveman-rules.js",
+      "sha256": "3bfc423815eaaac4cadb8e15213d14d2fd11c28168548d8a3011ff1c592e1b2f"
+    },
+    "engines/headroom/index.ts": {
+      "ported_to": "engines/headroom.js",
+      "sha256": "26f857a729e81e6d6aa66f4f2275467e17812c73c12b9dd4d49388157f9de18d"
+    },
+    "engines/headroom/smartcrusher.ts": {
+      "ported_to": "engines/headroom.js",
+      "sha256": "26f857a729e81e6d6aa66f4f2275467e17812c73c12b9dd4d49388157f9de18d"
+    },
+    "engines/headroom/tabular.ts": {
+      "ported_to": "engines/headroom.js",
+      "sha256": "26f857a729e81e6d6aa66f4f2275467e17812c73c12b9dd4d49388157f9de18d"
+    },
+    "engines/ionizer/index.ts": {
+      "ported_to": "engines/ionizer.js",
+      "sha256": "bae09a6d44f9fe0dfedaa15b4d8d764ff89dff7a5fbe9088d272eb5fedb94a51"
+    },
+    "engines/ionizer/sample.ts": {
+      "ported_to": "engines/ionizer.js",
+      "sha256": "bae09a6d44f9fe0dfedaa15b4d8d764ff89dff7a5fbe9088d272eb5fedb94a51"
+    },
+    "engines/llm/index.ts": {
+      "ported_to": "engines/llm.js",
+      "sha256": "21ca324633e104c6ad06455a3d466f5b54ffc43886fbc143ea5c63567b2e8741"
+    },
+    "engines/readLifecycle/index.ts": {
+      "ported_to": "engines/read-lifecycle.js",
+      "sha256": "8f6ee0ed4792a64ccbdfdc7ab7b68b21ed893289f727960d4190addc822ace46"
+    },
+    "engines/codexResponses/index.ts": {
+      "ported_to": "engines/codex-responses.js",
+      "sha256": "2160263e6090fb804ff5fff23a566148c5f0729a171bb0c58bc3608e43c22b8e"
+    },
+    "ultra.ts": {
+      "ported_to": "engines/ultra.js",
+      "sha256": "5d4a536ffb5be00f8e847415d2d9f56dc25dcc1ccc5e84fba64552252e51c8a6"
+    },
+    "ultraHeuristic.ts": {
+      "ported_to": "engines/ultra.js",
+      "sha256": "5d4a536ffb5be00f8e847415d2d9f56dc25dcc1ccc5e84fba64552252e51c8a6"
+    },
+    "engines/rtk/index.ts": {
+      "ported_to": "engines/rtk/index.js",
+      "sha256": "9d14142cb5d385f697cb54d6762acd72c1c50228e96c1ae22459902f2ff2497c"
+    },
+    "engines/rtk/commandDetector.ts": {
+      "ported_to": "engines/rtk/commandDetector.js",
+      "sha256": "e15c910ef51fa572309b112a83c16c32b11e162b516d15ae3fbf86e252b1ab41"
+    },
+    "engines/rtk/deduplicator.ts": {
+      "ported_to": "engines/rtk/deduplicator.js",
+      "sha256": "48819980a72ba33d260baad038b5a57e704053ff2b2c50d27e49b973d65b886e"
+    },
+    "engines/rtk/grouper.ts": {
+      "ported_to": "engines/rtk/grouper.js",
+      "sha256": "acddae9e0ab0f9f55266b986b04b18d7acb3b432b9482c3955a703cf9c8c8599"
+    },
+    "engines/rtk/lineFilter.ts": {
+      "ported_to": "engines/rtk/lineFilter.js",
+      "sha256": "d25367df4ab41be1a10eb1b584097842e0b2bf4a1f15e62160e5eb1eeb6d73b6"
+    },
+    "engines/rtk/severityVocabulary.ts": {
+      "ported_to": "engines/rtk/severity.js",
+      "sha256": "2939f28e45bf57b4f2a5ca7181d5cfb5408a2ca5c536d645701fdcd7d540bb85"
+    },
+    "engines/rtk/smartTruncate.ts": {
+      "ported_to": "engines/rtk/smartTruncate.js",
+      "sha256": "4836177d0fe46a1c18a35f5b515edc0f92a9581c182fb90e2df4b2313d6d2e59"
+    },
+    "engines/rtk/splitCompositeCommand.ts": {
+      "ported_to": "engines/rtk/splitCommand.js",
+      "sha256": "664b83edb327cb8591c5f7054e43de8c25b2d3ba32d31f0eed96201eb6a7932e"
+    },
+    "engines/rtk/filterLoader.ts": {
+      "ported_to": "engines/rtk/builtinFilters.js",
+      "sha256": "ff03c75602e88683b8c9f63a6eb451e008f178ec60b7b03367da5969516c3293"
+    },
+    "rules/{lang}/*.json": {
+      "ported_to": "engines/rules-data.js",
+      "sha256": "13278a975860f33d6a9d10500894a993967bcbbb0f97e89e391d068da7e84f5a"
+    }
+  },
+  "upstreams": [
+    {
+      "name": "caveman",
+      "repository": "https://github.com/JuliusBrussee/caveman",
+      "used_by": [
+        "engines/caveman.js",
+        "engines/caveman-rules.js",
+        "engines/rules-data.js"
+      ],
+      "note": "Credited by repository: the port came through OmniRoute's copy of this project."
+    },
+    {
+      "name": "headroom",
+      "repository": "https://github.com/headroomlabs-ai/headroom",
+      "used_by": [
+        "engines/headroom.js"
+      ],
+      "note": "Credited by repository: the GCF columnar encoding in engines/headroom.js is this project's format."
+    },
+    {
+      "name": "rtk",
+      "repository": "https://github.com/denneulin/rtk",
+      "used_by": [
+        "engines/rtk/index.js",
+        "engines/rtk/commandDetector.js",
+        "engines/rtk/deduplicator.js",
+        "engines/rtk/grouper.js",
+        "engines/rtk/lineFilter.js",
+        "engines/rtk/severity.js",
+        "engines/rtk/smartTruncate.js",
+        "engines/rtk/splitCommand.js",
+        "engines/rtk/builtinFilters.js"
+      ],
+      "note": "Credited by repository: the port came through OmniRoute's copy of this project."
+    }
+  ],
+  "changes": [
+    "Ported from TypeScript to plain ES modules: no build step, no dependency outside node: builtins.",
+    "performance.now() replaced with Date.now() where the port runs inside the gateway sandbox.",
+    "zod validation hand-written; filter matching and the severity vocabulary kept as-is.",
+    "Progress and trace logging removed; the engines report through ctx.state instead.",
+    "Hashes identify the ported copies in this package, not the upstream originals.",
+    "License kept as MIT, carrying both the OmniRoute copyright line and this plugin's.",
+    "Same turn semantics as history-trim (#423): the turn being sent (everything after the last assistant message, or the whole body when there is none) is left exactly as it arrived. The 21 cases in test/fixtures/approved-lite-cases.json are copied from that package and pass unmodified.",
+    "preserve.lastTurns defaults to 0 and the lite engine's preserveCurrentTurn defaults to true: no sliding window rewrites a prefix that was already sent. preserveCurrentTurn: false exists for callers who prefer strict prefix stability over leaving the current turn alone; README says which is which."
+  ]
+}

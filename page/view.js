@@ -44,6 +44,8 @@
       preserveSystem: "System prompt",
       preserveHint: "Keep the system prompt and the newest turns out of lossy rewrites.",
       lastTurns: "Last turns",
+      statsFileNote:
+        "Counts and snapshots go to stats.json and captures/ under the plugin config folder (magpie/compress-core/). The page sandbox can read plugin settings but not files, so there are no live numbers here.",
       lastWrite: "Last write",
       never: "never",
       loadedAt: "Loaded",
@@ -124,6 +126,8 @@
       preserveSystem: "系统提示词",
       preserveHint: "系统提示词和最近几轮不参与有损改写。",
       lastTurns: "最近轮次",
+      statsFileNote:
+        "统计与快照写在插件配置目录的 compress-core/stats.json 与 captures/。页面沙箱只能读插件设置、读不到文件，所以这一页不显示实时数字。",
       lastWrite: "上次写入",
       never: "从未",
       loadedAt: "已加载",

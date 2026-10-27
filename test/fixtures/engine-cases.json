@@ -1,0 +1,369 @@
+{
+  "note": "每个引擎一条最小契约：会动手的存压完的 body，不该动手的存 unchanged。这些锁的是当前行为，不是正确性的证明 —— 改引擎时先想清楚为什么这条该变。",
+  "input": {
+    "model": "gpt-4o",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a coding agent.\n\n\n\nRules: be terse."
+      },
+      {
+        "role": "user",
+        "content": "Please look at this file and tell me what it does.\n\n\n\nHere is the log:\nline 0 of a long tool output that nobody will read twice\nline 1 of a long tool output that nobody will read twice\nline 2 of a long tool output that nobody will read twice\nline 3 of a long tool output that nobody will read twice\nline 4 of a long tool output that nobody will read twice\nline 5 of a long tool output that nobody will read twice\nline 6 of a long tool output that nobody will read twice\nline 7 of a long tool output that nobody will read twice\nline 8 of a long tool output that nobody will read twice\nline 9 of a long tool output that nobody will read twice\nline 10 of a long tool output that nobody will read twice\nline 11 of a long tool output that nobody will read twice\nline 12 of a long tool output that nobody will read twice\nline 13 of a long tool output that nobody will read twice\nline 14 of a long tool output that nobody will read twice\nline 15 of a long tool output that nobody will read twice\nline 16 of a long tool output that nobody will read twice\nline 17 of a long tool output that nobody will read twice\nline 18 of a long tool output that nobody will read twice\nline 19 of a long tool output that nobody will read twice\nline 20 of a long tool output that nobody will read twice\nline 21 of a long tool output that nobody will read twice\nline 22 of a long tool output that nobody will read twice\nline 23 of a long tool output that nobody will read twice\nline 24 of a long tool output that nobody will read twice\nline 25 of a long tool output that nobody will read twice\nline 26 of a long tool output that nobody will read twice\nline 27 of a long tool output that nobody will read twice\nline 28 of a long tool output that nobody will read twice\nline 29 of a long tool output that nobody will read twice\nline 30 of a long tool output that nobody will read twice\nline 31 of a long tool output that nobody will read twice\nline 32 of a long tool output that nobody will read twice\nline 33 of a long tool output that nobody will read twice\nline 34 of a long tool output that nobody will read twice\nline 35 of a long tool output that nobody will read twice\nline 36 of a long tool output that nobody will read twice\nline 37 of a long tool output that nobody will read twice\nline 38 of a long tool output that nobody will read twice\nline 39 of a long tool output that nobody will read twice"
+      },
+      {
+        "role": "assistant",
+        "content": "Reading it now."
+      },
+      {
+        "role": "user",
+        "content": "Please look at this file and tell me what it does."
+      },
+      {
+        "role": "assistant",
+        "content": "Reading it now."
+      },
+      {
+        "role": "user",
+        "content": "go on"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "read",
+          "description": "read a file",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      }
+    ]
+  },
+  "cases": [
+    {
+      "engine": "session-dedup",
+      "why": "输入里没有同一会话内重复出现的大块文本，所以它不动。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect": "unchanged",
+      "use": "input"
+    },
+    {
+      "engine": "ccr",
+      "why": "没有可折叠的重复上下文块，所以它不动。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect": "unchanged",
+      "use": "input"
+    },
+    {
+      "engine": "lite",
+      "why": "折叠空白、去掉完全相同的相邻消息 —— 无损，同样的字节每次都得同一个结果。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect_request": {
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a coding agent.\n\nRules: be terse."
+          },
+          {
+            "role": "user",
+            "content": "Please look at this file and tell me what it does.\n\nHere is the log:\nline 0 of a long tool output that nobody will read twice\nline 1 of a long tool output that nobody will read twice\nline 2 of a long tool output that nobody will read twice\nline 3 of a long tool output that nobody will read twice\nline 4 of a long tool output that nobody will read twice\nline 5 of a long tool output that nobody will read twice\nline 6 of a long tool output that nobody will read twice\nline 7 of a long tool output that nobody will read twice\nline 8 of a long tool output that nobody will read twice\nline 9 of a long tool output that nobody will read twice\nline 10 of a long tool output that nobody will read twice\nline 11 of a long tool output that nobody will read twice\nline 12 of a long tool output that nobody will read twice\nline 13 of a long tool output that nobody will read twice\nline 14 of a long tool output that nobody will read twice\nline 15 of a long tool output that nobody will read twice\nline 16 of a long tool output that nobody will read twice\nline 17 of a long tool output that nobody will read twice\nline 18 of a long tool output that nobody will read twice\nline 19 of a long tool output that nobody will read twice\nline 20 of a long tool output that nobody will read twice\nline 21 of a long tool output that nobody will read twice\nline 22 of a long tool output that nobody will read twice\nline 23 of a long tool output that nobody will read twice\nline 24 of a long tool output that nobody will read twice\nline 25 of a long tool output that nobody will read twice\nline 26 of a long tool output that nobody will read twice\nline 27 of a long tool output that nobody will read twice\nline 28 of a long tool output that nobody will read twice\nline 29 of a long tool output that nobody will read twice\nline 30 of a long tool output that nobody will read twice\nline 31 of a long tool output that nobody will read twice\nline 32 of a long tool output that nobody will read twice\nline 33 of a long tool output that nobody will read twice\nline 34 of a long tool output that nobody will read twice\nline 35 of a long tool output that nobody will read twice\nline 36 of a long tool output that nobody will read twice\nline 37 of a long tool output that nobody will read twice\nline 38 of a long tool output that nobody will read twice\nline 39 of a long tool output that nobody will read twice"
+          },
+          {
+            "role": "assistant",
+            "content": "Reading it now."
+          },
+          {
+            "role": "user",
+            "content": "Please look at this file and tell me what it does."
+          },
+          {
+            "role": "assistant",
+            "content": "Reading it now."
+          },
+          {
+            "role": "user",
+            "content": "go on"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "read",
+              "description": "read a file",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        ]
+      },
+      "use": "input"
+    },
+    {
+      "engine": "rtk",
+      "why": "输入里没有命令行工具输出，所以它不动。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect": "unchanged",
+      "use": "input"
+    },
+    {
+      "engine": "codex-responses",
+      "why": "输入是 chat 协议，不是 Responses，所以它不动。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect": "unchanged",
+      "use": "input"
+    },
+    {
+      "engine": "headroom",
+      "why": "没有可识别的长 JSON / 结构化输出，所以它不动。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect": "unchanged",
+      "use": "input"
+    },
+    {
+      "engine": "relevance",
+      "why": "按与最新提问的相关度切掉历史里无关的开头，有损。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect_request": {
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a coding agent.\n\n\n\nRules: be terse."
+          },
+          {
+            "role": "user",
+            "content": "\n\n\n\nHere is the log:\nline 0 of a long tool output that nobody will read twice\nline 1 of a long tool output that nobody will read twice\nline 2 of a long tool output that nobody will read twice\nline 3 of a long tool output that nobody will read twice\nline 4 of a long tool output that nobody will read twice\nline 5 of a long tool output that nobody will read twice\nline 6 of a long tool output that nobody will read twice\nline 7 of a long tool output that nobody will read twice\nline 8 of a long tool output that nobody will read twice\nline 9 of a long tool output that nobody will read twice\nline 10 of a long tool output that nobody will read twice\nline 11 of a long tool output that nobody will read twice\nline 12 of a long tool output that nobody will read twice\nline 13 of a long tool output that nobody will read twice\nline 14 of a long tool output that nobody will read twice\nline 15 of a long tool output that nobody will read twice\nline 16 of a long tool output that nobody will read twice\nline 17 of a long tool output that nobody will read twice\nline 18 of a long tool output that nobody will read twice\nline 19 of a long tool output that nobody will read twice\nline 20 of a long tool output that nobody will read twice\nline 21 of a long tool output that nobody will read twice\nline 22 of a long tool output that nobody will read twice\nline 23 of a long tool output that nobody will read twice\nline 24 of a long tool output that nobody will read twice\nline 25 of a long tool output that nobody will read twice\nline 26 of a long tool output that nobody will read twice\nline 27 of a long tool output that nobody will read twice\nline 28 of a long tool output that nobody will read twice\nline 29 of a long tool output that nobody will read twice\nline 30 of a long tool output that nobody will read twice\nline 31 of a long tool output that nobody will read twice\nline 32 of a long tool output that nobody will read twice\nline 33 of a long tool output that nobody will read twice\nline 34 of a long tool output that nobody will read twice\nline 35 of a long tool output that nobody will read twice\nline 36 of a long tool output that nobody will read twice\nline 37 of a long tool output that nobody will read twice\nline 38 of a long tool output that nobody will read twice\nline 39 of a long tool output that nobody will read twice"
+          },
+          {
+            "role": "assistant",
+            "content": "Reading it now."
+          },
+          {
+            "role": "user",
+            "content": "Please look at this file and tell me what it does."
+          },
+          {
+            "role": "assistant",
+            "content": "Reading it now."
+          },
+          {
+            "role": "user",
+            "content": "go on"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "read",
+              "description": "read a file",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        ]
+      },
+      "use": "input"
+    },
+    {
+      "engine": "caveman",
+      "why": "把啰嗦句子压成电报体，有损但保留全部事实。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect_request": {
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a coding agent.\n\n\n\nRules: be terse."
+          },
+          {
+            "role": "user",
+            "content": "Look at this file and tell me what it does.\n\nHere is the log:\nLine 0 of a long tool output that nobody will read twice\nLine 1 of a long tool output that nobody will read twice\nLine 2 of a long tool output that nobody will read twice\nLine 3 of a long tool output that nobody will read twice\nLine 4 of a long tool output that nobody will read twice\nLine 5 of a long tool output that nobody will read twice\nLine 6 of a long tool output that nobody will read twice\nLine 7 of a long tool output that nobody will read twice\nLine 8 of a long tool output that nobody will read twice\nLine 9 of a long tool output that nobody will read twice\nLine 10 of a long tool output that nobody will read twice\nLine 11 of a long tool output that nobody will read twice\nLine 12 of a long tool output that nobody will read twice\nLine 13 of a long tool output that nobody will read twice\nLine 14 of a long tool output that nobody will read twice\nLine 15 of a long tool output that nobody will read twice\nLine 16 of a long tool output that nobody will read twice\nLine 17 of a long tool output that nobody will read twice\nLine 18 of a long tool output that nobody will read twice\nLine 19 of a long tool output that nobody will read twice\nLine 20 of a long tool output that nobody will read twice\nLine 21 of a long tool output that nobody will read twice\nLine 22 of a long tool output that nobody will read twice\nLine 23 of a long tool output that nobody will read twice\nLine 24 of a long tool output that nobody will read twice\nLine 25 of a long tool output that nobody will read twice\nLine 26 of a long tool output that nobody will read twice\nLine 27 of a long tool output that nobody will read twice\nLine 28 of a long tool output that nobody will read twice\nLine 29 of a long tool output that nobody will read twice\nLine 30 of a long tool output that nobody will read twice\nLine 31 of a long tool output that nobody will read twice\nLine 32 of a long tool output that nobody will read twice\nLine 33 of a long tool output that nobody will read twice\nLine 34 of a long tool output that nobody will read twice\nLine 35 of a long tool output that nobody will read twice\nLine 36 of a long tool output that nobody will read twice\nLine 37 of a long tool output that nobody will read twice\nLine 38 of a long tool output that nobody will read twice\nLine 39 of a long tool output that nobody will read twice"
+          },
+          {
+            "role": "assistant",
+            "content": "Reading it now."
+          },
+          {
+            "role": "user",
+            "content": "Look at this file and tell me what it does."
+          },
+          {
+            "role": "assistant",
+            "content": "Reading it now."
+          },
+          {
+            "role": "user",
+            "content": "go on"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "read",
+              "description": "read a file",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        ]
+      },
+      "use": "input"
+    },
+    {
+      "engine": "read-lifecycle",
+      "why": "没有 read 工具调用与后续写入的先后关系，所以它不动。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect": "unchanged",
+      "use": "input"
+    },
+    {
+      "engine": "aggressive",
+      "why": "整段历史折叠成摘要标记，有损得最狠。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect_request": {
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a coding agent.\n\n\n\nRules: be terse."
+          },
+          {
+            "role": "user",
+            "content": "[COMPRESSED:summary]\nIntents: Please look at this file and tell me what it does.."
+          },
+          {
+            "role": "assistant",
+            "content": "Reading it now."
+          },
+          {
+            "role": "user",
+            "content": "Please look at this file and tell me what it does."
+          },
+          {
+            "role": "assistant",
+            "content": "Reading it now."
+          },
+          {
+            "role": "user",
+            "content": "go on"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "read",
+              "description": "read a file",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        ]
+      },
+      "use": "input"
+    },
+    {
+      "engine": "ultra",
+      "why": "去停用词与冗余修饰，有损。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect_request": {
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a coding agent.\n\n\n\nRules: be terse."
+          },
+          {
+            "role": "user",
+            "content": "Please look file tell what does.\n\n\n\n log:\nline 0 long tool output nobody read twice\nline 1 long tool output nobody read twice\nline 2 long tool output nobody read twice\nline 3 long tool output nobody read twice\nline 4 long tool output nobody read twice\nline 5 long tool output nobody read twice\nline 6 long tool output nobody read twice\nline 7 long tool output nobody read twice\nline 8 long tool output nobody read twice\nline 9 long tool output nobody read twice\nline 10 long tool output nobody read twice\nline 11 long tool output nobody read twice\nline 12 long tool output nobody read twice\nline 13 long tool output nobody read twice\nline 14 long tool output nobody read twice\nline 15 long tool output nobody read twice\nline 16 long tool output nobody read twice\nline 17 long tool output nobody read twice\nline 18 long tool output nobody read twice\nline 19 long tool output nobody read twice\nline 20 long tool output nobody read twice\nline 21 long tool output nobody read twice\nline 22 long tool output nobody read twice\nline 23 long tool output nobody read twice\nline 24 long tool output nobody read twice\nline 25 long tool output nobody read twice\nline 26 long tool output nobody read twice\nline 27 long tool output nobody read twice\nline 28 long tool output nobody read twice\nline 29 long tool output nobody read twice\nline 30 long tool output nobody read twice\nline 31 long tool output nobody read twice\nline 32 long tool output nobody read twice\nline 33 long tool output nobody read twice\nline 34 long tool output nobody read twice\nline 35 long tool output nobody read twice\nline 36 long tool output nobody read twice\nline 37 long tool output nobody read twice\nline 38 long tool output nobody read twice\nline 39 long tool output nobody read twice"
+          },
+          {
+            "role": "assistant",
+            "content": "Reading now."
+          },
+          {
+            "role": "user",
+            "content": "Please look file tell what does."
+          },
+          {
+            "role": "assistant",
+            "content": "Reading now."
+          },
+          {
+            "role": "user",
+            "content": "go"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "function": {
+              "name": "read",
+              "description": "read a file",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        ]
+      },
+      "use": "input"
+    },
+    {
+      "engine": "ionizer",
+      "why": "没有可重排的短消息序列，所以它不动。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect": "unchanged",
+      "use": "input"
+    },
+    {
+      "engine": "llm",
+      "why": "需要模型辅助，离线不下判断，所以它不动。",
+      "options": {
+        "maxToolLength": 400
+      },
+      "expect": "unchanged",
+      "use": "input"
+    }
+  ]
+}

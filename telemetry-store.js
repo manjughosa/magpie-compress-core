@@ -1,5 +1,5 @@
 // Persistent telemetry store. Runs only in the trusted Bun/Node host, never moejs.
-import { appendFile, mkdir, readFile } from "node:fs/promises"
+import { appendFile, mkdir, readFile, rename, stat } from "node:fs/promises"
 import { join } from "node:path"
 import { homedir } from "node:os"
 
@@ -10,11 +10,29 @@ export function telemetryDir() {
   return process.env.COMPRESS_CORE_DATA_DIR || join(base, "compress-core")
 }
 const file = () => join(telemetryDir(), "requests.jsonl")
+// A request log that grows forever is a disk leak, not telemetry. The file keeps
+// one previous generation (`requests.jsonl.1`) and starts over past this size;
+// ~8 MB is many thousands of requests and costs nothing to carry.
+const MAX_LOG_BYTES = 8_000_000
+let logBytes = -1   // -1: size not measured yet, so the first write takes a stat
 let queue = Promise.resolve()
+
+async function rotateIfGrown(wrote) {
+  if (logBytes < 0) {
+    logBytes = await stat(file()).then(s => s.size, () => 0)
+  }
+  logBytes += wrote
+  if (logBytes < MAX_LOG_BYTES) return
+  await rename(file(), file() + ".1").catch(() => {})
+  logBytes = 0
+}
+
 export function persist(event) {
   queue = queue.then(async () => {
     await mkdir(telemetryDir(), { recursive: true })
-    await appendFile(file(), JSON.stringify(event) + "\n", "utf8")
+    const line = JSON.stringify(event) + "\n"
+    await appendFile(file(), line, "utf8")
+    await rotateIfGrown(Buffer.byteLength(line))
   }).catch(error => console.error("compress-core telemetry:", error.message))
   return queue
 }
@@ -27,15 +45,28 @@ const SECRET_RULES = [
   [/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g, "[redacted:private-key]"],
   [/\bgithub_pat_[A-Za-z0-9_]{20,}/g, "[redacted:github-token]"],
   [/\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}/g, "[redacted:github-token]"],
-  [/\bAKIA[0-9A-Z]{16}\b/g, "[redacted:aws-key]"],
+  [/\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g, "[redacted:aws-key]"],
+  // The secret half of an AWS key pair has no prefix: 40 base64 characters that
+  // only the parameter name gives away.
+  [/(secret[-_]?access[-_]?key|aws_secret_access_key)(["'\s:=]+)([A-Za-z0-9/+=]{16,})/gi, "$1$2[redacted:aws-secret]"],
+  [/\bhf_[A-Za-z0-9]{20,}/g, "[redacted:hf-token]"],
+  [/\bnpm_[A-Za-z0-9]{36}\b/g, "[redacted:npm-token]"],
+  [/\/\/[^\s/:]+:_authToken=\S+/g, "[redacted:npm-token]"],
+  [/\bAIza[0-9A-Za-z_-]{35}\b/g, "[redacted:google-key]"],
   [/\bxox[abprs]-[A-Za-z0-9-]{10,}/g, "[redacted:slack-token]"],
   [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, "[redacted:jwt]"],
   [/\b(?:sk|rk|pk|ak)-[A-Za-z0-9_-]{16,}/g, "[redacted:key]"],
+  // A password carried inside a URL: scheme://user:secret@host.
+  [/\b([a-z][a-z0-9+.-]*:\/\/[^\s:@/]+:)([^\s@/]{3,})(@)/gi, "$1[redacted]$3"],
+  // A whole Cookie / Set-Cookie header; the session ids are the value.
+  [/^[ \t]*((?:set-)?cookie[ \t]*:)[^\r\n]*/gim, "$1 [redacted:cookie]"],
+  // A password is short often enough that the 8-character floor below would miss it.
+  [/(password|passwd|pwd)(["'\s:=]+)([^\s,"'}\[]{3,})/gi, "$1$2[redacted]"],
   [/\b(?:Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{12,}/gi, "[redacted:credential]"],
   [/\b(?:sk|rk|pk|ak|key|token|bearer)[-_ ][A-Za-z0-9._-]{8,}/gi, "[credential]"],
   // The value must not start with "[" so a rule never re-masks a tag an earlier
   // rule just wrote ("Authorization: [redacted:credential]" stays legible).
-  [/(authorization|api[-_ ]?key|access[-_ ]?token|password|passwd|client[-_ ]?secret|secret)(["'\s:=]+)([^\s,"'}\[]{8,})/gi, "$1$2[redacted]"],
+  [/(authorization|api[-_ ]?key|access[-_ ]?token|client[-_ ]?secret|secret)(["'\s:=]+)([^\s,"'}\[]{8,})/gi, "$1$2[redacted]"],
 ]
 
 // Masking only: no truncation, so a capture's before/after view stays whole.

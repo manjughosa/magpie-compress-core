@@ -1,0 +1,1372 @@
+[
+  {
+    "name": "blank-line runs in the history folded, trailing spaces and tabs gone",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "a\n\n\n\nb\n \t "
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "a\n\nb\n"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    }
+  },
+  {
+    "name": "a first request with no assistant message goes out whole",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "a\n\n\n\nb\n \t "
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "a\n\n\n\nb\n \t "
+        }
+      ]
+    }
+  },
+  {
+    "name": "text already folded passes untouched",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "a\n\nb"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "a\n\nb"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    }
+  },
+  {
+    "name": "content that isn't a string is left as it is",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "a\n\n\n\nb\n   "
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "a\n\n\n\nb\n   "
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    }
+  },
+  {
+    "name": "the turn being sent keeps its whitespace, the history before it is folded",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "old\n\n\n\nx"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "apply this patch:\n+foo \n+bar\t\n\n\n\nend"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "old\n\nx"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "apply this patch:\n+foo \n+bar\t\n\n\n\nend"
+        }
+      ]
+    }
+  },
+  {
+    "name": "a system prompt written twice goes once",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are X."
+        },
+        {
+          "role": "user",
+          "content": "hi"
+        },
+        {
+          "role": "system",
+          "content": "You are X."
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are X."
+        },
+        {
+          "role": "user",
+          "content": "hi"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    }
+  },
+  {
+    "name": "a second system prompt whose opening matches is kept when the rest differs",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. Rule set A: never push."
+        },
+        {
+          "role": "system",
+          "content": "You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. Rule set B: always run tests."
+        },
+        {
+          "role": "user",
+          "content": "hi"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. Rule set A: never push."
+        },
+        {
+          "role": "system",
+          "content": "You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. Rule set B: always run tests."
+        },
+        {
+          "role": "user",
+          "content": "hi"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    }
+  },
+  {
+    "name": "the turn being sent keeps a system prompt the history already has",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a coding agent."
+        },
+        {
+          "role": "user",
+          "content": "next"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "system",
+          "content": "You are a coding agent."
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a coding agent."
+        },
+        {
+          "role": "user",
+          "content": "next"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "system",
+          "content": "You are a coding agent."
+        }
+      ]
+    }
+  },
+  {
+    "name": "preserveSystemPrompt keeps every system message, folded or repeated",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": {
+          "preserveSystemPrompt": true
+        },
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are X."
+        },
+        {
+          "role": "system",
+          "content": "You are X."
+        },
+        {
+          "role": "user",
+          "content": "hi"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are X."
+        },
+        {
+          "role": "system",
+          "content": "You are X."
+        },
+        {
+          "role": "user",
+          "content": "hi"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    }
+  },
+  {
+    "name": "a long past tool result is cut at a word boundary",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": {
+          "maxToolLength": 256
+        },
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha\n...[truncated]"
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    }
+  },
+  {
+    "name": "the turn being sent is never cut",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": {
+          "maxToolLength": 256
+        },
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+        }
+      ]
+    }
+  },
+  {
+    "name": "compressToolResults false leaves the history whole",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": {
+          "maxToolLength": 256,
+          "compressToolResults": false
+        },
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    }
+  },
+  {
+    "name": "an Anthropic tool_result block is cut inside",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": {
+          "maxToolLength": 256
+        },
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "reading"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "t",
+              "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "reading"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "t",
+              "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha\n...[truncated]"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    }
+  },
+  {
+    "name": "text parts inside a tool_result are cut too",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": {
+          "maxToolLength": 256
+        },
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "t",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "t",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha\n...[truncated]"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    }
+  },
+  {
+    "name": "a cut never splits a surrogate pair",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": {
+          "maxToolLength": 257
+        },
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\n...[truncated]"
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    }
+  },
+  {
+    "name": "a message repeated right after itself goes",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "same"
+        },
+        {
+          "role": "user",
+          "content": "same"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "same"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "name": "two identical messages in the turn being sent are both kept",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello"
+        },
+        {
+          "role": "assistant",
+          "content": "hi"
+        },
+        {
+          "role": "user",
+          "content": "continue"
+        },
+        {
+          "role": "user",
+          "content": "continue"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello"
+        },
+        {
+          "role": "assistant",
+          "content": "hi"
+        },
+        {
+          "role": "user",
+          "content": "continue"
+        },
+        {
+          "role": "user",
+          "content": "continue"
+        }
+      ]
+    }
+  },
+  {
+    "name": "two assistant messages that differ only in their tool calls are both kept",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "a",
+              "type": "function",
+              "function": {
+                "name": "f",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "b",
+              "type": "function",
+              "function": {
+                "name": "f",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "a",
+          "content": "ra"
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "b",
+          "content": "rb"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "a",
+              "type": "function",
+              "function": {
+                "name": "f",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "b",
+              "type": "function",
+              "function": {
+                "name": "f",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "a",
+          "content": "ra"
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "b",
+          "content": "rb"
+        }
+      ]
+    }
+  },
+  {
+    "name": "two user messages that differ only in their name are both kept",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "name": "alice",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "name": "bob",
+          "content": "ok"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "name": "alice",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "name": "bob",
+          "content": "ok"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    }
+  },
+  {
+    "name": "a maxToolLength below the floor falls back to 2000",
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": {
+          "maxToolLength": 100
+        },
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    }
+  },
+  {
+    "name": "a request without a messages array goes on unchanged",
+    "ctx": {
+      "protocol": "responses"
+    },
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": false,
+        "lite": true,
+        "rtk": false,
+        "codex-responses": false,
+        "headroom": false,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": false,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false
+      }
+    },
+    "request": {
+      "model": "m",
+      "input": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "a\n\n\n\nb"
+            }
+          ]
+        }
+      ]
+    },
+    "expect_request": {
+      "model": "m",
+      "input": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "a\n\n\n\nb"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

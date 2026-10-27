@@ -1,6 +1,6 @@
 // engines/aggressive.js — Aggressive：把较早的轮次摘要化并逐步老化，只保留最近细节（约 50%）。
 //
-// 来源（E:\LLM_Config\OmniRouteDesktop\resources\app\open-sse\services\compression\）：
+// 来源（OmniRoute@ff679ab86e0113a009d8aeeeee464139bd090874 open-sse/services/compression/）：
 //   - aggressive.ts            (233 行)  三步主流程 + [COMPRESSED: 标记约定
 //   - progressiveAging.ts      (5689B)   applyAging 分档老化
 //   - summarizer.ts            (244 行)  RuleBasedSummarizer（纯规则摘要器）

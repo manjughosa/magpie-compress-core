@@ -46,6 +46,15 @@
           "content": "a\n\n\n\nb\n \t "
         }
       ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "a\n\n\n\nb\n \t "
+        }
+      ]
     }
   },
   {
@@ -66,11 +75,50 @@
           "content": "next"
         }
       ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "a\n\nb"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
     }
   },
   {
     "name": "content that isn't a string is left as it is",
     "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "a\n\n\n\nb\n   "
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
       "model": "m",
       "messages": [
         {
@@ -205,6 +253,31 @@
           "content": "next"
         }
       ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. Rule set A: never push."
+        },
+        {
+          "role": "system",
+          "content": "You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. You are a coding agent. Rule set B: always run tests."
+        },
+        {
+          "role": "user",
+          "content": "hi"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
     }
   },
   {
@@ -258,6 +331,31 @@
       "preserveSystemPrompt": true
     },
     "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are X."
+        },
+        {
+          "role": "system",
+          "content": "You are X."
+        },
+        {
+          "role": "user",
+          "content": "hi"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
       "model": "m",
       "messages": [
         {
@@ -360,6 +458,23 @@
           "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
         }
       ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+        }
+      ]
     }
   },
   {
@@ -369,6 +484,27 @@
       "compressToolResults": false
     },
     "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
+    },
+    "expect_request": {
       "model": "m",
       "messages": [
         {
@@ -704,11 +840,81 @@
           "content": "rb"
         }
       ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "a",
+              "type": "function",
+              "function": {
+                "name": "f",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "b",
+              "type": "function",
+              "function": {
+                "name": "f",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "a",
+          "content": "ra"
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "b",
+          "content": "rb"
+        }
+      ]
     }
   },
   {
     "name": "two user messages that differ only in their name are both kept",
     "request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "name": "alice",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "name": "bob",
+          "content": "ok"
+        },
+        {
+          "role": "assistant",
+          "content": "ok"
+        },
+        {
+          "role": "user",
+          "content": "next"
+        }
+      ]
+    },
+    "expect_request": {
       "model": "m",
       "messages": [
         {
@@ -757,6 +963,27 @@
           "content": "done"
         }
       ]
+    },
+    "expect_request": {
+      "model": "m",
+      "messages": [
+        {
+          "role": "user",
+          "content": "go"
+        },
+        {
+          "role": "assistant",
+          "content": "reading"
+        },
+        {
+          "role": "tool",
+          "content": "alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha alpha"
+        },
+        {
+          "role": "assistant",
+          "content": "done"
+        }
+      ]
     }
   },
   {
@@ -765,6 +992,20 @@
       "protocol": "responses"
     },
     "request": {
+      "model": "m",
+      "input": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "a\n\n\n\nb"
+            }
+          ]
+        }
+      ]
+    },
+    "expect_request": {
       "model": "m",
       "input": [
         {

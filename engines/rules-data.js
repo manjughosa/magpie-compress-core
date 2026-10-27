@@ -1,7 +1,7 @@
 // rules-data.js — caveman 规则包的内联数据（自动生成，勿手改）。
 //
 // 生成器: scripts/port-caveman.mjs
-// 来源  : E:\LLM_Config\OmniRouteDesktop\resources\app\open-sse\services\compression\rules\{lang}\*.json
+// 来源  : OmniRoute@ff679ab86e0113a009d8aeeeee464139bd090874 open-sse/services/compression/rules\{lang}\*.json
 // 可读原文: ./rules/{lang}/*.json（原样复制，含 _schema.json）
 //
 // 为什么不用 JSON import：moejs 是 Go 内嵌的 JS 引擎，import attributes

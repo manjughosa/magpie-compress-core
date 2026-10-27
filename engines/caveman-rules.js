@@ -1,6 +1,6 @@
 // caveman-rules.js — caveman 规则引擎（移植自 OmniRouteDesktop 的 cavemanRules.ts）
 //
-// 来源（E:\LLM_Config\OmniRouteDesktop\resources\app\open-sse\services\compression\）：
+// 来源（OmniRoute@ff679ab86e0113a009d8aeeeee464139bd090874 open-sse/services/compression/）：
 //   cavemanRules.ts (14020B / 432 行)     —— CAVEMAN_RULES 规则表、getRulesForContext、元数据
 //   caveman.ts    (第 28–162 行)          —— RULE_KEYWORDS 关键字预筛表
 //   caveman.ts    (第 164–226 行)         —— shouldAttemptRule / applyRulesToText

@@ -209,14 +209,15 @@
     var lastTurns = $("lastTurns")
     var keep = $("preserveSystem")
     if (budget && document.activeElement !== budget) {
-      budget.value = options.budgetMs != null ? options.budgetMs : 600
+      budget.value = options.budgetMs != null ? options.budgetMs : 0
     }
     if (lastTurns && document.activeElement !== lastTurns) {
-      var turns = options.preserve && options.preserve.lastTurns != null ? options.preserve.lastTurns : 2
+      var turns = options.preserve && options.preserve.lastTurns != null ? options.preserve.lastTurns : 0
       lastTurns.value = turns
     }
     if (keep) {
-      var keepSystem = !(options.preserve && options.preserve.system === false)
+      // Keep this identical to pipeline.js: only an explicit true protects system.
+      var keepSystem = !!(options.preserve && options.preserve.system === true)
       keep.setAttribute("aria-checked", keepSystem ? "true" : "false")
     }
     var captureFull = $("captureFull")
@@ -306,34 +307,11 @@
 
   // ═══ 差异弹窗 ═══
 
-  // 完整快照按需加载：页面 CSP 只允许同源脚本，所以用 <script> 而不是 fetch。
-  var captureCache = {}
-
-  function ensureCapture(id) {
-    if (captureCache[id]) return Promise.resolve(captureCache[id])
-    var store = globalThis.__COMPRESS_CAPTURES__
-    if (store && store[id]) {
-      captureCache[id] = store[id]
-      return Promise.resolve(store[id])
-    }
-    return new Promise(function (resolve) {
-      var done = false
-      var finish = function (value) {
-        if (done) return
-        done = true
-        resolve(value || null)
-      }
-      var script = document.createElement("script")
-      script.src = "captures/" + encodeURIComponent(id) + ".js"
-      script.onload = function () {
-        var got = globalThis.__COMPRESS_CAPTURES__ ? globalThis.__COMPRESS_CAPTURES__[id] : null
-        if (got) captureCache[id] = got
-        finish(got)
-      }
-      script.onerror = function () { finish(null) }
-      document.head.append(script)
-      setTimeout(function () { finish(captureCache[id] || null) }, 6000)
-    })
+  // 完整快照只保存在配置目录：<config>/magpie/compress-core/captures/<id>.json。
+  // 页面 CSP 读不到本机文件，快照也不再复制进安装包的 page/captures —— 那段复制
+  // 会把对话文本放进已安装的包里，审查要求去掉，所以这里只留摘要与文件位置。
+  function ensureCapture() {
+    return Promise.resolve(null)
   }
 
   function onDiffKey(ev) {
@@ -544,9 +522,9 @@
         U.el(
           "p",
           "diff-note",
-          cap.summary
-            ? "这条记录只发布了索引（快照体积超过发布上限），完整文本没有随页面发布。"
-            : "完整快照没有随页面发布，只剩索引里的体积、模型与协议信息。",
+          "完整快照只写在本机配置文件里：<配置目录>/magpie/compress-core/captures/" +
+            String(cap.id) +
+            ".json。页面读不到本机文件，这里只显示索引里的体积、模型与协议。",
         ),
       )
       return
@@ -665,7 +643,8 @@
     if (lastTurns) {
       lastTurns.addEventListener("change", function () {
         var p = Object.assign({}, options.preserve)
-        p.lastTurns = parseInt(lastTurns.value, 10) || 2
+        var n = parseInt(lastTurns.value, 10)
+        p.lastTurns = Number.isFinite(n) ? Math.max(0, Math.min(50, n)) : 0
         save({ preserve: p })
       })
     }

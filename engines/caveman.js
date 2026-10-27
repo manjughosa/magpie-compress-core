@@ -1,6 +1,6 @@
 // caveman.js — caveman 散文压缩引擎（移植自 OmniRouteDesktop 的 caveman.ts）
 //
-// 来源（E:\LLM_Config\OmniRouteDesktop\resources\app\open-sse\services\compression\）：
+// 来源（OmniRoute@ff679ab86e0113a009d8aeeeee464139bd090874 open-sse/services/compression/）：
 //   caveman.ts    (17062B / 471 行) —— 主编排：preservation → 规则应用 → 校验 → 收尾
 //   preservation.ts (8856B / 253 行) —— 保护区提取/还原（代码围栏、行内代码、数学、路径、URL…）
 //   validation.ts  (12534B)         —— 压缩后结构校验，不通过就回退原文

@@ -1,18 +1,23 @@
 // Page sandbox <-> Bun file channel. Commands run on a subsequent local request;
 // a result never replaces unrelated strategies or settings.
 import { randomUUID } from "node:crypto"
-import { readFile, rename, writeFile } from "node:fs/promises"
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { runLab } from "./lab.js"
 import { clearCaptures } from "./capture-store.js"
-import { configDir, clearCaptureIndex, flush } from "./stats-writer.js"
-import { redactSecrets } from "./telemetry-store.js"
+import { clearCaptureIndex, flush } from "./stats-writer.js"
+import { redactSecrets, telemetryDir } from "./telemetry-store.js"
 
-// A lab run result is written into plugins.json so the page can read it, and it
-// carries the text the operator pasted plus the full request body. Both are
-// masked before they land in the config file, and a result too large to belong
-// in a config file keeps only the report.
+// Command results go into this plugin's own file, not magpie's plugins.json:
+// a lab result carries the text the operator pasted plus the full request body,
+// and a settings file is the wrong place for either. Both are masked before they
+// land on disk, and a result too large to be worth storing keeps only the report.
 const LAB_RESULT_LIMIT = 2_000_000
+
+// Results the page used to read back through `magpie.options`. A page cannot
+// read a file (connect-src 'none'), so it no longer shows a lab result inline:
+// it points at this file instead.
+const commandsFile = () => join(telemetryDir(), "commands.json")
 
 function maskDeep(value) {
   if (typeof value === "string") return redactSecrets(value)
@@ -44,17 +49,25 @@ const later = task => {
   return result
 }
 
-// Read-modify-write only this plugin's command/stat fields. Other entries and
-// the user's current switches remain untouched, even when a page was stale.
+// Read-modify-write this plugin's own command file. magpie's settings file is
+// never opened: writing it fought magpie's lock and restarted the hooks host on
+// every change.
 async function patch(fields) {
-  const path = join(configDir(), "plugins.json")
-  const tmp = path + ".compress-command.tmp"
-  const doc = JSON.parse(await readFile(path, "utf8"))
-  const entries = Array.isArray(doc?.plugins) ? doc.plugins : []
-  const entry = entries.find(item => item?.name === "compress-core" || /(?:^|\/)compress-core$/.test(item?.spec || ""))
-  if (!entry) return false
-  entry.options ||= {}
-  Object.assign(entry.options, fields)
+  const path = commandsFile()
+  const tmp = path + ".tmp"
+  let doc = {}
+  try {
+    const text = await readFile(path, "utf8")
+    if (text.length <= LAB_RESULT_LIMIT) doc = JSON.parse(text)
+  } catch {
+    // No file yet: start from an empty document.
+  }
+  if (!doc || typeof doc !== "object" || Array.isArray(doc)) doc = {}
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined) delete doc[key]
+    else doc[key] = value
+  }
+  await mkdir(telemetryDir(), { recursive: true })
   await writeFile(tmp, JSON.stringify(doc, null, 2) + "\n")
   await rename(tmp, path)
   return true

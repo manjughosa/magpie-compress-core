@@ -466,7 +466,10 @@ export function applySessionDedup(body, stepConfig) {
   // 时间盒（moejs 250ms 请求钩子上游的硬约束）：dedup 是 best-effort，
   // 到点即停——已替换的保持正确，未处理的少压缩。上游原话：
   // "skipping the tail only forgoes some compression, never changes output correctness"。
-  const budgetMs = typeof stepConfig["timeBudgetMs"] === "number" ? stepConfig["timeBudgetMs"] : 120
+  // No time box by default: a deadline that bites under load turns the same request
+    // into two different request bodies, and a body that changes is a body the
+    // provider's prompt cache can never reuse. Set timeBudgetMs to trade that away.
+    const budgetMs = typeof stepConfig["timeBudgetMs"] === "number" ? stepConfig["timeBudgetMs"] : 0
   const deadline =
     typeof stepConfig["deadlineAt"] === "number"
       ? stepConfig["deadlineAt"] // 测试注入：绝对时间戳

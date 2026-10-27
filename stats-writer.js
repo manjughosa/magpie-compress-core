@@ -1,36 +1,36 @@
-// A rolling summary of what compression saved, written back into this plugin's
-// own entry in magpie's `plugins.json`.
+// A rolling summary of what compression saved, kept in this plugin's own
+// folder under magpie's config directory.
 //
-// Why it goes through that file: a page or a panel runs under magpie's sandbox
-// with `connect-src 'none'`, so it cannot fetch anything — `magpie.options` is
-// the only channel a page can read. The hook side is trusted Bun and may touch
-// the disk, so it writes the numbers where the page will look for them.
+// It used to be written back into this plugin's entry in magpie's
+// `plugins.json`, because a page runs with `connect-src 'none'` and
+// `magpie.options` was the only channel it could read. That file is magpie's:
+// writing it fights magpie's lock, puts up to 2 MB of lab text into a file
+// meant for settings, and every write bumps its stamp, which restarts the hooks
+// host — a fresh host then flushes on its next request, and the host can end up
+// restarting once per request. The gateway maintainer asked for this file to be
+// ours, so it is: `<config>/magpie/compress-core/stats.json`, beside the
+// request log and the captures.
 //
-// This borrows a file magpie owns, so every write is conservative: only when
-// there is exactly one matching entry, never while magpie may be writing it
-// (fresh mtime is skipped), always through a temp file and a rename, and any
-// failure is swallowed so compression itself is never affected.
-import { readFile, stat, writeFile, rename, unlink } from "node:fs/promises"
+// The page can no longer read the numbers through `magpie.options`; it shows
+// the file it can be read from instead. That is the trade the review asked
+// for, and it is the right way round: settings stay magpie's, data stays ours.
+import { mkdir, readFile, writeFile, rename, unlink } from "node:fs/promises"
 import { join } from "node:path"
 import { homedir } from "node:os"
+import { telemetryDir } from "./telemetry-store.js"
 
 const FLUSH_MS = 30_000        // at most one write every half minute
-const QUIET_MS = 1_500         // skip if magpie wrote the file this recently
 const KEEP_RECENT = 50
-const MAX_BYTES = 4_000_000    // refuse to rewrite an implausibly large file
-
-let selfDir = ""
-
-export function setSelfDir(dir) {
-  selfDir = typeof dir === "string" ? dir : ""
-}
+const MAX_BYTES = 4_000_000    // refuse to parse an implausibly large file
 
 export function configDir() {
   const xdg = process.env.XDG_CONFIG_HOME ? join(process.env.XDG_CONFIG_HOME, "magpie") : null
   return process.env.MAGPIE_CONFIG_DIR || xdg || join(homedir(), ".config", "magpie")
 }
 
-const pluginsJson = () => join(configDir(), "plugins.json")
+// 与本插件的请求日志、快照同目录：<config>/magpie/compress-core。
+const statsFile = () => join(telemetryDir(), "stats.json")
+export const statsPath = statsFile
 
 function blank() {
   return {
@@ -126,25 +126,8 @@ export function clearCaptureIndex() {
   capturesCleared = true
 }
 
-// A test run must never touch the real plugins.json.
+// A test run must never touch the real files.
 const off = () => process.env.COMPRESS_CORE_NO_STATS === "1"
-
-const norm = (p) => String(p || "").replace(/\\/g, "/").toLowerCase().replace(/\/+$/, "")
-const base = (p) => norm(p).split("/").filter(Boolean).pop() || ""
-
-// A spec is a folder we were added from, or a package name. Compare the tail
-// so a relative spec still matches the folder this file lives in.
-function isOurs(spec) {
-  const s = norm(spec)
-  if (!s) return false
-  if (selfDir) {
-    const dir = norm(selfDir)
-    if (s === dir) return true
-    const name = base(dir)
-    if (name && (s === name || s.endsWith("/" + name))) return true
-  }
-  return s.includes("compress-core")
-}
 
 export function record(event) {
   if (off() || !event || typeof event !== "object") return
@@ -191,32 +174,21 @@ export async function flush(force = false) {
   const now = Date.now()
   if (!force && now - lastFlushAt < FLUSH_MS) return
   inFlight = true
-  const path = pluginsJson()
-  const tmp = path + ".compress-core.tmp"
+  const path = statsFile()
+  const tmp = path + ".tmp"
   try {
-    const info = await stat(path)
-    if (info.size > MAX_BYTES) return
-    if (!force && now - info.mtimeMs < QUIET_MS) return
-
-    const doc = JSON.parse(await readFile(path, "utf8"))
-    const list = Array.isArray(doc?.plugins) ? doc.plugins : null
-    if (!list) return
-
-    const hits = list.filter((p) => p && isOurs(p.spec))
-    if (hits.length !== 1) return
-
-    const entry = hits[0]
-    if (!entry.options || typeof entry.options !== "object") entry.options = {}
-    // Re-read after every UI/command write; stats and capture metadata share
-    // this object with user settings, so an in-memory snapshot is not enough.
-    const next = merge(entry.options.stats, summary)
-    if (JSON.stringify(entry.options.stats) === JSON.stringify(next)) {
-      lastFlushAt = now
-      return
+    let stored = null
+    try {
+      const text = await readFile(path, "utf8")
+      if (text.length <= MAX_BYTES) stored = JSON.parse(text)
+    } catch {
+      // No file yet, or an unreadable one: start from this process's summary.
     }
-
-    entry.options.stats = next
-    await writeFile(tmp, JSON.stringify(doc, null, 2) + "\n", "utf8")
+    // The stored file is the base and this process's summary is the increment,
+    // because the Bun companion may not keep this module alive between requests.
+    const next = merge(stored, summary)
+    await mkdir(telemetryDir(), { recursive: true })
+    await writeFile(tmp, JSON.stringify(next, null, 2) + "\n", "utf8")
     await rename(tmp, path)
     // Everything this process knows is now on disk; the next request must not
     // count it twice.

@@ -1,5 +1,8 @@
 // engines/headroom.js — SmartCrusher：同质/异质 JSON 对象数组 → GCF 列式块（无损）
 // 移植自 OmniRoute: open-sse/services/compression/engines/headroom/
+//
+// GCF (the ```gcf-generic columnar block this engine emits) is headroom's format:
+//   https://github.com/headroomlabs-ai/headroom — credited in PROVENANCE.json.
 //   index.ts + smartcrusher.ts + tabular.ts（GCF 编解码在 ./gcf/）
 //
 // 算法（上游原样）：

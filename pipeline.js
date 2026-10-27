@@ -15,9 +15,18 @@ export function byteLength(value) {
 export function strategyEnabled(engine, options = {}) {
   if (engine.available === false) return false
   const strategies = options.strategies
-  return strategies && Object.prototype.hasOwnProperty.call(strategies, engine.id)
-    ? strategies[engine.id] === true
-    : engine.defaultOn === true
+  const raw = strategies && Object.prototype.hasOwnProperty.call(strategies, engine.id) ? strategies[engine.id] : undefined
+  if (raw === undefined) return engine.defaultOn === true
+  // 对象形态一次说清「开着」和「怎么配」；写 true/false 只在开关这一层说话。
+  if (raw && typeof raw === "object") return raw.enabled !== false
+  return raw === true
+}
+// 引擎配置：strategies[id] 的对象形态优先，其次 options[id]（lab 台与旧配置的写法）。
+export function engineConfig(engine, options = {}) {
+  const raw = options && options.strategies ? options.strategies[engine.id] : undefined
+  if (raw && typeof raw === "object") return raw
+  const flat = options && options[engine.id]
+  return flat && typeof flat === "object" ? flat : {}
 }
 function restore(target, snapshot) {
   for (const key of Object.keys(target)) delete target[key]
@@ -36,8 +45,12 @@ function preserveSettings(options) {
   const preserve = options && typeof options.preserve === "object" && options.preserve ? options.preserve : {}
   const turns = Number(preserve.lastTurns)
   return {
-    system: preserve.system !== false,
-    lastTurns: Number.isFinite(turns) ? Math.max(0, Math.min(50, Math.floor(turns))) : 2,
+    // 默认不额外保护 system：lite 对 system 的变换（整段去重）本身就是幂等的，
+    // 保护它等于关掉那一步。要绝对不动 system 的人显式开 preserve.system。
+    system: preserve.system === true,
+    // 默认 0：被滑窗保护的那一轮，在它滑出窗口时会被改写一次，缓存从此每轮
+    // miss（review 第 2 条）。要保护就显式配置，代价记在 README。
+    lastTurns: Number.isFinite(turns) ? Math.max(0, Math.min(50, Math.floor(turns))) : 0,
   }
 }
 
@@ -162,7 +175,7 @@ export function runPipeline(body, ctx, options = {}, beforeBody = null) {
     const snapshot = clone(body)
     const stateSnapshot = clone(ctx.state)
     try {
-      const cfg = options[engine.id] && typeof options[engine.id] === "object" ? options[engine.id] : {}
+      const cfg = engineConfig(engine, options)
       const changed = engine.apply(body, ctx, cfg) === true
       record.afterBytes = byteLength(body)
       record.ms = Date.now() - t

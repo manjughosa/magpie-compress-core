@@ -1,6 +1,6 @@
 // engines/ionizer.js — Ionizer：对超长同构 JSON 数组做确定性统计采样，保留骨架与关键行。
 //
-// 来源（E:\LLM_Config\OmniRouteDesktop\resources\app\open-sse\services\compression\engines\ionizer\）：
+// 来源（OmniRoute@ff679ab86e0113a009d8aeeeee464139bd090874 open-sse/services/compression/engines\ionizer\）：
 //   - index.ts  (124 行)  IONIZER_SCHEMA / validateIonizerConfig / ionizerEngine（apply 契约）
 //   - sample.ts (205 行)  fnv1a / mulberry32 / schemaUnion / isErrorRow / seededSample / ionize
 //                         / applyIonizerPass / runIonizerPass

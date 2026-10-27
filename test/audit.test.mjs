@@ -42,15 +42,19 @@ export async function run() {
     check("AUDIT-02 快照包含完整 after，50 条封顶，删除/清空生效", true)
 
     const oldOptions = snapshot().options
+    const configPath = join(dir, "plugins.json")
+    const configBefore = await readFile(configPath, "utf8")
     assert.ok(await processLabCommand({ labCommand: { id: "cmd-lab", action: "test", request: { id: "req-lab", mode: "text", input, strategy: "lite", protocol: "chat" } } }))
-    const saved = JSON.parse(await readFile(join(dir, "plugins.json"), "utf8")).plugins[0].options
+    const saved = JSON.parse(await readFile(join(dir, "commands.json"), "utf8"))
     assert.equal(saved.labResult.status, "done")
     assert.equal(saved.labResult.result.strategy, "lite")
     assert.equal(saved.labCommand, undefined)
-    assert.deepEqual(saved.strategies, { lite: true })
     assert.equal(await processLabCommand({ labCommand: { id: "cmd-lab", action: "test", request: { id: "req-lab", mode: "text", input, strategy: "lite", protocol: "chat" } } }), false)
     assert.deepEqual(snapshot().options, oldOptions)
-    check("AUDIT-03 本地命令不污染其他选项，重复请求只执行一次", true)
+    // The blocking finding: a command result is ours to store, and magpie's
+    // settings file is never opened. Same bytes before and after.
+    assert.equal(await readFile(configPath, "utf8"), configBefore)
+    check("AUDIT-03 本地命令不污染其他选项，重复请求只执行一次，绝不写 plugins.json", true)
 
     const requestOptions = JSON.parse(await readFile(join(dir, "plugins.json"), "utf8")).plugins[0].options
     const repeat = Array.from({ length: 40 }, (_, i) => `Audit line ${i}: repeated block.`).join("\n")
@@ -78,13 +82,13 @@ export async function run() {
       if (oldNoStats === undefined) delete process.env.COMPRESS_CORE_NO_STATS
       else process.env.COMPRESS_CORE_NO_STATS = oldNoStats
     }
-    const diskOptions = JSON.parse(await readFile(join(dir, "plugins.json"), "utf8")).plugins[0].options
+    const diskStats = JSON.parse(await readFile(join(dir, "stats.json"), "utf8"))
     // Prior capture commands create a baseline; the important invariant is
     // that the new hook capture is also persisted, not an absolute list size.
     // Read the persisted index instead of the in-memory summary: a successful
     // flush resets that summary, so it is empty by the time we assert here.
-    assert.ok(diskOptions.stats.captures.length > 0)
-    const newest = diskOptions.stats.captures[0]
+    assert.ok(diskStats.captures.length > 0)
+    const newest = diskStats.captures[0]
     assert.ok(typeof newest.id === "string" && newest.id.startsWith("capture-"))
     assert.equal(afterHook.messages.at(-1).content, "Latest stays.")
     assert.ok(newest.model.length <= 160)

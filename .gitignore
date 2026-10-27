@@ -9,3 +9,8 @@ page/captures/
 *.tmp
 *.log
 .DS_Store
+
+# Built artifacts: produced by `node scripts/build-lab-bundle.mjs`, never committed.
+# npm still ships them through package.json's files list, so an install needs no build.
+page/engines.js
+page/lab-engine.bundle.js

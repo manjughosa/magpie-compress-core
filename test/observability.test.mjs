@@ -159,7 +159,7 @@ export async function run() {
 
     const free = makeBody()
     runPipeline(free, { protocol: "chat", state: {} }, { ...liteOnly, preserve: { system: false, lastTurns: 0 } }, clone(free))
-    check("OBS-12 关掉 preserve 后 system 也参与折叠，正在发送的那一轮仍原样",
+    check("OBS-12 preserve 全关后历史都折叠，正在发送的那一轮仍原样",
       free.messages[0].content === "sys\n\n" && free.messages[5].content === noisy)
   }
 }

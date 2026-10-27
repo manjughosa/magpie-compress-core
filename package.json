@@ -5,19 +5,24 @@
   "type": "module",
   "license": "MIT",
   "files": [
-    "page",
-    "engines",
+    "LICENSE",
+    "PROVENANCE.json",
+    "README.md",
+    "README.en.md",
+    "DEBUGGING.md",
     "adapter.js",
-    "catalog.js",
     "capture-store.js",
-    "options-commands.js",
+    "catalog.js",
+    "compress-core.middleware.js",
+    "engines",
     "hash.js",
+    "lab.js",
+    "observability.hooks.js",
+    "options-commands.js",
+    "page",
     "pipeline.js",
     "stats-writer.js",
-    "telemetry-store.js",
-    "observability.hooks.js",
-    "compress-core.middleware.js",
-    "README.md"
+    "telemetry-store.js"
   ],
   "keywords": [
     "magpie",
@@ -63,7 +68,7 @@
     ],
     "options": {
       "strategies": {
-        "session-dedup": true,
+        "session-dedup": false,
         "ccr": true,
         "lite": true,
         "rtk": false,
@@ -79,16 +84,16 @@
         "llm": false,
         "omniglyph": false
       },
-      "budgetMs": 600,
+      "budgetMs": 0,
       "preserve": {
-        "system": true,
-        "lastTurns": 2
+        "system": false,
+        "lastTurns": 0
       },
       "gatewayTimeoutMs": 4000,
       "capture": false
     }
   },
-  "dependencies": {
-    "ws": "^8.22.0"
+  "scripts": {
+    "build:page": "node scripts/build-lab-bundle.mjs"
   }
 }

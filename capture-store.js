@@ -10,43 +10,16 @@ export const KEEP_CAPTURES = 50
 const ID_PATTERN = /^[A-Za-z0-9-]{8,80}$/
 const encoder = new TextEncoder()
 const directory = () => join(telemetryDir(), "captures")
-// The page cannot fetch anything: magpie serves a plugin page over
-// /_magpie/plugin/<token>/ and the page CSP allows no network access. Each
-// capture is therefore also published beside the page as a script that the
-// viewer loads with a <script> tag. Before/after detail stays available
-// without asking the host to run a command on some later request.
-const pageDirectory = () => process.env.COMPRESS_CORE_PAGE_DIR || join(import.meta.dirname, "page", "captures")
+// A capture keeps the whole conversation text, so it lives in exactly one place:
+// this plugin's own folder under magpie's config directory. It used to be copied
+// beside the page as a loadable script, which put conversations inside the
+// installed package; a page can no longer read them, and that is the point.
 let queue = Promise.resolve()
 
 function enqueue(operation) {
   const result = queue.then(operation, operation)
   queue = result.catch(() => {})
   return result
-}
-
-function publishedScript(record) {
-  // JSON.stringify output is a valid JS expression. Keying by id keeps one
-  // published capture from overwriting another when two loads race.
-  return `globalThis.__COMPRESS_CAPTURES__=globalThis.__COMPRESS_CAPTURES__||{};globalThis.__COMPRESS_CAPTURES__[${JSON.stringify(record.id)}]=${JSON.stringify(record)};\n`
-}
-
-async function publish(record) {
-  const dir = pageDirectory()
-  const target = join(dir, `${record.id}.js`)
-  const temp = join(dir, `.${record.id}.${process.pid}.${randomUUID()}.tmp`)
-  try {
-    await mkdir(dir, { recursive: true })
-    await writeFile(temp, publishedScript(record), "utf8")
-    await rename(temp, target)
-    return true
-  } catch {
-    try { await rm(temp, { force: true }) } catch { /* The JSON copy is still on disk. */ }
-    return false
-  }
-}
-
-async function unpublish(id) {
-  try { await rm(join(pageDirectory(), `${id}.js`), { force: true }) } catch { /* Best effort. */ }
 }
 
 // The viewer cannot fetch, and the index kept in plugins.json is rewritten
@@ -98,14 +71,8 @@ async function loadIndex() {
 async function writeIndex() {
   if (!index) return
   if (index.length > KEEP_CAPTURES) index = index.slice(0, KEEP_CAPTURES)
-  const body = `globalThis.__COMPRESS_CAPTURES_INDEX__=${JSON.stringify(index)};\n`
-  const page = pageDirectory()
-  try {
-    await mkdir(page, { recursive: true })
-    const temp = join(page, `.index.${process.pid}.${randomUUID()}.tmp`)
-    await writeFile(temp, body, "utf8")
-    await rename(temp, join(page, "index.js"))
-  } catch { /* The viewer falls back to the options index. */ }
+  // One copy, in our own folder: `captures-index.json`. The viewer used to load a
+  // script written beside the page; the page no longer reads either of them.
   try {
     const base = telemetryDir()
     await mkdir(base, { recursive: true })
@@ -132,18 +99,7 @@ async function prune() {
   const expired = captures.slice(KEEP_CAPTURES)
   await Promise.all(expired.map(async capture => {
     try { await rm(capture.path, { force: true }) } catch { /* Retention is best effort. */ }
-    await unpublish(capture.id)
   }))
-  // A published script whose capture is gone can only be a leftover from an
-  // interrupted run; it would still load into the page and show a dead entry.
-  try {
-    const alive = new Set(kept.map(capture => capture.id))
-    for (const name of await readdir(pageDirectory())) {
-      if (!name.endsWith(".js") || name === "index.js") continue
-      if (alive.has(name.slice(0, -".js".length))) continue
-      try { await rm(join(pageDirectory(), name), { force: true }) } catch { /* Best effort. */ }
-    }
-  } catch { /* The page directory may not exist yet. */ }
   return expired.map(capture => capture.id)
 }
 
@@ -171,12 +127,11 @@ export function saveCapture(record) {
       await writeFile(temp, data, "utf8")
       await rename(temp, path)
       const expired = await prune()
-      const published = await publish(record)
       // Keep the page's list in step with the store: the viewer renders this.
       const listed = await loadIndex()
       index = [indexEntry(record), ...listed.filter(entry => entry.id !== record.id && !expired.includes(entry.id))].slice(0, KEEP_CAPTURES)
       await writeIndex()
-      return { saved: true, published }
+      return { saved: true }
     } catch {
       try { await rm(temp, { force: true }) } catch { /* Preserve the original failure reason. */ }
       return { saved: false, reason: "write_failed" }
@@ -200,7 +155,7 @@ export function clearCaptures() {
       if (!entry.isFile() || !entry.name.endsWith(".json")) continue
       try {
         await rm(join(directory(), entry.name), { force: true })
-        await unpublish(entry.name.slice(0, -".json".length))
+        // Nothing else to remove: the JSON copy is the only copy.
         cleared++
       } catch { /* Other captures can still be cleared. */ }
     }
