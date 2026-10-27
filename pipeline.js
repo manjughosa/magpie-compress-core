@@ -102,7 +102,8 @@ function reasonFor(engine, ctx) {
   if (engine.id === "headroom") return "no_eligible_json_array_or_not_smaller"
   if (engine.id === "session-dedup") return "no_repeat_eligible_block"
   if (engine.id === "rtk") return "no_matching_tool_output_filter"
-  return "no_whitespace_or_tool_result_change"
+  // 其余引擎只会返回 false，管线无从知道具体原因，就别冒用别人的原因文案。
+  return "nothing_to_remove"
 }
 function texts(body, protocol) {
   return conversationView(body, protocol)?.segments.map(s => s.text) || []

@@ -9506,7 +9506,7 @@ Files: ` + [...paths].join(", ");
       return "no_repeat_eligible_block";
     if (engine.id === "rtk")
       return "no_matching_tool_output_filter";
-    return "no_whitespace_or_tool_result_change";
+    return "nothing_to_remove";
   }
   function texts(body, protocol) {
     return conversationView(body, protocol)?.segments.map((s) => s.text) || [];
@@ -9743,6 +9743,7 @@ Files: ` + [...paths].join(", ");
   var encoder2 = new TextEncoder;
   var REASON_ZH = {
     no_repeat_eligible_block: "输入里没有重复出现的块——去重要靠同一会话里已经发过的文本。",
+    nothing_to_remove: "扫过了：这段文本里没有它能去掉的东西。",
     no_whitespace_or_tool_result_change: "输入里没有多余空白、重复行或可以精简的工具输出。",
     no_matching_tool_output_filter: "输入里没有识别到命令输出——这个策略只处理工具结果。",
     no_eligible_json_array_or_not_smaller: "没有够大的 JSON 数组可折叠，或者压完反而更大。",

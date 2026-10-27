@@ -408,6 +408,7 @@
     disabled: "未启用",
     unavailable: "不可用",
     no_repeat_eligible_block: "没有可折叠的重复块",
+    nothing_to_remove: "扫过了：这段文本里没有它能去掉的东西",
     no_whitespace_or_tool_result_change: "没有可清理的空白或工具输出",
     no_eligible_json_array_or_not_smaller: "没有可压缩的 JSON，或压缩后不更小",
     budget_exceeded: "超出时间预算",
