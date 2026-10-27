@@ -1104,3 +1104,15 @@ select:focus { border-color: var(--accent); }
   width: 14px;
   height: 14px;
 }
+
+/* 实验室说明：多数策略依赖上下文，短文本试不出效果。 */
+.lab-note {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--pill);
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.65;
+}

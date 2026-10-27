@@ -135,6 +135,7 @@
               <span class="lab-label">输入原文</span>
               <textarea id="labInput" class="lab-textarea" rows="12" placeholder="粘贴一段对话或文本…"></textarea>
             </label>
+            <p class="lab-note">大部分策略靠上下文——同一会话里已经发过的重复内容、工具输出、多轮历史，或者特定协议。能直接压单段文本的只有少数几个（lite、caveman、ultra、aggressive、headroom），而且各只去掉一类东西：行尾空白、客套话、语气词、冗余结构、可折叠的 JSON 数组。文本太短，多半显示「没命中」，那是正常结果，不是坏了。要看真实效果，把「输入形态」切成「请求体 JSON」再贴一条真请求。</p>
             <button id="runLab" class="lab-run-btn" type="button">
               <span class="icon">▶</span> 运行试压
             </button>
