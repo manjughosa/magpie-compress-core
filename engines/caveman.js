@@ -21,7 +21,7 @@
 //   6. configSchema 是 magpie 的配置面板契约，原版没有：把 intensity / language / groups /
 //      compressRoles 等摊成可配置项。
 //   7. 原版 DEFAULT_CAVEMAN_CONFIG.intensity 是 "lite"。这里默认 "full"：magpie 里 caveman
-//      默认关闭（defaultOn=false），用户显式打开时期望的是「明显变小」，lite 只删客套话，
+//      默认关（pipeline.js 的 DEFAULT_STRATEGIES 里是 false），用户显式打开时期望的是「明显变小」，lite 只删客套话，
 //      压缩率约 10%，与 why 里写的 30% 对不上。
 //
 // ── 砍掉的东西 ───────────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ export const label = "Caveman"
 export const why =
   "按语言规则表删掉啰嗦措辞、客套话、冗余从句，保留代码与事实（约 30% 压缩）。"
 export const lossy = true
-export const cacheImpact = "moderate"
+export const cacheImpact = "moderate"
 export const defaultOn = false
 export const stackPriority = 20
 export const isSingleMode = false

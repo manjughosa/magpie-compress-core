@@ -326,8 +326,28 @@ export async function run() {
     ] }
     const ctx = ctxFor("chat", { strategies: { lite: true } })
     const changed = apply(body, ctx, {})
-    check("engine.apply 非视觉模型剥图", changed && body.messages[0].content[0].text === "[image: png]")
-    check("engine.apply state留痕", Array.isArray(ctx.state.lite.techniques))
+    // 默认不剥图：模型名不像视觉模型也一样。用户截的图就是 data URI，
+    // 按名字判定等于把截图换成一行 [image: png]，图根本没到模型面前
+    // （round-4 review 的 B2）。这里只检查图还在——这一轮的空白折叠与否与此无关。
+    apply(body, ctx, {})
+    check("engine.apply 默认不剥图", body.messages[0].content[0].type === "image_url" &&
+      body.messages[0].content[0].image_url.url === "data:image/png;base64,AAAA")
+    // 数组形态的 content 不走空白折叠，所以留痕另用一段纯字符串的历史来看。
+    const histCtx = ctxFor("chat", { strategies: { lite: true } })
+    const hist = apply({ model: "m", messages: [
+      { role: "user", content: "a\n\n\n\nb" },
+      { role: "assistant", content: "ok" },
+    ] }, histCtx, {})
+    check("engine.apply state留痕", hist && Array.isArray(histCtx.state.lite.techniques))
+    const stripped = { model: "some-text-model", messages: [
+      { role: "user", content: [
+        { type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } },
+        { type: "text", text: "hi   \n\n\n\nthere" },
+      ] },
+    ] }
+    apply(stripped, ctxFor("chat", { strategies: { lite: true } }), { supportsVision: false })
+    check("engine.apply 显式非视觉才剥图", stripped.messages[0].content[0].type === "text" &&
+      stripped.messages[0].content[0].text === "[image: png]")
     const body2 = { model: "gpt-4o", messages: body.messages.map((m) => ({ ...m })) }
     body2.messages[0] = { role: "user", content: [
       { type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } },

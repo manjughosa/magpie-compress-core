@@ -63,6 +63,16 @@ Set `preserveCurrentTurn` to `true` for the conservative mode: everything after 
 
 `preserve.lastTurns` defaults to `0` (no extra protection). Setting it to N keeps the newest N turns out of every rewrite; the turn rewrites itself once when it slides out of that window — that comes from the window, not from lite.
 
+`preserve.system` defaults to `false`. Turning it on protects the whole system segment behind a placeholder for the length of the run, and the price is that the step which depends on the system text (say, "the same system prompt written twice keeps one copy") goes dead — the previous version defaulted it to `true`, which made that step a piece of dead configuration. Write `true` explicitly if the system segment must not move at all.
+
+`compressToolResults` defaults to `false`, so tool results in the history are not cut. Cutting a tool result asks the model to read a thing it was never told had been cut, and it rewrites a message the model has already read by length, so the prefix moves with it. Write `compressToolResults: true` for the old behaviour (`maxToolLength` is still parsed, and anything under 2000 falls back to 2000).
+
+## Oversized bodies
+
+`maxBytes` defaults to `8000000`: **a body bigger than that runs no engine at all and goes out as it arrived**, recorded in telemetry as `tooLarge` with `body_too_large`. The hook has 250 ms, and a 20 MB body costs around 70 ms in `JSON.stringify` alone before any engine has looked at it — that size cannot fit the budget on any machine. Skipping by size rather than by clock is what keeps the decision deterministic: the same body always gets the same answer, so the prefix it contributes to the provider's prompt cache never moves. The decision does not count bytes exactly: it counts text length first (O(n), no allocation, and always a lower bound on the real byte count); a lower bound already over the line ends the decision, one far below it passes, and only the narrow band between the two pays for an exact count.
+
+`budgetMs` defaults to `0`, meaning no strategy is skipped on time. Give it a positive value and the pipeline stops the remaining strategies once it expires — but the same request can then compress two different ways under load, and a body that changed is a body the prompt cache can never reuse, so there is no time budget by default. Engines carry no deadline of their own either (`session-dedup`'s `timeBudgetMs` defaults to `0` as well).
+
 ## The page
 
 Sidebar → Plugins → Compress. One compression meter, the preset, one row per strategy, and the last eight requests.
@@ -137,8 +147,8 @@ The Apache-2.0 upstreams reached through OmniRoute: `caveman` (github.com/Julius
 ## Development
 
 ```bash
-node test/run.mjs                 # every test (22 suites)
-node test/run.mjs lite            # one suite
+node test/run.mjs                 # every test (24 suites)
+node test/run.mjs lite            # one suite: the argument is the suite name (the name in each suite file; e.g. `lite`, `gateway cases (cases.json)`)
 bun test                          # the same suites the way CI runs them
 node scripts/gen-page-catalog.mjs # regenerate page/engines.js after editing catalog.js
 npm run build:page                # re-bundle page/lab-engine.bundle.js after editing lab.js / engines
@@ -153,7 +163,7 @@ If a panel button does nothing, or you are about to change how the page renders,
 
 `test/lite-spec.md` and `test/session-dedup-spec.md` are the behaviour contracts for those two strategies; read them before touching the engines.
 
-`cases.json` is the outward contract: of its 23 cases, 21 are copied verbatim from the history-trim package merged into magpie-community/plugins (#423) and 2 record this package's own default-preset behaviour (the turn being sent is folded too; a tabular tool result becomes a `gcf-generic` block). It answers one concrete question — after a body goes through this middleware, is it exactly the body that implementation leaves? A difference is a semantic fork: either fix it here or argue for it there. Those 21 cases ask for the conservative mode explicitly (`preserveCurrentTurn: true`), because "send the turn being sent as it arrived" is what history-trim did, and this middleware now rewrites everything by default. In the magpie repo it runs as `bun scripts/check.mjs`; the local equivalent is `node test/run.mjs gateway`.
+`cases.json` is the outward contract: of its 23 cases, 21 are copied verbatim from the history-trim package merged into magpie-community/plugins (#423) and 2 record this package's own default-preset behaviour (the turn being sent is folded too; a tabular tool result becomes a `gcf-generic` block). It answers one concrete question — after a body goes through this middleware, is it exactly the body that implementation leaves? A difference is a semantic fork: either fix it here or argue for it there. Those 21 cases ask for the conservative mode explicitly (`preserveCurrentTurn: true`), because "send the turn being sent as it arrived" is what history-trim did, and this middleware now rewrites everything by default. In the magpie repo it runs as `bun scripts/check.mjs`; the local equivalent is `node test/run.mjs "gateway cases (cases.json)"`.
 
 ## Uninstall
 

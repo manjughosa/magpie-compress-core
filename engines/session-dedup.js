@@ -530,7 +530,6 @@ export function restoreDedup(text, map) {
 // ─── 中间件引擎包装 ──────────────────────────────────────────────────────────
 
 export const id = "session-dedup"
-export const defaultOn = true
 
 export function apply(body, ctx, cfg) {
   if (!body || typeof body !== "object") return false

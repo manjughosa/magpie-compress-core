@@ -274,7 +274,6 @@ function markEligibility(items, config) {
 // ─── 引擎 ────────────────────────────────────────────────────────────────
 
 export const id = "codex-responses"
-export const defaultOn = false // 上游 DEFAULT_CODEX_RESPONSES_CONFIG.enabled=false
 
 export function apply(body, ctx, cfg) {
   if (!body || typeof body !== "object") return false

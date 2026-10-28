@@ -133,7 +133,6 @@ export function restoreText(text) {
 // 上游 chat-only 行为等价：system/developer 跳过、空段自然无操作。
 
 export const id = "headroom"
-export const defaultOn = true
 
 export function apply(body, ctx, cfg = {}) {
   if (!body || typeof body !== "object") return false

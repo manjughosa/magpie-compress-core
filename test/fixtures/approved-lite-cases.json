@@ -410,7 +410,8 @@
     "name": "a long past tool result is cut at a word boundary",
     "options": {
       "maxToolLength": 256,
-      "preserveCurrentTurn": true
+      "preserveCurrentTurn": true,
+      "compressToolResults": true
     },
     "request": {
       "model": "m",
@@ -467,7 +468,8 @@
     "name": "the turn being sent is never cut",
     "options": {
       "maxToolLength": 256,
-      "preserveCurrentTurn": true
+      "preserveCurrentTurn": true,
+      "compressToolResults": true
     },
     "request": {
       "model": "m",
@@ -558,7 +560,8 @@
     "name": "an Anthropic tool_result block is cut inside",
     "options": {
       "maxToolLength": 256,
-      "preserveCurrentTurn": true
+      "preserveCurrentTurn": true,
+      "compressToolResults": true
     },
     "request": {
       "model": "m",
@@ -629,7 +632,8 @@
     "name": "text parts inside a tool_result are cut too",
     "options": {
       "maxToolLength": 256,
-      "preserveCurrentTurn": true
+      "preserveCurrentTurn": true,
+      "compressToolResults": true
     },
     "request": {
       "model": "m",
@@ -700,7 +704,8 @@
     "name": "a cut never splits a surrogate pair",
     "options": {
       "maxToolLength": 257,
-      "preserveCurrentTurn": true
+      "preserveCurrentTurn": true,
+      "compressToolResults": true
     },
     "request": {
       "model": "m",
@@ -985,7 +990,8 @@
     "name": "a maxToolLength below the floor falls back to 2000",
     "options": {
       "maxToolLength": 100,
-      "preserveCurrentTurn": true
+      "preserveCurrentTurn": true,
+      "compressToolResults": true
     },
     "request": {
       "model": "m",

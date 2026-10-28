@@ -5,9 +5,10 @@
 //   1. process.env.OMNIROUTE_LITE_MAX_TOOL_LENGTH → 配置注入（resolveLiteMaxToolLength 的 fallback 固定 2000）。
 //   2. Array.prototype.findLastIndex（ES2023）→ 手写从尾扫描循环。
 //   3. createCompressionStats 用 chars/4 最小版（原版 tiktoken/omniglyph 只影响遥测，不影响压缩行为）。
-//   4. truncateToolText 改为头尾各留一半（原版只留头部）。工具输出的结尾（报错行、结论、
-//      命令最后一段、tail 日志）往往正是模型要的；只留头部会让模型重读同一文件。
-//      词边界规则不变，超长文本的总长度仍是 maxLength + 标记长度。
+//   4. truncateToolText 与上游一致：只留头部，切点先退到词边界。上游读
+//      OMNIROUTE_LITE_MAX_TOOL_LENGTH 环境变量，这里只认显式配置（见第 1 条）。
+//      （早前的版本改成头尾各留一半，实现没跟上，注释就成了谎——现在两边都是
+//      「只留头部」，与 #423 的 cases.json 逐字对上。）
 //
 // 协议覆盖：OmniRoute 原版只认 body.messages（chat 与 anthropic 都有 messages；
 // anthropic 的 content blocks / tool_result 原版原生支持）。responses / gemini 没有
@@ -412,24 +413,28 @@ export function applyLiteCompression(body, options) {
 import { conversationView } from "../adapter.js"
 
 export const id = "lite"
-export const defaultOn = true
 
 export function apply(body, ctx, cfg) {
   if (!body || typeof body !== "object") return false
   const opts = {
     preserveSystemPrompt: cfg && cfg.preserveSystemPrompt === true,
-    compressToolResults: !(cfg && cfg.compressToolResults === false),
+    // 默认不截断工具结果：把工具输出腰斩，模型是在读一段它不知道被切过的东西，
+    // 而截断本身还会按长度改写模型已经读过的消息（round-4 review 的 B2）。
+    // 显式 compressToolResults: true 打开，maxToolLength 仍按原样解析。
+    compressToolResults: !!(cfg && cfg.compressToolResults === true),
     maxToolLength: cfg ? cfg.maxToolLength : undefined,
     // 默认全量改写，严格前缀稳定（reviewer 的 blocking 项）。显式
     // preserveCurrentTurn: true 换回「当前轮原样送出」的保守模式。
     preserveCurrentTurn: !!(cfg && cfg.preserveCurrentTurn === true),
     // 试压台专用：语义上等价于默认行为，保留是为了让旧的 lab 配置继续工作。
     treatAllAsHistory: !!(cfg && cfg.treatAllAsHistory === true),
-    // supportsVision 默认按目标模型自动判定；配置可显式覆盖（true/false）
+    // 默认按「模型看得见图」处理，也就是不动图。以前这里跑 isVisionModelId(body.model)：
+    // 名字不像视觉模型的，附件里的截图会被换成一行 [image: png] —— 用户截的图根本没到
+    // 模型面前（round-4 review 的 B2）。要旧行为就显式 supportsVision: false。
     supportsVision:
       cfg && typeof cfg.supportsVision === "boolean"
         ? cfg.supportsVision
-        : isVisionModelId(body.model),
+        : true,
   }
   if (Array.isArray(body.messages)) {
     const r = applyLiteCompression(body, opts)

@@ -407,7 +407,6 @@ function processRtkCodeBlocksOnly(content, config) {
 // ─── 引擎契约 ────────────────────────────────────────────────────────────
 
 export const id = "rtk"
-export const defaultOn = false // RTK 有损，默认关
 
 export function apply(body, ctx, cfg) {
   if (!body || typeof body !== "object") return false

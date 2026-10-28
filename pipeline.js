@@ -12,11 +12,82 @@ export function clone(value) {
 export function byteLength(value) {
   return new TextEncoder().encode(JSON.stringify(value) || "").length
 }
+// A body this large is left exactly as it came, every time.
+//
+// The hook has 250 ms and JSON.stringify alone costs about 70 ms on a 20 MB
+// body, before any engine has looked at it, so a body that size cannot be
+// compressed inside the budget on any machine. Skipping on size -- not on a
+// clock -- is what keeps it stable: the same body is skipped on every request,
+// so the prefix it contributes to the prompt cache never moves. A deadline
+// would decide per request, and the same body would go out raw once and
+// compressed the next.
+export const DEFAULT_MAX_BODY_BYTES = 8_000_000
+
+// O(n) over the text, with no JSON.stringify and no encoding. It only counts
+// what the text already has: JSON escaping and UTF-8 can make the wire bytes
+// larger, never smaller, so this number is a floor and never a ceiling.
+export function roughByteLength(value) {
+  let total = 0
+  const walk = (node) => {
+    if (node === null || node === undefined) { total += 4; return }
+    const kind = typeof node
+    if (kind === "string") { total += node.length + 2; return }
+    if (kind === "number") { total += 8; return }
+    if (kind === "boolean") { total += 5; return }
+    if (Array.isArray(node)) { total += 2; for (const item of node) walk(item); return }
+    if (kind === "object") {
+      total += 2
+      for (const key of Object.keys(node)) { total += key.length + 3; walk(node[key]) }
+      return
+    }
+    total += 8
+  }
+  walk(value)
+  return total
+}
+
+// Escaping a character costs at most five extra characters ("\u0001"), so a
+// floor within a factor of six of the limit still has to be measured exactly.
+const ESCAPE_RATIO = 6
+
+// Is this body over the limit? A floor above the limit answers yes on its own;
+// a floor far below answers no; anything in between pays for one exact count.
+// 返回 false（没超）、true（下界就已超，没数精确值）或那个精确值本身（数过才算出来的）。
+// 这样调用方拿到精确值时不用再数一遍：一个数了又数的字节计数，是代价付了两遍、
+// 收益一份没有（round-3 review 的 "worst combination"）。
+function overLimit(body, maxBytes) {
+  const floor = roughByteLength(body)
+  if (floor > maxBytes) return true
+  if (floor * ESCAPE_RATIO < maxBytes) return false
+  const exact = byteLength(body)
+  return exact > maxBytes ? exact : false
+}
+// 默认档在这里说一次。package.json 的 magpie.options.strategies、README 的「预设」段
+// 是同一张表。引擎自己声明 defaultOn 的那种写法会把默认行为拆成两处，然后两边分家：
+// README 说 session-dedup 是关的，magpie 没被改过 options、传的就是 {}，于是它开着跑，
+// 每个请求先花 250 ms 等它，再原样发出去。round-4 review 的 B1 就是这条。
+export const DEFAULT_STRATEGIES = Object.freeze({
+  "session-dedup": false,
+  ccr: true,
+  lite: true,
+  rtk: false,
+  "codex-responses": false,
+  headroom: true,
+  relevance: false,
+  caveman: false,
+  "read-lifecycle": false,
+  aggressive: false,
+  llmlingua: false,
+  ultra: false,
+  ionizer: false,
+  llm: false,
+  omniglyph: false,
+})
 export function strategyEnabled(engine, options = {}) {
   if (engine.available === false) return false
   const strategies = options.strategies
   const raw = strategies && Object.prototype.hasOwnProperty.call(strategies, engine.id) ? strategies[engine.id] : undefined
-  if (raw === undefined) return engine.defaultOn === true
+  if (raw === undefined) return DEFAULT_STRATEGIES[engine.id] === true
   // 对象形态一次说清「开着」和「怎么配」；写 true/false 只在开关这一层说话。
   if (raw && typeof raw === "object") return raw.enabled !== false
   return raw === true
@@ -154,19 +225,44 @@ function headroomRoundTrip(beforeBody, body, ctx) {
 }
 export function runPipeline(body, ctx, options = {}, beforeBody = null) {
   const started = Date.now()
+  const limit = Number(options.maxBytes)
+  const maxBytes = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : DEFAULT_MAX_BODY_BYTES
+  const budget = Number(options.budgetMs)
+  const budgetMs = Number.isFinite(budget) && budget > 0 ? Math.floor(budget) : 0
+  const over = overLimit(body, maxBytes)
+  if (over !== false) {
+    const bytes = typeof over === "number" ? over : byteLength(body)
+    return {
+      version: TELEMETRY_VERSION, ts: new Date().toISOString(),
+      model: String(ctx.model || body.model || "").slice(0, 160), agent: String(ctx.agent || "unknown").slice(0, 80),
+      protocol: String(ctx.protocol || "unknown"), session: String(ctx.session || "").slice(0, 100),
+      beforeBytes: bytes, afterBytes: bytes, savedBytes: 0, savedPct: 0,
+      estimatedBeforeTokens: Math.ceil(bytes / 4), estimatedAfterTokens: Math.ceil(bytes / 4),
+      totalMs: Date.now() - started, budgetMs: budgetMs || 250, budgetExceeded: 0,
+      failOpen: 0, roundTripsChecked: 0, roundTripsPassed: 0, preserved: 0,
+      tooLarge: true, maxBytes,
+      strategies: PIPELINE.map((engine) => ({
+        id: engine.id, label: engine.label || engine.id, available: engine.available !== false,
+        enabled: strategyEnabled(engine, options), status: "skipped", reason: "body_too_large",
+        beforeBytes: bytes, afterBytes: bytes, ms: 0,
+      })),
+    }
+  }
   const beforeBytes = byteLength(body)
   const records = []
   ctx.state = ctx.state || {}
   const guard = guardPreservedSegments(body, ctx, options)
-  const budget = Number(options.budgetMs)
-  const budgetMs = Number.isFinite(budget) && budget > 0 ? Math.floor(budget) : 0
   let failOpen = 0, roundTripsChecked = 0, roundTripsPassed = 0, budgetHit = 0
+  // Measured once per shape the body takes, not once per engine: byteLength is
+  // a JSON.stringify plus an encode, and on a large body that is the whole
+  // cost of the hook.
+  let currentBytes = beforeBytes
   for (const engine of PIPELINE) {
-    const record = { id: engine.id, label: engine.label || engine.id, available: engine.available !== false, enabled: strategyEnabled(engine, options), status: "skipped", reason: engine.available === false ? "unavailable" : "disabled", beforeBytes: byteLength(body), afterBytes: 0, ms: 0 }
-    if (!record.enabled) { record.afterBytes = record.beforeBytes; records.push(record); continue }
+    const record = { id: engine.id, label: engine.label || engine.id, available: engine.available !== false, enabled: strategyEnabled(engine, options), status: "skipped", reason: engine.available === false ? "unavailable" : "disabled", beforeBytes: currentBytes, afterBytes: 0, ms: 0 }
+    if (!record.enabled) { record.afterBytes = currentBytes; records.push(record); continue }
     if (budgetMs > 0 && Date.now() - started > budgetMs) {
       record.reason = "budget_exceeded"
-      record.afterBytes = record.beforeBytes
+      record.afterBytes = currentBytes
       budgetHit += 1
       records.push(record)
       continue
@@ -177,7 +273,7 @@ export function runPipeline(body, ctx, options = {}, beforeBody = null) {
     try {
       const cfg = engineConfig(engine, options)
       const changed = engine.apply(body, ctx, cfg) === true
-      record.afterBytes = byteLength(body)
+      if (changed) { record.afterBytes = byteLength(body); currentBytes = record.afterBytes } else { record.afterBytes = currentBytes }
       record.ms = Date.now() - t
       record.status = changed ? "hit" : "skipped"
       record.reason = changed ? "changed" : reasonFor(engine, ctx)

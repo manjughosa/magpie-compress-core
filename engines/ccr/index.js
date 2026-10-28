@@ -44,7 +44,7 @@ export const why = "把大的重复/连续块换成内容寻址引用，原文�
 export const description =
   "Lossless — replaces large repeated/contiguous blocks with content-addressed references instead of deleting them; the original content stays retrievable."
 export const lossy = false
-export const cacheImpact = "low"
+export const cacheImpact = "low"
 export const defaultOn = true
 export const stackPriority = 4
 export const isSingleMode = false

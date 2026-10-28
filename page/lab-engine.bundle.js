@@ -5,13 +5,12 @@
       __defProp(target, name, { get: all[name], enumerable: true });
   };
 
-  // ../.config/magpie/plugins/compress-core/engines/session-dedup.js
+  // engines/session-dedup.js
   var session_dedup_exports = {};
   __export(session_dedup_exports, {
     apply: () => apply2,
     applySessionDedup: () => applySessionDedup,
     callerSupportsCcrRetrieve: () => callerSupportsCcrRetrieve,
-    defaultOn: () => defaultOn2,
     findNearDuplicates: () => findNearDuplicates,
     id: () => id2,
     jaccard: () => jaccard,
@@ -19,7 +18,7 @@
     shingles: () => shingles
   });
 
-  // ../.config/magpie/plugins/compress-core/hash.js
+  // hash.js
   var K = [
     1116352408,
     1899447441,
@@ -153,7 +152,7 @@
     return out;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/lite.js
+  // engines/lite.js
   var lite_exports = {};
   __export(lite_exports, {
     apply: () => apply,
@@ -162,7 +161,6 @@
     compressToolResults: () => compressToolResults,
     createCompressionStats: () => createCompressionStats,
     dedupSystemPrompt: () => dedupSystemPrompt,
-    defaultOn: () => defaultOn,
     id: () => id,
     isUsableLiteMaxToolLength: () => isUsableLiteMaxToolLength,
     isVisionModelId: () => isVisionModelId,
@@ -171,7 +169,7 @@
     resolveLiteMaxToolLength: () => resolveLiteMaxToolLength
   });
 
-  // ../.config/magpie/plugins/compress-core/adapter.js
+  // adapter.js
   function conversationView(body, protocol) {
     if (!body || typeof body !== "object") return null;
     const segments = [];
@@ -307,7 +305,7 @@
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/lite.js
+  // engines/lite.js
   var DEFAULT_MAX_TOOL_LENGTH = 2e3;
   var MIN_MAX_TOOL_LENGTH = 256;
   var MAX_MAX_TOOL_LENGTH = 1e6;
@@ -583,7 +581,7 @@
     const messages = Array.isArray(body.messages) ? body.messages : null;
     let historyLength = 0;
     if (messages) {
-      if (options.preserveCurrentTurn !== false && options.treatAllAsHistory !== true) {
+      if (options.preserveCurrentTurn === true && options.treatAllAsHistory !== true) {
         historyLength = turnStart(messages);
       } else {
         historyLength = messages.length;
@@ -619,20 +617,24 @@
     };
   }
   var id = "lite";
-  var defaultOn = true;
   function apply(body, ctx, cfg) {
     if (!body || typeof body !== "object") return false;
     const opts = {
       preserveSystemPrompt: cfg && cfg.preserveSystemPrompt === true,
-      compressToolResults: !(cfg && cfg.compressToolResults === false),
+      // 默认不截断工具结果：把工具输出腰斩，模型是在读一段它不知道被切过的东西，
+      // 而截断本身还会按长度改写模型已经读过的消息（round-4 review 的 B2）。
+      // 显式 compressToolResults: true 打开，maxToolLength 仍按原样解析。
+      compressToolResults: !!(cfg && cfg.compressToolResults === true),
       maxToolLength: cfg ? cfg.maxToolLength : void 0,
-      // 模型已经读过的段才动，正在发送的这一轮原样送出（默认）。显式
-      // preserveCurrentTurn: false 时全量改写，追求严格前缀稳定。
-      preserveCurrentTurn: !(cfg && cfg.preserveCurrentTurn === false),
+      // 默认全量改写，严格前缀稳定（reviewer 的 blocking 项）。显式
+      // preserveCurrentTurn: true 换回「当前轮原样送出」的保守模式。
+      preserveCurrentTurn: !!(cfg && cfg.preserveCurrentTurn === true),
       // 试压台专用：语义上等价于默认行为，保留是为了让旧的 lab 配置继续工作。
       treatAllAsHistory: !!(cfg && cfg.treatAllAsHistory === true),
-      // supportsVision 默认按目标模型自动判定；配置可显式覆盖（true/false）
-      supportsVision: cfg && typeof cfg.supportsVision === "boolean" ? cfg.supportsVision : isVisionModelId(body.model)
+      // 默认按「模型看得见图」处理，也就是不动图。以前这里跑 isVisionModelId(body.model)：
+      // 名字不像视觉模型的，附件里的截图会被换成一行 [image: png] —— 用户截的图根本没到
+      // 模型面前（round-4 review 的 B2）。要旧行为就显式 supportsVision: false。
+      supportsVision: cfg && typeof cfg.supportsVision === "boolean" ? cfg.supportsVision : true
     };
     if (Array.isArray(body.messages)) {
       const r = applyLiteCompression(body, opts);
@@ -663,7 +665,7 @@
     return changed;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/session-dedup.js
+  // engines/session-dedup.js
   var DEFAULT_MIN_BLOCK_CHARS = 80;
   var MIN_BLOCK_LINES = 3;
   var MAX_SUFFIX_STARTS = 2e3;
@@ -886,7 +888,7 @@
     });
     return changed ? { ...msg, content: newContent } : { ...msg };
   }
-  function processMessages(messages, minBlockChars, blockMap, deadline) {
+  function processMessages(messages, minBlockChars, blockMap, deadline, preserveCurrentTurn) {
     const msgTexts = [];
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i];
@@ -897,11 +899,14 @@
       }
     }
     if (msgTexts.length === 0) return { messages, dedupCount: 0 };
-    let currentTurnStart = 0;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === "assistant") {
-        currentTurnStart = i + 1;
-        break;
+    let currentTurnStart = messages.length;
+    if (preserveCurrentTurn) {
+      currentTurnStart = 0;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === "assistant") {
+          currentTurnStart = i + 1;
+          break;
+        }
       }
     }
     const { deduped, dedupCount } = dedupMessageTexts(msgTexts, minBlockChars, currentTurnStart, blockMap, deadline);
@@ -1038,6 +1043,7 @@
     stepConfig = stepConfig || {};
     if (stepConfig["enabled"] === false) return { body, compressed: false, stats: null };
     const minBlockChars = typeof stepConfig["minBlockChars"] === "number" ? stepConfig["minBlockChars"] : DEFAULT_MIN_BLOCK_CHARS;
+    const preserveCurrentTurn = stepConfig["preserveCurrentTurn"] === true;
     const messages = body["messages"];
     if (!Array.isArray(messages) || messages.length === 0) {
       return { body, compressed: false, stats: null };
@@ -1046,7 +1052,13 @@
     const budgetMs = typeof stepConfig["timeBudgetMs"] === "number" ? stepConfig["timeBudgetMs"] : 0;
     const deadline = typeof stepConfig["deadlineAt"] === "number" ? stepConfig["deadlineAt"] : budgetMs > 0 ? start + budgetMs : 0;
     const blockMap = /* @__PURE__ */ new Map();
-    const { messages: exactMessages, dedupCount, dedupMap } = processMessages(messages, minBlockChars, blockMap, deadline);
+    const { messages: exactMessages, dedupCount, dedupMap } = processMessages(
+      messages,
+      minBlockChars,
+      blockMap,
+      deadline,
+      preserveCurrentTurn
+    );
     const store = /* @__PURE__ */ new Map();
     const { messages: finalMessages, fuzzyCount } = runFuzzyPass(
       exactMessages,
@@ -1072,7 +1084,6 @@
     );
   }
   var id2 = "session-dedup";
-  var defaultOn2 = true;
   function apply2(body, ctx, cfg) {
     if (!body || typeof body !== "object") return false;
     const r = applySessionDedup(body, cfg);
@@ -1091,15 +1102,14 @@
     return true;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/rtk/index.js
+  // engines/rtk/index.js
   var rtk_exports = {};
   __export(rtk_exports, {
     apply: () => apply3,
-    defaultOn: () => defaultOn3,
     id: () => id3
   });
 
-  // ../.config/magpie/plugins/compress-core/engines/rtk/splitCommand.js
+  // engines/rtk/splitCommand.js
   function lastCommandSegment(command) {
     if (!command) return command;
     const segments = [];
@@ -1184,7 +1194,7 @@
     return command;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/rtk/commandDetector.js
+  // engines/rtk/commandDetector.js
   var COMMAND_PREFIXES = [
     "git",
     "make",
@@ -1590,7 +1600,7 @@
     };
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/rtk/builtinFilters.js
+  // engines/rtk/builtinFilters.js
   var BUILTIN_FILTERS = [
     {
       id: "git-status",
@@ -1843,7 +1853,7 @@
     return sorted.find((f) => f.commandTypes.includes("generic-output")) ?? null;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/rtk/smartTruncate.js
+  // engines/rtk/smartTruncate.js
   function smartTruncate(text, options = {}) {
     const maxChars = Math.max(0, Math.floor(options.maxChars ?? 0));
     const maxLines = Math.max(0, Math.floor(options.maxLines ?? 0));
@@ -1917,7 +1927,7 @@
     return { text: result, truncated: true, droppedLines };
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/rtk/deduplicator.js
+  // engines/rtk/deduplicator.js
   function deduplicateRepeatedLines(text, options = {}) {
     const threshold = Math.max(2, Math.floor(options.threshold ?? 3));
     const lines = text.split(/\r?\n/);
@@ -1942,7 +1952,7 @@
     return { text: output.join("\n"), collapsed };
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/rtk/severity.js
+  // engines/rtk/severity.js
   var SEVERITY_WORDS = [
     "error",
     "failed",
@@ -1973,7 +1983,7 @@
     return new RegExp(SEVERITY_ALTERNATION, "i");
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/rtk/lineFilter.js
+  // engines/rtk/lineFilter.js
   var SEVERITY_PATTERN = severityPattern();
   var regexCache = /* @__PURE__ */ new Map();
   function cachedRegExp(pattern, flags) {
@@ -2114,7 +2124,7 @@
     };
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/rtk/grouper.js
+  // engines/rtk/grouper.js
   function normalizeLine(line) {
     let s = line;
     s = s.replace(/\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?/g, "<N>");
@@ -2150,7 +2160,7 @@
     return { text: output.join("\n"), grouped };
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/rtk/index.js
+  // engines/rtk/index.js
   var SHELL_TOOL_NAME_RE = /\b(bash|shell|terminal|run_command|execute_command|exec|command)\b/;
   function hasCacheControlMarker(part) {
     return !!part && typeof part === "object" && part.cache_control !== void 0 && part.cache_control !== null;
@@ -2483,7 +2493,6 @@ ${stripped.text}
     return { content: compressed ? nextContent : content, compressed, techniquesUsed, rulesApplied };
   }
   var id3 = "rtk";
-  var defaultOn3 = false;
   function apply3(body, ctx, cfg) {
     if (!body || typeof body !== "object") return false;
     const messages = body.messages;
@@ -2565,11 +2574,10 @@ ${stripped.text}
     return true;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/codex-responses.js
+  // engines/codex-responses.js
   var codex_responses_exports = {};
   __export(codex_responses_exports, {
     apply: () => apply4,
-    defaultOn: () => defaultOn4,
     id: () => id4
   });
   var SUPPORTED_TYPES = /* @__PURE__ */ new Set([
@@ -2767,7 +2775,6 @@ ${stripped.text}
     return meta;
   }
   var id4 = "codex-responses";
-  var defaultOn4 = false;
   function apply4(body, ctx, cfg) {
     if (!body || typeof body !== "object") return false;
     if (ctx && ctx.protocol && ctx.protocol !== "responses") return false;
@@ -2799,19 +2806,18 @@ ${stripped.text}
     return true;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/headroom.js
+  // engines/headroom.js
   var headroom_exports = {};
   __export(headroom_exports, {
     apply: () => apply5,
     crushText: () => crushText,
-    defaultOn: () => defaultOn5,
     id: () => id5,
     restoreText: () => restoreText,
     tryCompactJson: () => tryCompactJson,
     wrapGcf: () => wrapGcf
   });
 
-  // ../.config/magpie/plugins/compress-core/engines/gcf/scalar.js
+  // engines/gcf/scalar.js
   var JSON_NUMBER_RE = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/;
   var NUMERIC_LIKE_RE = /^[+-]\.?\d|^\.\d|^0\d/;
   var INLINE_ARRAY_RE = /\[[^\]]*\]\s*:/;
@@ -2921,8 +2927,8 @@ ${stripped.text}
     }
     return s;
   }
-  var MISSING = /* @__PURE__ */ Symbol("missing");
-  var ATTACHMENT = /* @__PURE__ */ Symbol("attachment");
+  var MISSING = Symbol("missing");
+  var ATTACHMENT = Symbol("attachment");
   function parseQuotedString(s) {
     if (s.length < 2 || s[0] !== '"') throw new Error("unterminated_quote");
     let out = "";
@@ -3077,7 +3083,7 @@ ${stripped.text}
     return -1;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/gcf/encode.js
+  // engines/gcf/encode.js
   function indent(depth) {
     return "  ".repeat(depth);
   }
@@ -3527,7 +3533,7 @@ ${stripped.text}
     return arr.every((v) => typeof v !== "object" || v === null);
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/gcf/decode.js
+  // engines/gcf/decode.js
   function decodeGeneric(input) {
     input = input.trimEnd();
     if (!input) throw new Error("missing_header: empty input");
@@ -4200,7 +4206,7 @@ ${stripped.text}
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/headroom.js
+  // engines/headroom.js
   var DEFAULT_MIN_ROWS = 8;
   var GCF_FENCE_OPEN = "```gcf-generic";
   var GCF_FENCE_CLOSE = "```";
@@ -4272,7 +4278,6 @@ ${GCF_FENCE_CLOSE}`;
     return result;
   }
   var id5 = "headroom";
-  var defaultOn5 = true;
   function apply5(body, ctx, cfg = {}) {
     if (!body || typeof body !== "object") return false;
     if (cfg.enabled === false) return false;
@@ -4297,7 +4302,7 @@ ${GCF_FENCE_CLOSE}`;
     return changed;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/relevance/index.js
+  // engines/relevance/index.js
   var relevance_exports = {};
   __export(relevance_exports, {
     RELEVANCE_SCHEMA: () => RELEVANCE_SCHEMA,
@@ -4307,7 +4312,7 @@ ${GCF_FENCE_CLOSE}`;
     available: () => available,
     cacheImpact: () => cacheImpact,
     configSchema: () => configSchema,
-    defaultOn: () => defaultOn6,
+    defaultOn: () => defaultOn,
     description: () => description,
     id: () => id6,
     isSingleMode: () => isSingleMode,
@@ -4320,7 +4325,7 @@ ${GCF_FENCE_CLOSE}`;
     why: () => why
   });
 
-  // ../.config/magpie/plugins/compress-core/engines/relevance/config.js
+  // engines/relevance/config.js
   var RELEVANCE_SCHEMA = [
     {
       key: "enabled",
@@ -4382,7 +4387,7 @@ ${GCF_FENCE_CLOSE}`;
     };
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/relevance/scorer.js
+  // engines/relevance/scorer.js
   var BOILERPLATE_TOKENS = /* @__PURE__ */ new Set([
     "please",
     "note",
@@ -4455,7 +4460,7 @@ ${GCF_FENCE_CLOSE}`;
     });
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/relevance/index.js
+  // engines/relevance/index.js
   function splitSentences(text) {
     const out = [];
     let start = 0;
@@ -4509,7 +4514,7 @@ ${GCF_FENCE_CLOSE}`;
   var description = "Extractive sentence scoring against the last user query.";
   var lossy = true;
   var cacheImpact = "moderate";
-  var defaultOn6 = false;
+  var defaultOn = false;
   var stackPriority = 18;
   var isSingleMode = false;
   var levels = void 0;
@@ -4543,7 +4548,7 @@ ${GCF_FENCE_CLOSE}`;
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/ultra.js
+  // engines/ultra.js
   var ultra_exports = {};
   __export(ultra_exports, {
     DEFAULT_ULTRA_CONFIG: () => DEFAULT_ULTRA_CONFIG,
@@ -4552,7 +4557,7 @@ ${GCF_FENCE_CLOSE}`;
     available: () => available2,
     cacheImpact: () => cacheImpact2,
     configSchema: () => configSchema2,
-    defaultOn: () => defaultOn7,
+    defaultOn: () => defaultOn2,
     description: () => description2,
     extractPreservedBlocks: () => extractPreservedBlocks,
     id: () => id7,
@@ -5019,7 +5024,7 @@ ${GCF_FENCE_CLOSE}`;
   var description2 = "Heuristic token pruning (+ optional SLM).";
   var lossy2 = true;
   var cacheImpact2 = "high";
-  var defaultOn7 = false;
+  var defaultOn2 = false;
   var stackPriority2 = 40;
   var isSingleMode2 = false;
   var levels2 = void 0;
@@ -5050,7 +5055,7 @@ ${GCF_FENCE_CLOSE}`;
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/caveman.js
+  // engines/caveman.js
   var caveman_exports = {};
   __export(caveman_exports, {
     ALL_RULE_GROUPS: () => ALL_RULE_GROUPS,
@@ -5061,7 +5066,7 @@ ${GCF_FENCE_CLOSE}`;
     cleanupArtifacts: () => cleanupArtifacts,
     compressText: () => compressText,
     configSchema: () => configSchema3,
-    defaultOn: () => defaultOn8,
+    defaultOn: () => defaultOn3,
     estimateCompressionTokens: () => estimateCompressionTokens,
     extractPreservedBlocks: () => extractPreservedBlocks2,
     findFencedCodeBlocks: () => findFencedCodeBlocks,
@@ -5080,7 +5085,7 @@ ${GCF_FENCE_CLOSE}`;
     why: () => why3
   });
 
-  // ../.config/magpie/plugins/compress-core/engines/rules-data.js
+  // engines/rules-data.js
   var RULE_PACKS = {
     "de": {
       context: { "language": "de", "category": "context", "rules": [{ "name": "de_context_setup", "pattern": "\\b(?:hier ist der code|unten ist der code|dies ist der code)\\b\\s*[:.]?\\s*", "replacement": "Code:", "context": "user", "category": "context", "minIntensity": "lite" }, { "name": "de_intent", "pattern": "\\b(?:mein ziel ist|was ich brauche ist|ich versuche|die idee ist)\\b\\s*", "replacement": "Ziel:", "context": "user", "category": "context", "minIntensity": "lite" }, { "name": "de_question_directive", "pattern": "(?<![\\p{L}\\p{N}_])(?:kannst du erklaeren warum|kannst du erkl\xE4ren warum|kannst du zeigen wie)(?![\\p{L}\\p{N}_])\\s*", "replacement": "Erklaere ", "context": "user", "category": "context", "minIntensity": "lite", "flags": "giu" }, { "name": "de_background", "pattern": "(?<![\\p{L}\\p{N}_])(?:wie du weisst|wie du wei\xDFt|wie bereits erwaehnt|wie bereits erw\xE4hnt)(?![\\p{L}\\p{N}_])[,.]?\\s*", "replacement": "", "context": "all", "category": "context", "minIntensity": "lite", "flags": "giu" }] },
@@ -5159,7 +5164,7 @@ ${GCF_FENCE_CLOSE}`;
     }
   };
 
-  // ../.config/magpie/plugins/compress-core/engines/caveman-rules.js
+  // engines/caveman-rules.js
   var RULE_KEYWORDS = {
     redundant_phrasing: ["make sure", "be sure"],
     redundant_because: ["due to the fact", "the reason is because"],
@@ -5850,13 +5855,13 @@ ${GCF_FENCE_CLOSE}`;
     return best;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/caveman.js
+  // engines/caveman.js
   var id8 = "caveman";
   var label3 = "Caveman";
   var why3 = "\u6309\u8BED\u8A00\u89C4\u5219\u8868\u5220\u6389\u5570\u55E6\u63AA\u8F9E\u3001\u5BA2\u5957\u8BDD\u3001\u5197\u4F59\u4ECE\u53E5\uFF0C\u4FDD\u7559\u4EE3\u7801\u4E0E\u4E8B\u5B9E\uFF08\u7EA6 30% \u538B\u7F29\uFF09\u3002";
   var lossy3 = true;
   var cacheImpact3 = "moderate";
-  var defaultOn8 = false;
+  var defaultOn3 = false;
   var stackPriority3 = 20;
   var isSingleMode3 = false;
   var levels3 = void 0;
@@ -6392,7 +6397,7 @@ ${GCF_FENCE_CLOSE}`;
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/aggressive.js
+  // engines/aggressive.js
   var aggressive_exports = {};
   __export(aggressive_exports, {
     apply: () => apply9,
@@ -6400,7 +6405,7 @@ ${GCF_FENCE_CLOSE}`;
     cacheImpact: () => cacheImpact4,
     compressToolResult: () => compressToolResult,
     configSchema: () => configSchema4,
-    defaultOn: () => defaultOn9,
+    defaultOn: () => defaultOn4,
     id: () => id9,
     isCodeLikeLine: () => isCodeLikeLine2,
     isSingleMode: () => isSingleMode4,
@@ -6416,7 +6421,7 @@ ${GCF_FENCE_CLOSE}`;
   var why4 = "\u628A\u8F83\u65E9\u7684\u5BF9\u8BDD\u8F6E\u6B21\u6458\u8981\u5316\u5E76\u9010\u6B65\u8001\u5316\uFF0C\u53EA\u4FDD\u7559\u6700\u8FD1\u7684\u7EC6\u8282\uFF08\u7EA6 50%\uFF09\u3002";
   var lossy4 = true;
   var cacheImpact4 = "high";
-  var defaultOn9 = false;
+  var defaultOn4 = false;
   var stackPriority4 = 30;
   var isSingleMode4 = false;
   var levels4 = void 0;
@@ -6899,7 +6904,7 @@ ${GCF_FENCE_CLOSE}`;
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/ionizer.js
+  // engines/ionizer.js
   var ionizer_exports = {};
   __export(ionizer_exports, {
     DEFAULT_TARGET_ROWS: () => DEFAULT_TARGET_ROWS,
@@ -6911,7 +6916,7 @@ ${GCF_FENCE_CLOSE}`;
     available: () => available5,
     cacheImpact: () => cacheImpact5,
     configSchema: () => configSchema5,
-    defaultOn: () => defaultOn10,
+    defaultOn: () => defaultOn5,
     fnv1a: () => fnv1a2,
     id: () => id10,
     ionize: () => ionize,
@@ -6933,7 +6938,7 @@ ${GCF_FENCE_CLOSE}`;
   var why5 = "\u6309\u91C7\u6837\u7B56\u7565\u4E22\u6389\u4F4E\u4FE1\u606F\u91CF\u7684\u7247\u6BB5\uFF0C\u4FDD\u7559\u9AA8\u67B6\u4E0E\u5173\u952E\u4E8B\u5B9E\uFF08\u6545\u610F\u6709\u635F\uFF09\u3002";
   var lossy5 = true;
   var cacheImpact5 = "high";
-  var defaultOn10 = false;
+  var defaultOn5 = false;
   var stackPriority5 = 13;
   var isSingleMode5 = false;
   var levels5 = void 0;
@@ -7117,7 +7122,7 @@ ${GCF_FENCE_CLOSE}`;
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/llm.js
+  // engines/llm.js
   var llm_exports = {};
   __export(llm_exports, {
     apply: () => apply11,
@@ -7125,7 +7130,7 @@ ${GCF_FENCE_CLOSE}`;
     available: () => available6,
     cacheImpact: () => cacheImpact6,
     configSchema: () => configSchema6,
-    defaultOn: () => defaultOn11,
+    defaultOn: () => defaultOn6,
     extractPreservedBlocks: () => extractPreservedBlocks3,
     findFencedCodeBlocks: () => findFencedCodeBlocks2,
     getLlmCompressorBackend: () => getLlmCompressorBackend,
@@ -7145,7 +7150,7 @@ ${GCF_FENCE_CLOSE}`;
   var why6 = "\u7528\u4E00\u4E2A LLM \u538B\u7F29\u6563\u6587\uFF08\u9700\u8981\u5916\u90E8\u6A21\u578B\u540E\u7AEF\uFF0C\u672C\u63D2\u4EF6\u5185\u65E0\u6CD5\u63D0\u4F9B\uFF0C\u56E0\u6B64\u9ED8\u8BA4\u4E0D\u53EF\u7528\uFF09\u3002";
   var lossy6 = true;
   var cacheImpact6 = "high";
-  var defaultOn11 = false;
+  var defaultOn6 = false;
   var stackPriority6 = 38;
   var isSingleMode6 = false;
   var levels6 = void 0;
@@ -7449,7 +7454,7 @@ ${GCF_FENCE_CLOSE}`;
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/ccr/index.js
+  // engines/ccr/index.js
   var ccr_exports = {};
   __export(ccr_exports, {
     CCR_PROTOCOL_INSTRUCTION: () => CCR_PROTOCOL_INSTRUCTION,
@@ -7468,7 +7473,7 @@ ${GCF_FENCE_CLOSE}`;
     cacheImpact: () => cacheImpact7,
     callerSupportsCcrRetrieve: () => callerSupportsCcrRetrieve2,
     configSchema: () => configSchema7,
-    defaultOn: () => defaultOn12,
+    defaultOn: () => defaultOn7,
     description: () => description3,
     effectiveMinChars: () => effectiveMinChars,
     handleCcrRetrieve: () => handleCcrRetrieve,
@@ -7498,7 +7503,7 @@ ${GCF_FENCE_CLOSE}`;
   var description3 = "Lossless \u2014 replaces large repeated/contiguous blocks with content-addressed references instead of deleting them; the original content stays retrievable.";
   var lossy7 = false;
   var cacheImpact7 = "low";
-  var defaultOn12 = true;
+  var defaultOn7 = true;
   var stackPriority7 = 4;
   var isSingleMode7 = false;
   var levels7 = void 0;
@@ -8011,7 +8016,7 @@ ${GCF_FENCE_CLOSE}`;
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/read-lifecycle.js
+  // engines/read-lifecycle.js
   var read_lifecycle_exports = {};
   __export(read_lifecycle_exports, {
     ENGINE_ID: () => ENGINE_ID2,
@@ -8023,7 +8028,7 @@ ${GCF_FENCE_CLOSE}`;
     collapseResponseOutputs: () => collapseResponseOutputs,
     collapseSupersededReads: () => collapseSupersededReads,
     configSchema: () => configSchema8,
-    defaultOn: () => defaultOn13,
+    defaultOn: () => defaultOn8,
     description: () => description4,
     extractInvocations: () => extractInvocations,
     extractPath: () => extractPath,
@@ -8046,7 +8051,7 @@ ${GCF_FENCE_CLOSE}`;
   var description4 = "Collapses stale/superseded file-Read tool results: when the same path is re-read or modified later in the conversation, earlier Reads are replaced with a short stub, keeping the current Read intact. Lossy + opt-in (default off). Supports Anthropic and OpenAI tool shapes.";
   var lossy8 = true;
   var cacheImpact8 = "moderate";
-  var defaultOn13 = false;
+  var defaultOn8 = false;
   var stackPriority8 = 22;
   var isSingleMode8 = false;
   var levels8 = void 0;
@@ -8396,7 +8401,7 @@ ${GCF_FENCE_CLOSE}`;
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/catalog.js
+  // catalog.js
   var ENGINES = [
     {
       id: "session-dedup",
@@ -8690,7 +8695,7 @@ ${GCF_FENCE_CLOSE}`;
     return byId.get(id14) || null;
   }
 
-  // ../.config/magpie/plugins/compress-core/engines/index.js
+  // engines/index.js
   var MODULES = {
     "session-dedup": session_dedup_exports,
     lite: lite_exports,
@@ -8718,7 +8723,7 @@ ${GCF_FENCE_CLOSE}`;
     return REGISTRY.get(id14) || null;
   }
 
-  // ../.config/magpie/plugins/compress-core/pipeline.js
+  // pipeline.js
   var INTERNAL_MARKER = "__magpieCompressCore";
   var TELEMETRY_VERSION = 1;
   function clone(value) {
@@ -8727,11 +8732,75 @@ ${GCF_FENCE_CLOSE}`;
   function byteLength2(value) {
     return new TextEncoder().encode(JSON.stringify(value) || "").length;
   }
+  var DEFAULT_MAX_BODY_BYTES = 8e6;
+  function roughByteLength(value) {
+    let total = 0;
+    const walk = (node) => {
+      if (node === null || node === void 0) {
+        total += 4;
+        return;
+      }
+      const kind = typeof node;
+      if (kind === "string") {
+        total += node.length + 2;
+        return;
+      }
+      if (kind === "number") {
+        total += 8;
+        return;
+      }
+      if (kind === "boolean") {
+        total += 5;
+        return;
+      }
+      if (Array.isArray(node)) {
+        total += 2;
+        for (const item of node) walk(item);
+        return;
+      }
+      if (kind === "object") {
+        total += 2;
+        for (const key of Object.keys(node)) {
+          total += key.length + 3;
+          walk(node[key]);
+        }
+        return;
+      }
+      total += 8;
+    };
+    walk(value);
+    return total;
+  }
+  var ESCAPE_RATIO = 6;
+  function overLimit(body, maxBytes) {
+    const floor = roughByteLength(body);
+    if (floor > maxBytes) return true;
+    if (floor * ESCAPE_RATIO < maxBytes) return false;
+    const exact = byteLength2(body);
+    return exact > maxBytes ? exact : false;
+  }
+  var DEFAULT_STRATEGIES = Object.freeze({
+    "session-dedup": false,
+    ccr: true,
+    lite: true,
+    rtk: false,
+    "codex-responses": false,
+    headroom: true,
+    relevance: false,
+    caveman: false,
+    "read-lifecycle": false,
+    aggressive: false,
+    llmlingua: false,
+    ultra: false,
+    ionizer: false,
+    llm: false,
+    omniglyph: false
+  });
   function strategyEnabled(engine, options = {}) {
     if (engine.available === false) return false;
     const strategies = options.strategies;
     const raw = strategies && Object.prototype.hasOwnProperty.call(strategies, engine.id) ? strategies[engine.id] : void 0;
-    if (raw === void 0) return engine.defaultOn === true;
+    if (raw === void 0) return DEFAULT_STRATEGIES[engine.id] === true;
     if (raw && typeof raw === "object") return raw.enabled !== false;
     return raw === true;
   }
@@ -8863,23 +8932,64 @@ ${GCF_FENCE_CLOSE}`;
   }
   function runPipeline(body, ctx, options = {}, beforeBody = null) {
     const started = Date.now();
+    const limit = Number(options.maxBytes);
+    const maxBytes = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : DEFAULT_MAX_BODY_BYTES;
+    const budget = Number(options.budgetMs);
+    const budgetMs = Number.isFinite(budget) && budget > 0 ? Math.floor(budget) : 0;
+    const over = overLimit(body, maxBytes);
+    if (over !== false) {
+      const bytes = typeof over === "number" ? over : byteLength2(body);
+      return {
+        version: TELEMETRY_VERSION,
+        ts: (/* @__PURE__ */ new Date()).toISOString(),
+        model: String(ctx.model || body.model || "").slice(0, 160),
+        agent: String(ctx.agent || "unknown").slice(0, 80),
+        protocol: String(ctx.protocol || "unknown"),
+        session: String(ctx.session || "").slice(0, 100),
+        beforeBytes: bytes,
+        afterBytes: bytes,
+        savedBytes: 0,
+        savedPct: 0,
+        estimatedBeforeTokens: Math.ceil(bytes / 4),
+        estimatedAfterTokens: Math.ceil(bytes / 4),
+        totalMs: Date.now() - started,
+        budgetMs: budgetMs || 250,
+        budgetExceeded: 0,
+        failOpen: 0,
+        roundTripsChecked: 0,
+        roundTripsPassed: 0,
+        preserved: 0,
+        tooLarge: true,
+        maxBytes,
+        strategies: PIPELINE.map((engine) => ({
+          id: engine.id,
+          label: engine.label || engine.id,
+          available: engine.available !== false,
+          enabled: strategyEnabled(engine, options),
+          status: "skipped",
+          reason: "body_too_large",
+          beforeBytes: bytes,
+          afterBytes: bytes,
+          ms: 0
+        }))
+      };
+    }
     const beforeBytes = byteLength2(body);
     const records = [];
     ctx.state = ctx.state || {};
     const guard = guardPreservedSegments(body, ctx, options);
-    const budget = Number(options.budgetMs);
-    const budgetMs = Number.isFinite(budget) && budget > 0 ? Math.floor(budget) : 0;
     let failOpen = 0, roundTripsChecked = 0, roundTripsPassed = 0, budgetHit = 0;
+    let currentBytes = beforeBytes;
     for (const engine of PIPELINE) {
-      const record = { id: engine.id, label: engine.label || engine.id, available: engine.available !== false, enabled: strategyEnabled(engine, options), status: "skipped", reason: engine.available === false ? "unavailable" : "disabled", beforeBytes: byteLength2(body), afterBytes: 0, ms: 0 };
+      const record = { id: engine.id, label: engine.label || engine.id, available: engine.available !== false, enabled: strategyEnabled(engine, options), status: "skipped", reason: engine.available === false ? "unavailable" : "disabled", beforeBytes: currentBytes, afterBytes: 0, ms: 0 };
       if (!record.enabled) {
-        record.afterBytes = record.beforeBytes;
+        record.afterBytes = currentBytes;
         records.push(record);
         continue;
       }
       if (budgetMs > 0 && Date.now() - started > budgetMs) {
         record.reason = "budget_exceeded";
-        record.afterBytes = record.beforeBytes;
+        record.afterBytes = currentBytes;
         budgetHit += 1;
         records.push(record);
         continue;
@@ -8890,7 +9000,12 @@ ${GCF_FENCE_CLOSE}`;
       try {
         const cfg = engineConfig(engine, options);
         const changed = engine.apply(body, ctx, cfg) === true;
-        record.afterBytes = byteLength2(body);
+        if (changed) {
+          record.afterBytes = byteLength2(body);
+          currentBytes = record.afterBytes;
+        } else {
+          record.afterBytes = currentBytes;
+        }
         record.ms = Date.now() - t;
         record.status = changed ? "hit" : "skipped";
         record.reason = changed ? "changed" : reasonFor(engine, ctx);
@@ -8943,7 +9058,7 @@ ${GCF_FENCE_CLOSE}`;
     if (body && typeof body === "object") delete body[INTERNAL_MARKER];
   }
 
-  // ../.config/magpie/plugins/compress-core/lab.js
+  // lab.js
   var MAX_LAB_BYTES = 256e3;
   var PROTOCOLS = /* @__PURE__ */ new Set(["chat", "responses", "anthropic", "gemini"]);
   var encoder = new TextEncoder();
@@ -9035,7 +9150,7 @@ ${GCF_FENCE_CLOSE}`;
     }
   }
 
-  // ../.config/magpie/plugins/compress-core/page/lab-engine.js
+  // page/lab-engine.js
   var encoder2 = new TextEncoder();
   var REASON_ZH = {
     no_repeat_eligible_block: "\u8F93\u5165\u91CC\u6CA1\u6709\u91CD\u590D\u51FA\u73B0\u7684\u5757\u2014\u2014\u53BB\u91CD\u8981\u9760\u540C\u4E00\u4F1A\u8BDD\u91CC\u5DF2\u7ECF\u53D1\u8FC7\u7684\u6587\u672C\u3002",

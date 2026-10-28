@@ -23,8 +23,8 @@
 //   6. 砍掉的东西：EngineConfigField 的 validate()（pipeline 不做校验）、metadata 里的
 //      targetLatencyMs/supportsPreview/stable（面板不用）、apply 里对 stepConfig 的解构糖。
 //   7. **开关语义下移**：上游在 apply 里判 stepConfig.enabled !== true 才算开启；本插件里
-//      "开不开"由 pipeline.strategyEnabled(catalog 的 defaultOn:false) 决定，引擎内若再要求
-//      enabled===true，pipeline 把 default-off 引擎打开后仍会被二次门控挡掉（实测 0% 收益）。
+//      "开不开"由 pipeline.strategyEnabled 与 pipeline.js 的 DEFAULT_STRATEGIES 决定（这条为 false），
+//      引擎内若再要求 enabled===true，pipeline 把 default-off 引擎打开后仍会被二次门控挡掉（实测 0% 收益）。
 //      因此内部只认显式 enabled:false。
 
 import { conversationView } from "../adapter.js"
@@ -37,7 +37,7 @@ export const why = "同一个文件被反复 Read 时，把被后续 Read/Write 
 export const description =
   "Collapses stale/superseded file-Read tool results: when the same path is re-read or modified later in the conversation, earlier Reads are replaced with a short stub, keeping the current Read intact. Lossy + opt-in (default off). Supports Anthropic and OpenAI tool shapes."
 export const lossy = true
-export const cacheImpact = "moderate"
+export const cacheImpact = "moderate"
 export const defaultOn = false
 export const stackPriority = 22 // 上游 5；catalog 锁定 22，见文件头第 5 条
 export const isSingleMode = false
@@ -416,7 +416,7 @@ export function applyReadLifecycle(body, cfg, opts) {
   opts = opts || {}
   const empty = { body, compressed: false, stats: null, collapsedCount: 0 }
 
-  // 上游的 opt-in 门控由 pipeline 的 strategyEnabled(catalog defaultOn:false) 承担，
+  // 上游的 opt-in 门控由 pipeline 的 strategyEnabled（配合 DEFAULT_STRATEGIES，这条为 false）承担，
   // 引擎内部只认显式 false，否则 pipeline 把 default-off 引擎打开后仍会被二次门控挡住。
   if (cfg.enabled === false) return empty
   if (!body || typeof body !== "object") return empty

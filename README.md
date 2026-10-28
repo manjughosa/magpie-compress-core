@@ -65,6 +65,14 @@ lite 默认**全量改写、严格前缀稳定**：每条消息从第一轮起�
 
 `preserve.system` 默认 `false`。开着它会把 system 段整段占位保护、跑完再还原，代价是依赖 system 内容的那一步（例如「同一段 system 写了两遍只留一份」）整段失效——上一版把它默认成 `true`，等于把那一步变成死配置。要绝对不动 system 的人显式写 `true`。
 
+`compressToolResults` 默认 `false`，也就是不截断历史里的工具结果。把工具的输出来腰斩，模型是在读一段它不知道被切过的东西；截断还按长度改写模型已经读过的消息，前缀跟着失配。要旧行为（OmniRoute 默认会按 `maxToolLength` 截断）就显式写 `compressToolResults: true`，`maxToolLength` 仍按原样解析（低于 2000 的下限回落到 2000）。
+
+## 超大的 body
+
+`maxBytes` 默认 `8000000`：**超过这个尺寸的 body 一个引擎都不跑，原样发出去**，遥测里记 `tooLarge` 与 `body_too_large`。钩子只有 250 ms，而 20 MB 的 body 光 `JSON.stringify` 就要 70 ms 上下，任何引擎还没看它一眼——那种尺寸在任何机器上都压不进预算。按尺寸而不是按时钟跳过，是因为尺寸是确定的：同一份 body 每次都得到同一个判断，它贡献给上游提示词缓存的前缀就不动。判断本身不算精确字节数：先数文本长度（O(n)、不分配、永远是真实字节数的下界），下界已经过线就直接下结论，离门限还远就直接放行，只有卡在中间那一小段才付一次精确计数。
+
+`budgetMs` 默认 `0`，即不按时间跳过任何策略。给它一个正值，pipeline 会在超时后停掉剩下的策略——但同一个请求在负载下可能压出两种结果，而变过的 body 是缓存永远复用不了的 body，所以默认不给时间预算。引擎自己也不带 deadline（`session-dedup` 的 `timeBudgetMs` 同样默认 `0`）。
+
 ## 页面
 
 侧栏 Plugins 组 → 压缩：一条压缩尺、档位、每个策略一行、最近八次请求。
@@ -139,8 +147,8 @@ MIT（`LICENSE`，保留 OmniRoute 的版权行）。每个引擎都是 OmniRout
 ## 开发
 
 ```bash
-node test/run.mjs                 # 全部测试（22 套）
-node test/run.mjs lite            # 只跑一套
+node test/run.mjs                 # 全部测试（24 套）
+node test/run.mjs lite            # 只跑一套：参数是套件名（每个套件文件里的 name；例：`lite`、`gateway cases (cases.json)`）
 bun test                          # 同一个入口的 bun 版：CI 就是它
 node scripts/gen-page-catalog.mjs # 改完 catalog.js 后重新生成 page/engines.js
 npm run build:page                # 改完 lab.js / engines 后重新打包 page/lab-engine.bundle.js
@@ -155,7 +163,7 @@ node test/live-probe.mjs          # 对着真的 magpie 打一次
 
 `test/lite-spec.md` 和 `test/session-dedup-spec.md` 是这两个策略的行为契约，改引擎之前先看。
 
-`cases.json` 是对外契约：23 条用例里，21 条与 magpie-community/plugins 里被合并的 history-trim (#423) 逐字一致，另外 2 条是这一包自己的默认档行为（正在发送的这一轮同样被改写、表格化的工具结果转成 `gcf-generic` 块）。它回答一个具体问题——同一份输入经过这个中间件之后，body 是否与那份实现留下的完全一致；不一致就是语义分叉，要么这里改，要么去那边论证。那 21 条显式写成保守模式（`preserveCurrentTurn: true`），因为 history-trim 的语义就是「正在发送的这一轮原样送出」，而这里默认是全量改写。magpie 仓库跑它用 `bun scripts/check.mjs`，这边等价的入口是 `node test/run.mjs gateway`。
+`cases.json` 是对外契约：23 条用例里，21 条与 magpie-community/plugins 里被合并的 history-trim (#423) 逐字一致，另外 2 条是这一包自己的默认档行为（正在发送的这一轮同样被改写、表格化的工具结果转成 `gcf-generic` 块）。它回答一个具体问题——同一份输入经过这个中间件之后，body 是否与那份实现留下的完全一致；不一致就是语义分叉，要么这里改，要么去那边论证。那 21 条显式写成保守模式（`preserveCurrentTurn: true`），因为 history-trim 的语义就是「正在发送的这一轮原样送出」，而这里默认是全量改写。magpie 仓库跑它用 `bun scripts/check.mjs`，这边等价的入口是 `node test/run.mjs "gateway cases (cases.json)"`。
 
 ## 卸载
 

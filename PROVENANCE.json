@@ -3,127 +3,128 @@
   "commit": "ff679ab86e0113a009d8aeeeee464139bd090874",
   "path": "open-sse/services/compression",
   "license": "MIT",
-  "note": "The port was read from an installed OmniRoute copy, so the commit was not recorded at the time. The commit above is the OmniRoute revision this port was checked against; the hashes are of the ported files in this package, not of the upstream originals.",
+  "note": "The port was read from an installed OmniRoute copy, so the commit was not recorded at the time. The commit above is the OmniRoute revision this port was checked against. Each sha256 is of the upstream file itself, read from that copy -- not of the ported file in this package.",
   "files": {
     "aggressive.ts": {
       "ported_to": "engines/aggressive.js",
-      "sha256": "8539c238c8a1cf50020f896dc4bc1c27842ebe00f6b77c6557d7da993fbcea61"
+      "sha256": "55eabb0a38a52924a78a2a3cf936e9079fe21e4b4a680372f96d9ec2ebb58fcc"
     },
     "progressiveAging.ts": {
       "ported_to": "engines/aggressive.js",
-      "sha256": "8539c238c8a1cf50020f896dc4bc1c27842ebe00f6b77c6557d7da993fbcea61"
+      "sha256": "8fdde8bfd739b531cb3f88a956a393b057c06891617b389148162d28e83d9982"
     },
     "summarizer.ts": {
       "ported_to": "engines/aggressive.js",
-      "sha256": "8539c238c8a1cf50020f896dc4bc1c27842ebe00f6b77c6557d7da993fbcea61"
+      "sha256": "c7dac6d2877c9f440af766c4e5ac705e157544f213836d76b697666b053c94d4"
     },
     "caveman.ts": {
       "ported_to": "engines/caveman.js",
-      "sha256": "2667043c1523dd735c1946ecd92d1ddb9e80d85619b56fcb5f205129811eb0b5"
+      "sha256": "79754f18dfb155cdee0d77201678edda75e67c517fffb7aa876016a88769b563"
     },
     "preservation.ts": {
       "ported_to": "engines/caveman.js",
-      "sha256": "2667043c1523dd735c1946ecd92d1ddb9e80d85619b56fcb5f205129811eb0b5"
+      "sha256": "78b56b877ce2b9b496b66557d153d87b72705e00de88b1c7a1a4a97f8b1d8121"
     },
     "validation.ts": {
       "ported_to": "engines/caveman.js",
-      "sha256": "2667043c1523dd735c1946ecd92d1ddb9e80d85619b56fcb5f205129811eb0b5"
+      "sha256": "afa760e52286702ceed5922becd47da8f9b8f678f7fb2ba834cbbcabfd431d2f"
     },
     "cavemanRules.ts": {
       "ported_to": "engines/caveman-rules.js",
-      "sha256": "3bfc423815eaaac4cadb8e15213d14d2fd11c28168548d8a3011ff1c592e1b2f"
+      "sha256": "f4fe6aa23208ca9fb505e59e40ba5e418b0e8b183c98a9c0a639d9c07f4b702b"
     },
     "engines/headroom/index.ts": {
       "ported_to": "engines/headroom.js",
-      "sha256": "28143ce31472c03672eb151c93dcd16b2e153abaa75da6622bb25e511ac220da"
+      "sha256": "c7ac9cd2d9f9fc1a328ae76cd616c8c4c41b3d57a805f0cc0e139d3edfea810d"
     },
     "engines/headroom/smartcrusher.ts": {
       "ported_to": "engines/headroom.js",
-      "sha256": "28143ce31472c03672eb151c93dcd16b2e153abaa75da6622bb25e511ac220da"
+      "sha256": "46d14b414e0f8b5cfe5fc13d8207cf7023fed1c9b48b07bf4b24830e77e9dcf7"
     },
     "engines/headroom/tabular.ts": {
       "ported_to": "engines/headroom.js",
-      "sha256": "28143ce31472c03672eb151c93dcd16b2e153abaa75da6622bb25e511ac220da"
+      "sha256": "e69cd72cfe6a28104ea48c8f95ee901af86b0cea866df7b2f7bf272018029de4"
     },
     "engines/ionizer/index.ts": {
       "ported_to": "engines/ionizer.js",
-      "sha256": "bae09a6d44f9fe0dfedaa15b4d8d764ff89dff7a5fbe9088d272eb5fedb94a51"
+      "sha256": "0eccd7a84a9af44964e60a15ee1811caa7e7c4e0e3f1dd785d60ee7221faa7fd"
     },
     "engines/ionizer/sample.ts": {
       "ported_to": "engines/ionizer.js",
-      "sha256": "bae09a6d44f9fe0dfedaa15b4d8d764ff89dff7a5fbe9088d272eb5fedb94a51"
+      "sha256": "8d8f63da8d9a98099756d32fd5ee1945cfa98f3b0bdaf291bb036bf2f6441ad0"
     },
     "engines/llm/index.ts": {
       "ported_to": "engines/llm.js",
-      "sha256": "21ca324633e104c6ad06455a3d466f5b54ffc43886fbc143ea5c63567b2e8741"
+      "sha256": "c49f81d77e92f96056578d9250d0266e7275f30c77c8b04aea0b1a33cc2b6ac8"
     },
     "engines/readLifecycle/index.ts": {
       "ported_to": "engines/read-lifecycle.js",
-      "sha256": "8f6ee0ed4792a64ccbdfdc7ab7b68b21ed893289f727960d4190addc822ace46"
+      "sha256": "d8a72f68790354ded859b0d3343ea33a7eacb9321f6d73a1d26e9d76097f063f"
     },
     "engines/codexResponses/index.ts": {
       "ported_to": "engines/codex-responses.js",
-      "sha256": "2160263e6090fb804ff5fff23a566148c5f0729a171bb0c58bc3608e43c22b8e"
+      "sha256": "c8e50efea0713956fc5869f69d463dbd5d7755b1672c3d951de12b03cf1b175b"
     },
     "ultra.ts": {
       "ported_to": "engines/ultra.js",
-      "sha256": "5d4a536ffb5be00f8e847415d2d9f56dc25dcc1ccc5e84fba64552252e51c8a6"
+      "sha256": "8da8706c255c11be76a14c66fab0274f644eff918c5d0d8381d701fbfa9b652f"
     },
     "ultraHeuristic.ts": {
       "ported_to": "engines/ultra.js",
-      "sha256": "5d4a536ffb5be00f8e847415d2d9f56dc25dcc1ccc5e84fba64552252e51c8a6"
+      "sha256": "4de63ba55ca3ccf0e86bb2938790f72a1808dace776123c43eec2bf2d43d8a1a"
     },
     "engines/rtk/index.ts": {
       "ported_to": "engines/rtk/index.js",
-      "sha256": "9d14142cb5d385f697cb54d6762acd72c1c50228e96c1ae22459902f2ff2497c"
+      "sha256": "ff4f2cfcc3f4891a0ce68e29d83e072ff194d9a115685222684bd08a10546400"
     },
     "engines/rtk/commandDetector.ts": {
       "ported_to": "engines/rtk/commandDetector.js",
-      "sha256": "e15c910ef51fa572309b112a83c16c32b11e162b516d15ae3fbf86e252b1ab41"
+      "sha256": "5505b2d92862b4035d48a6aaee28b8a15d451c5c4dd5baa849ae99def83b94eb"
     },
     "engines/rtk/deduplicator.ts": {
       "ported_to": "engines/rtk/deduplicator.js",
-      "sha256": "48819980a72ba33d260baad038b5a57e704053ff2b2c50d27e49b973d65b886e"
+      "sha256": "aed654f42b2dae714a6141136b4e3948918e71525ff1710d0c6f72c8ac32c8fd"
     },
     "engines/rtk/grouper.ts": {
       "ported_to": "engines/rtk/grouper.js",
-      "sha256": "acddae9e0ab0f9f55266b986b04b18d7acb3b432b9482c3955a703cf9c8c8599"
+      "sha256": "2bde8873326bd9150b71499ce7203c0c951cb59a1e7a6a8d235485c11001bb72"
     },
     "engines/rtk/lineFilter.ts": {
       "ported_to": "engines/rtk/lineFilter.js",
-      "sha256": "d25367df4ab41be1a10eb1b584097842e0b2bf4a1f15e62160e5eb1eeb6d73b6"
+      "sha256": "faa1cf03da43025774b192184de12b28b67df2a29d8825441bee272529cb186c"
     },
     "engines/rtk/severityVocabulary.ts": {
       "ported_to": "engines/rtk/severity.js",
-      "sha256": "2939f28e45bf57b4f2a5ca7181d5cfb5408a2ca5c536d645701fdcd7d540bb85"
+      "sha256": "1df3e5657de9402416af2adb267de589a4f9a0b776cbd0e0721c73d7f694d80b"
     },
     "engines/rtk/smartTruncate.ts": {
       "ported_to": "engines/rtk/smartTruncate.js",
-      "sha256": "4836177d0fe46a1c18a35f5b515edc0f92a9581c182fb90e2df4b2313d6d2e59"
+      "sha256": "fb90894e9f578b0e851f350ca20f603a23073ff89094ce056ae9647c5c4812c4"
     },
     "engines/rtk/splitCompositeCommand.ts": {
       "ported_to": "engines/rtk/splitCommand.js",
-      "sha256": "664b83edb327cb8591c5f7054e43de8c25b2d3ba32d31f0eed96201eb6a7932e"
+      "sha256": "0ccef866b846b1238562d6ffb6e7963b7138d17796ac34557026bdae86fe720b"
     },
     "engines/rtk/filterLoader.ts": {
       "ported_to": "engines/rtk/builtinFilters.js",
-      "sha256": "ff03c75602e88683b8c9f63a6eb451e008f178ec60b7b03367da5969516c3293"
+      "sha256": "b7a72c055b80dc4dbbe05387585be214c002d994da32a2966da278c27e453c6b"
     },
     "rules/{lang}/*.json": {
       "ported_to": "engines/rules-data.js",
-      "sha256": "13278a975860f33d6a9d10500894a993967bcbbb0f97e89e391d068da7e84f5a"
+      "sha256": "cfdaa957907cf522ca5af5c6a72f525d94f3649dc544da6dbc0c9f1f813a8ec0",
+      "note": "Directory-level entry: the sha256 of every .json under upstream rules/, per language directory in name order, concatenated in that order."
     },
     "engines/headroom/gcf/generic.ts": {
       "ported_to": "engines/gcf/encode.js",
-      "sha256": "f44d740197c9fb17576e81bf9ebc62485c81a2949e6f69d6092993a572118d17"
+      "sha256": "8a933d064d836e5445256f58520555101b27539dbd56dd03b9e7a57359e94ba7"
     },
     "engines/headroom/gcf/decode_generic.ts": {
       "ported_to": "engines/gcf/decode.js",
-      "sha256": "6d4807a45660df40b5a0d85134129e485ae31e1028e3ed4ec8773f888480eefa"
+      "sha256": "8ac955ab883de199ca7b7a8c1b7cb79769f41ba99d580ce3dfef2e3b72f36025"
     },
     "engines/headroom/gcf/scalar.ts": {
       "ported_to": "engines/gcf/scalar.js",
-      "sha256": "7d97cd3aa532d6a4a60cb4361ffb8e390c244a3a6a72aedaaafae4def95abcb0"
+      "sha256": "901e2d45bf27e073df7655a89083a191a86d1d295b8bef6b4d179dbfae5eb298"
     }
   },
   "upstreams": [

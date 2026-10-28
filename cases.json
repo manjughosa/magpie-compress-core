@@ -558,7 +558,8 @@
         "ccr": false,
         "lite": {
           "maxToolLength": 256,
-          "preserveCurrentTurn": true
+          "preserveCurrentTurn": true,
+          "compressToolResults": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -631,7 +632,8 @@
         "ccr": false,
         "lite": {
           "maxToolLength": 256,
-          "preserveCurrentTurn": true
+          "preserveCurrentTurn": true,
+          "compressToolResults": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -754,7 +756,8 @@
         "ccr": false,
         "lite": {
           "maxToolLength": 256,
-          "preserveCurrentTurn": true
+          "preserveCurrentTurn": true,
+          "compressToolResults": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -841,7 +844,8 @@
         "ccr": false,
         "lite": {
           "maxToolLength": 256,
-          "preserveCurrentTurn": true
+          "preserveCurrentTurn": true,
+          "compressToolResults": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -928,7 +932,8 @@
         "ccr": false,
         "lite": {
           "maxToolLength": 257,
-          "preserveCurrentTurn": true
+          "preserveCurrentTurn": true,
+          "compressToolResults": true
         },
         "rtk": false,
         "codex-responses": false,
@@ -1293,7 +1298,8 @@
         "ccr": false,
         "lite": {
           "maxToolLength": 100,
-          "preserveCurrentTurn": true
+          "preserveCurrentTurn": true,
+          "compressToolResults": true
         },
         "rtk": false,
         "codex-responses": false,
