@@ -142,6 +142,20 @@ body.panel { padding: 0 16px 20px; }
 .opt:disabled { opacity: 0.6; cursor: default; }
 .opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
+.save-btn {
+  margin-left: 6px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  font-size: 12px;
+  cursor: pointer;
+}
+.save-btn:disabled { opacity: 0.4; cursor: default; }
+.save-btn.dirty { border-color: var(--accent); color: var(--accent); }
+.save-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 .hint {
   min-height: 17px;
   margin: 6px 0 0;

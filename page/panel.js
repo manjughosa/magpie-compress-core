@@ -13,10 +13,12 @@
   var state = { preset: "safe", open: {}, view: "main", pinned: null }
   // 页面读不到 capture-store.js，保留上限在这里镜像一份，只用于提示文案。
   var KEEP_CAPTURES = 50
-  var pending = null
+  var pendingPatch = null
+  var ccrPending = null
   var timer = 0
   var writeAt = 0
   var lastStats = ""
+  var lastOptions = ""
   var optionsListeners = []
 
   function notifyOptions() { optionsListeners.forEach(function (fn) { fn() }) }
@@ -62,26 +64,101 @@
     timer = setTimeout(flush, wait)
   }
 
-  function flush() {
-    if (!pending) return
-    var patch = options
-    pending = null
-    writeAt = Date.now()
-    // 写回是整包替换，会把钩子刚写进 stats 的更新一起覆盖回去。
-    // 所以先取一次最新的 stats 并进这次写，让它只动设置、不动数字。
+  function flushNow() {
+    clearTimeout(timer)
+    flush()
+  }
+
+  function paintSaveBtn() {
+    var btn = $("saveOptions")
+    if (!btn) return
+    btn.disabled = !pendingPatch
+    btn.classList.toggle("dirty", !!pendingPatch)
+  }
+
+  // ═══ ccr retrieve 工具安装 ═══
+  // 页面不能 spawn：把命令写进 options，下一次本地请求时宿主执行
+  // （options-commands.js 的 processCcrCommand），结果发布成 compress-ccr-status.js。
+  function installCcr() {
+    var btn = $("installCcr")
+    if (btn) btn.disabled = true
+    var id = "ccr-" + Date.now() + "-" + Math.random().toString(16).slice(2, 8)
     magpie.options
       .get()
       .then(function (fresh) {
-        if (fresh && fresh.stats) patch.stats = fresh.stats
-        return magpie.options.set(patch)
+        // 与 flush 同一原则：以最新 options 为底只加一个键，不拿页面旧副本整包盖。
+        var next = Object.assign({}, fresh && typeof fresh === "object" ? fresh : {})
+        next.ccrCommand = { id: id, action: "install-mcp" }
+        return magpie.options.set(next)
       })
+      .then(function (saved) {
+        options = saved && typeof saved === "object" ? saved : options
+        ccrPending = id
+        setMessage(T.ccrSent || "已提交，下个请求执行")
+        paintCcrBtn()
+      })
+      .catch(function () {
+        if (btn) btn.disabled = false
+        setMessage(T.failedWrite, "err")
+      })
+  }
+
+  function paintCcrBtn() {
+    var btn = $("installCcr")
+    if (!btn) return
+    var st = globalThis.__COMPRESS_CORE_CCR__
+    if (st && st.status === "done") {
+      btn.disabled = true
+      btn.textContent = T.ccrDone || "retrieve 工具已装好"
+      return
+    }
+    if (st && st.status === "error" && (!ccrPending || st.id === ccrPending)) {
+      btn.disabled = false
+      btn.textContent = T.ccrFailed || "安装失败，点击重试"
+      return
+    }
+    if (ccrPending) {
+      btn.disabled = true
+      btn.textContent = T.ccrSent || "已提交，下个请求执行"
+      return
+    }
+    btn.disabled = false
+    btn.textContent = T.ccrInstall || "安装 retrieve 工具"
+  }
+
+  function withoutStats(o) {
+    var c = Object.assign({}, o)
+    delete c.stats
+    return c
+  }
+
+  // 落盘语义：先取最新 options，把挂起的改动叠上去再整包写回。
+  // 旧版直接写页面持有的整份 options——主面板和设置面板同时开着、或 5 秒轮询
+  // 恰好刷新过页面副本时，会把别人刚写的键整包盖掉（策略开关因此抖动）。
+  function flush() {
+    if (!pendingPatch) return
+    var patch = pendingPatch
+    pendingPatch = null
+    writeAt = Date.now()
+    magpie.options
+      .get()
       .then(function (fresh) {
-        if (fresh) options = fresh
-        notifyOptions()
-        setMessage("")
-        paintAdvanced()
+        var next = mergeInto(fresh && typeof fresh === "object" ? fresh : {}, patch)
+        return magpie.options.set(next)
       })
-      .catch(function () { setMessage(T.failedWrite, "err") })
+      .then(function (saved) {
+        options = saved && typeof saved === "object" ? saved : options
+        lastOptions = JSON.stringify(withoutStats(options))
+        notifyOptions()
+        setMessage(T.savedOk || "已保存并生效")
+        safePaint()
+      })
+      .catch(function () {
+        // 失败把改动挂回去，保存按钮保持脏态，还能重试
+        pendingPatch = mergeInto(patch, pendingPatch || {})
+        setMessage(T.failedWrite, "err")
+        paintSaveBtn()
+      })
   }
 
   function mergeInto(target, patch) {
@@ -98,7 +175,9 @@
 
   function save(patch) {
     options = mergeInto(Object.assign({}, options), patch)
-    pending = true
+    // 改动单独记账：flush 时叠到最新 options 上，不靠页面这份可能过期的整包。
+    pendingPatch = mergeInto(pendingPatch || {}, patch)
+    paintSaveBtn()
     throttle()
   }
 
@@ -118,6 +197,11 @@
     // 因为「自定义」等于「不属于任何预设」本身没有可回推的组合。
     state.preset = state.pinned || V.presetOf(all)
     paintPresets()
+    paintCcrBtn()
+    // The Usage panel is this file too: it declares #meter and nothing painted it,
+    // so that tab stayed blank while the numbers were already published. A panel
+    // without a #meter (the settings one) returns at once.
+    paintMeter()
     paintRows()
     paintAdvanced()
     paintSessions()
@@ -168,10 +252,22 @@
     if (hint) hint.textContent = (T.presetHint && T.presetHint[state.preset]) || ""
   }
 
+  function paintMeter() {
+    var host = $("meter")
+    if (!host) return
+    var stats = statsSummary()
+    U.meter(host, V.meter(stats, lang), T)
+    if (!stats && T.statsFileNote) {
+      var note = U.el("p", "hint")
+      note.textContent = T.statsFileNote
+      host.appendChild(note)
+    }
+  }
+
   function paintRows() {
     var host = $("rows")
     if (!host) return
-    U.rows(host, V.cards(strategies(), options.stats, lang), {
+    U.rows(host, V.cards(strategies(), statsSummary(), lang), {
       T: T,
       open: state.open,
       config: configMap(),
@@ -226,8 +322,58 @@
     }
   }
 
-  // 索引条目：{ id, at, protocol, model, before, after, saved, summary }（字节数 + ISO 时间）
-  // 完整 before/after 文本不在这里，按需从 captures/<id>.js 用 <script> 载入。
+  // 索引条目：{ id, at, protocol, agent, model, before, after, saved, summary }（字节数 + ISO 时间）
+  // 完整 before/after 文本不在这里，只存在 <config>/magpie/compress-core/captures/<id>.json。
+
+  // 页面能拿到数据的只有两条路：`magpie.options`（写它会重载 hooks host，钩子已不再往里写
+  // stats）和页面自己的目录。所以数字和列表都由钩子发布成同目录的脚本，用 <script src> 取。
+  var wheel = [
+    { id: "statsScript", file: "compress-stats.js" },
+    { id: "capturesScript", file: "captures-index.js" },
+    { id: "ccrStatusScript", file: "compress-ccr-status.js" },
+  ]
+  var lastData = ""
+
+  function statsSummary() {
+    var published = globalThis.__COMPRESS_CORE_STATS__
+    if (published && typeof published === "object") return published
+    return options.stats || null
+  }
+
+  function captureList() {
+    var published = globalThis.__COMPRESS_CAPTURES_INDEX__
+    if (Object.prototype.toString.call(published) === "[object Array]") return published.slice()
+    return ((options.stats && options.stats.captures) || []).slice()
+  }
+
+  function dataSignature() {
+    try {
+      return JSON.stringify([globalThis.__COMPRESS_CORE_STATS__ || null, globalThis.__COMPRESS_CAPTURES_INDEX__ || null, globalThis.__COMPRESS_CORE_CCR__ || null])
+    } catch { return "" }
+  }
+
+  function loadPublished() {
+    var left = wheel.length
+    var settle = function () {
+      left -= 1
+      if (left > 0) return
+      var now = dataSignature()
+      if (now === lastData) return
+      lastData = now
+      safePaint()
+    }
+    wheel.forEach(function (item) {
+      var old = document.getElementById(item.id)
+      if (old && old.parentNode) old.parentNode.removeChild(old)
+      var script = document.createElement("script")
+      script.id = item.id
+      script.src = item.file + "?t=" + Date.now()
+      script.onload = settle
+      // 文件还没生成（从未有过记录、或刚装好）：保持原来的提示。
+      script.onerror = settle
+      ;(document.body || document.documentElement).append(script)
+    })
+  }
 
   function sessionRate(cap) {
     var before = Number(cap.before) || 0
@@ -240,13 +386,15 @@
     var hint = $("sessionHint")
     if (!host) return
 
-    var captures = ((options.stats && options.stats.captures) || []).slice()
+    var captures = captureList()
     captures.sort(function (a, b) { return new Date(b.at).getTime() - new Date(a.at).getTime() })
 
     U.clear(host)
 
     if (!captures.length) {
-      if (hint) hint.textContent = "暂无记录。打开「记录完整快照」后，每条经过网关的请求都会留一条，保留最新 " + KEEP_CAPTURES + " 条。"
+      if (hint) hint.textContent = options.capture === false
+        ? "暂无记录。打开下面的「记录完整快照」后，每条经过网关的请求都会在这里留一条。"
+        : "暂无记录。记录已打开，下一条经过网关的请求就会出现在这里，保留最新 " + KEEP_CAPTURES + " 条。"
       return
     }
     if (hint) hint.textContent = captures.length + " / " + KEEP_CAPTURES + " 条记录 · 点击一条查看差异"
@@ -307,11 +455,35 @@
 
   // ═══ 差异弹窗 ═══
 
-  // 完整快照只保存在配置目录：<config>/magpie/compress-core/captures/<id>.json。
-  // 页面 CSP 读不到本机文件，快照也不再复制进安装包的 page/captures —— 那段复制
-  // 会把对话文本放进已安装的包里，审查要求去掉，所以这里只留摘要与文件位置。
-  function ensureCapture() {
-    return Promise.resolve(null)
+  // 完整快照按需加载：页面 CSP 只允许同源脚本，所以用 <script> 而不是 fetch。
+  // capture-store 在每条 capture 落盘时同步发布 page/captures/<id>.js。
+  var captureCache = {}
+
+  function ensureCapture(id) {
+    if (captureCache[id]) return Promise.resolve(captureCache[id])
+    var store = globalThis.__COMPRESS_CAPTURES__
+    if (store && store[id]) {
+      captureCache[id] = store[id]
+      return Promise.resolve(store[id])
+    }
+    return new Promise(function (resolve) {
+      var done = false
+      var finish = function (value) {
+        if (done) return
+        done = true
+        resolve(value || null)
+      }
+      var script = document.createElement("script")
+      script.src = "captures/" + encodeURIComponent(id) + ".js"
+      script.onload = function () {
+        var got = globalThis.__COMPRESS_CAPTURES__ ? globalThis.__COMPRESS_CAPTURES__[id] : null
+        if (got) captureCache[id] = got
+        finish(got)
+      }
+      script.onerror = function () { finish(null) }
+      document.head.append(script)
+      setTimeout(function () { finish(captureCache[id] || null) }, 6000)
+    })
   }
 
   function onDiffKey(ev) {
@@ -522,9 +694,7 @@
         U.el(
           "p",
           "diff-note",
-          "完整快照只写在本机配置文件里：<配置目录>/magpie/compress-core/captures/" +
-            String(cap.id) +
-            ".json。页面读不到本机文件，这里只显示索引里的体积、模型与协议。",
+          "这条记录的完整快照没有随页面发布（可能已被清理或超过发布上限），只剩索引里的体积、模型与协议。",
         ),
       )
       return
@@ -593,10 +763,13 @@
       : d.toLocaleDateString(lang, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
   }
 
+  // rate 已是 0..1 的比率；小数点放进 fmtBytes 的 KB 显示之后，近 0.5%
+  // 的保存会被四舍五入抹成「同体积」，于是 ±0% 的行必须显示 0%，不能带上负号。
   function fmtRate(rate) {
     var value = Number(rate) || 0
     var pct = Math.round(value * 100)
-    return (pct > 0 ? "-" : pct < 0 ? "+" : "") + Math.abs(pct) + "%"
+    if (pct === 0) return "0%"
+    return (pct > 0 ? "-" : "+") + Math.abs(pct) + "%"
   }
 
   function strategies() {
@@ -628,6 +801,16 @@
 
   function init() {
     bindViewButtons();
+
+    var saveBtn = $("saveOptions")
+    if (saveBtn) saveBtn.addEventListener("click", flushNow)
+    var ccrBtn = $("installCcr")
+    if (ccrBtn) ccrBtn.addEventListener("click", installCcr)
+    // 防抖内的改动在面板被关掉/切走时会整个丢掉——离开前补一次立即写。
+    window.addEventListener("pagehide", flushNow)
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") flushNow()
+    })
 
     // 高级设置绑定
     var budget = $("budget")
@@ -667,7 +850,10 @@
     // 加载选项
     magpie.options.get().then(function (fresh) {
       if (fresh) options = fresh
+      lastOptions = JSON.stringify(withoutStats(options))
+      paintSaveBtn()
       safePaint()
+      loadPublished()
 
       // 初始化审计模块
       if (globalThis.CompressAudit) {
@@ -681,11 +867,27 @@
 
     // 轮询更新
     setInterval(function () {
+      // 数字和列表都在页面同目录的脚本里，不在 options 里：两边都取一次，谁变了就重绘。
+      loadPublished()
       magpie.options.get().then(function (fresh) {
         if (!fresh) return
         var s = JSON.stringify(fresh.stats || {})
-        if (s !== lastStats) {
+        // 有未保存的改动时只更新数字：不能用 fresh 整份替换 options，
+        // 会把用户在防抖窗口里的编辑冲掉。
+        if (pendingPatch) {
+          if (s !== lastStats) {
+            lastStats = s
+            options.stats = fresh.stats
+            paintMeter()
+            paintRows()
+            paintSessions()
+          }
+          return
+        }
+        var o = JSON.stringify(withoutStats(fresh))
+        if (s !== lastStats || o !== lastOptions) {
           lastStats = s
+          lastOptions = o
           options = fresh
           safePaint()
         }

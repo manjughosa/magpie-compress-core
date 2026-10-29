@@ -8445,7 +8445,7 @@ ${GCF_FENCE_CLOSE}`;
     {
       id: "lite",
       fields: [
-        { key: "compressToolResults", type: "boolean", label: "\u538B\u7F29\u5DE5\u5177\u8F93\u51FA", description: "\u5BF9 tool_result \u505A\u7A7A\u767D\u4E0E\u683C\u5F0F\u6E05\u7406", defaultValue: true },
+        { key: "compressToolResults", type: "boolean", label: "\u538B\u7F29\u5DE5\u5177\u8F93\u51FA", description: "\u8D85\u8FC7 maxToolLength \u7684\u5DE5\u5177\u8F93\u51FA\u53EA\u7559\u5934\u90E8\u5E76\u6807\u8BB0\u622A\u65AD\uFF08\u6709\u635F\uFF0C\u9ED8\u8BA4\u5173\uFF09", defaultValue: false },
         { key: "preserveSystemPrompt", type: "boolean", label: "\u4FDD\u62A4\u7CFB\u7EDF\u63D0\u793A\u8BCD", description: "\u5B8C\u5168\u4E0D\u78B0 system \u6D88\u606F", defaultValue: false },
         { key: "maxToolLength", type: "number", label: "\u5DE5\u5177\u8F93\u51FA\u4E0A\u9650", description: "\u8D85\u8FC7\u8FD9\u4E2A\u5B57\u7B26\u6570\u7684\u5DE5\u5177\u8F93\u51FA\u4F1A\u88AB\u622A\u65AD", defaultValue: 2e3, min: 200, max: 2e4 }
       ],
@@ -8980,6 +8980,7 @@ ${GCF_FENCE_CLOSE}`;
     const guard = guardPreservedSegments(body, ctx, options);
     let failOpen = 0, roundTripsChecked = 0, roundTripsPassed = 0, budgetHit = 0;
     let currentBytes = beforeBytes;
+    if (guard.plan.segments > 0) currentBytes = byteLength2(body);
     for (const engine of PIPELINE) {
       const record = { id: engine.id, label: engine.label || engine.id, available: engine.available !== false, enabled: strategyEnabled(engine, options), status: "skipped", reason: engine.available === false ? "unavailable" : "disabled", beforeBytes: currentBytes, afterBytes: 0, ms: 0 };
       if (!record.enabled) {

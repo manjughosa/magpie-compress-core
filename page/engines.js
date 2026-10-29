@@ -124,8 +124,8 @@ globalThis.CompressCatalog = {
           "key": "compressToolResults",
           "type": "boolean",
           "label": "压缩工具输出",
-          "description": "对 tool_result 做空白与格式清理",
-          "defaultValue": true
+          "description": "超过 maxToolLength 的工具输出只留头部并标记截断（有损，默认关）",
+          "defaultValue": false
         },
         {
           "key": "preserveSystemPrompt",
