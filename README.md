@@ -38,6 +38,46 @@ magpie plugin add github:magpie-community/plugins             # 从仓库装（p
 
 不可用的三个在面板上照常显示，标 `不可用` 并写明缺什么，开关点不动。
 
+## ccr 与 retrieve：压掉的东西去哪了
+
+ccr 是「把大段文本换成一个标签」的策略。它和其他压缩不一样的地方是：**原文一字不删，只是挪了个地方**。
+
+工作流程：
+
+1. **压缩时**：请求里有一段够长的文本（默认 600 字符以上），ccr 把它整个换成一行
+   标签：`[CCR retrieve hash=955dac5846d17f19c5811f24 chars=1641]`。原文以这个
+   哈希为键，存进插件数据目录的 `ccr-store.json`。请求体积当场瘦下来。
+2. **模型读到标签时**：它看到的是占位符不是原文。需要原文时，它调用
+   `omniroute_ccr_retrieve` 工具，把哈希递过去。
+3. **retrieve 工具**：一个本地小 MCP server（`mcp/ccr-retrieve-server.mjs`，零依赖），
+   拿哈希去 store 里查，把原文逐字节吐回给模型。支持 `full`（全文，上限 256KiB）、
+   `head` / `tail`（前后 N 行）、`lines`（行区间）、`grep`（正则筛选）、`stats`（元信息）
+   六种取法，模型可以只取它要的那一段。
+
+**为什么要单独「装 retrieve」**：ccr 动手前先检查调用方 agent 的工具清单里有没有
+`omniroute_ccr_retrieve`。没有就不压，原样放行（遥测里会看到 `no_retrieve_tool`）——
+因为压了模型却没有取回手段，等于把内容真丢了。门控宁可不干活也不丢东西，所以
+**不装 retrieve 工具时 ccr 永远是 0 命中，这是设计行为不是故障**。
+
+安装（一次性，二选一）：
+
+- 面板预设区点「装 retrieve」按钮；
+- 或命令行：`magpie library mcp add ccr-retrieve node <插件目录>/mcp/ccr-retrieve-server.mjs`
+
+装完之后的第一次请求里 ccr 就开始真命中。安装时会把工具派给 agent：
+默认派给 library 里已经在收 library MCP 的那些 agent；想自己点名，在插件 options 里加
+`"ccrAgents": "pi,opencode"`（逗号分隔的 agent id）再点按钮。事后也能随时用
+`magpie library mcp agents ccr-retrieve <a,b…>` 调整。重复安装是幂等的——已存在同名
+服务器按成功处理，按钮不会因为「装过了」报错。
+
+store 是本地文件，默认 24 小时过期、
+容量有上限（单块 2MB / 全局 64MB），超了按最久未用淘汰；同一段内容被取回得越频繁，
+ccr 越倾向不再压它（防乒乓）。模型读到的标签行前面会保留原文开头 200 个字符，
+方便它判断要不要取回。
+
+技术细节（store 格式、ramp、门控规则、与上游 OmniRoute 的差异）见
+`docs/ccr-retrieval-chain.md`。
+
 ## 四档预设
 
 | 档 | 含义 |
@@ -110,11 +150,11 @@ magpie 给页面和面板的沙箱是 `connect-src 'none'`，也没有文件系�
 
 ## 会话记录
 
-钩子能在**每一次**经过网关的请求上留一条快照，但 `capture` 默认**关**，只有打开之后才写。打开后，快照落在插件配置目录的 `captures/`（索引在 `captures-index.json`），最多保留最近 50 条，每条上限 2MB。
+钩子能在**每一次**经过网关的请求上留一条快照，`capture` 默认**开**（显式设 `false` 才关）。快照落在插件配置目录的 `captures/`，索引另存 `captures-index.json`，最多保留最近 50 条，每条上限 2MB。
 
-这些文件在页面沙箱里读不到，所以页面上的「已处理会话」列表不会再自己长出来；要看就打开 `captures/` 里的文件。行上的 `agent`（`dsh`、`pi` 等）标的是这条请求由哪一路 harness 发出。
+页面的 CSP 是 `connect-src 'none'`，只放行插件自己的 `page/` 目录。所以数字和列表都由钩子发布成同目录的两个脚本，页面用 `<script src>` 载入：`captures-index.js`（会话列表：id、时间、`agent`、模型、字节数）和 `compress-stats.js`（顶部统计与每个策略的 saving）。对话原文只在 `captures/`，不进安装包。行上的 `agent`（`dsh`、`pi` 等）标的是这条请求由哪一路 harness 发出。
 
-页面每 5 秒读一次 `magpie.options`，有变化就重绘，不需要手动刷新。
+页面每 5 秒重新取一次两个已发布脚本和 `magpie.options`，有变化就重绘，不需要手动刷新。
 
 ## 隐私
 

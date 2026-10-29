@@ -29,9 +29,10 @@
 
 - `page/view.js:293` `cards(strategies, stats, lang)` → 返回卡片数组，每项 `{id, label, why, description, badge, tone, available, requires, on, rule}`。
 - `page/ui.js:6` `el(tag, cls, text)`、`page/ui.js:13` `clear(host)`、`page/ui.js:21` `switchButton(on, disabled, onChange, label)`、`page/ui.js:37` `meter(host, m, T)`、`rows(host, cards, ctx)`，其中 `ctx = {T, open, config, onToggle, onSwitch, onField}`。
-- 会话索引在 `options.stats.captures[]`，字段是 `{id, at, agent, protocol, model, before, after, saved, summary}`。**旧的 `cap.ts` / `cap.strategy` / `rate` / `beforeText` 都不存在**，照着写只会渲染出 `Invalid Date … NaN MB → NaN MB NaN%`。
+- 会话索引**不在** `options.stats.captures[]` 里：`stats-writer.js` 已经不再写 `plugins.json`，那个字段是冻死的旧值。索引由钩子发布成页面同目录的 `page/captures-index.js`，页面用 `<script src="captures-index.js?t=…">` 载入后读 `globalThis.__COMPRESS_CAPTURES_INDEX__`，字段是 `{id, at, agent, protocol, model, before, after, saved, summary}`。**旧的 `cap.ts` / `cap.strategy` / `rate` / `beforeText` 都不存在**，照着写只会渲染出 `Invalid Date … NaN MB → NaN MB NaN%`。
 - `capture` 默认**开**（`!== false` 就算开），所以每一次经过网关的请求都会留一条，最新 50 条封顶。它一旦默认关，会话列表就只有开关被手动打开的那段时间有内容，看上去就是「永远停在旧的、只有本机 harness 的会话」。
-- 完整快照不在索引里：每条 capture 另有一份 `page/captures/<id>.js`，插入 `<script src="captures/<id>.js">` 之后读 `globalThis.__COMPRESS_CAPTURES__[id]`，得到 `{id, at, protocol, model, beforeText, afterText, beforeBytes, afterBytes, savedBytes, report}`。CSP 允许这种同源动态脚本，弹窗就是按需这么加载的。
+- `page/captures-index.js` 只装索引元数据，对话原文一条都不进去（那是审查否掉上一版的原因）。原文只在 `<config>/magpie/compress-core/captures/<id>.json`，页面读不到，弹窗只显示摘要与文件位置。
+- 那个脚本是生成物，不随包发布（`.gitignore` 里有），plugin 更新后由宿主下一次请求重发（`refreshCapturesIndex()`，每进程一次）。
 - `report.strategies[]` 每项 `{id, label, available, enabled, status, reason, beforeBytes, afterBytes, ms, savedBytes}`。
 - 页面在沙箱里唯一的数据通道是 `magpie.options`，而且 `set` 是**整包替换**：保存时必须提交完整 options（包括钩子写进去的 `stats`），只提交改动字段会把 `strategies`、`preserve` 一起抹掉。
 

@@ -6,6 +6,15 @@ requests.jsonl
 *.jsonl
 captures/
 page/captures/
+# The two files the hook republishes for the page to load: index metadata and the
+# savings summary, generated on this machine, never shipped.
+page/captures-index.js
+page/compress-stats.js
+page/compress-ccr-status.js
+# Local safety nets: timestamped .bak copies and dated backup snapshots.
+*.bak
+*.bak.*
+backup/
 *.tmp
 *.log
 .DS_Store

@@ -110,11 +110,11 @@ Compression does not depend on any of it: if the file cannot be written, compres
 
 ## Session records
 
-The hooks can keep a snapshot of **every** request that goes through the gateway, but `capture` is **off** by default and only writes once you turn it on. When on, snapshots land in `captures/` inside the plugin's config folder (indexed by `captures-index.json`), keeping the newest 50, each capped at 2MB.
+The hooks can keep a snapshot of **every** request that goes through the gateway; `capture` is **on** by default, and an explicit `false` turns it off. Snapshots land in `captures/` inside the plugin's config folder, indexed in `captures-index.json`, newest 50, each capped at 2MB.
 
-Those files are unreadable from the page sandbox, so the "processed sessions" list in the UI no longer fills itself; open the files in `captures/` instead. The `agent` on each row (`dsh`, `pi`, …) says which harness sent the request.
+The page's policy is `connect-src 'none'` and its own folder only, so the numbers and the list travel as two scripts beside it, loaded with `<script src>`: `captures-index.js` (the session list: id, time, `agent`, model, byte counts) and `compress-stats.js` (the savings meter and each strategy's total). The conversation text stays in `captures/` and never enters the installed package. The `agent` on each row (`dsh`, `pi`, …) says which harness sent the request.
 
-The page re-reads `magpie.options` every 5 seconds and repaints on change — no manual refresh.
+The page re-reads the two published scripts and `magpie.options` every 5 seconds and repaints on change — no manual refresh.
 
 ## Privacy
 
