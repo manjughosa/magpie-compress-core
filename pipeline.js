@@ -185,6 +185,7 @@ function reasonFor(engine, ctx) {
   if (engine.id === "codex-responses") return "no_eligible_response_item"
   if (engine.id === "headroom") return "no_eligible_json_array_or_not_smaller"
   if (engine.id === "session-dedup") return "no_repeat_eligible_block"
+  if (engine.id === "ccr") return ctx.state?.ccrGateReason || "nothing_to_remove"
   if (engine.id === "rtk") return "no_matching_tool_output_filter"
   // 其余引擎只会返回 false，管线无从知道具体原因，就别冒用别人的原因文案。
   return "nothing_to_remove"
@@ -257,6 +258,10 @@ export function runPipeline(body, ctx, options = {}, beforeBody = null) {
   // a JSON.stringify plus an encode, and on a large body that is the whole
   // cost of the hook.
   let currentBytes = beforeBytes
+  // 占位符替换已经把保护段换成几个字节的 marker；从这里起按占位后的身体记账，
+  // 引擎的 savedBytes 才是它自己省的体积，而不是把保护段抠掉的差值记在它头上。
+  // 无保护段时不重测，省掉一次大 body 的 stringify。
+  if (guard.plan.segments > 0) currentBytes = byteLength(body)
   for (const engine of PIPELINE) {
     const record = { id: engine.id, label: engine.label || engine.id, available: engine.available !== false, enabled: strategyEnabled(engine, options), status: "skipped", reason: engine.available === false ? "unavailable" : "disabled", beforeBytes: currentBytes, afterBytes: 0, ms: 0 }
     if (!record.enabled) { record.afterBytes = currentBytes; records.push(record); continue }

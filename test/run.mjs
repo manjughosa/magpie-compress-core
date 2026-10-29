@@ -15,8 +15,11 @@ process.env.COMPRESS_CORE_DATA_DIR = joinPath(sandbox, "data")
 // A suite that isolates only the data folder would still write its counters
 // into the operator's own plugins.json; the config folder is sandboxed too.
 process.env.MAGPIE_CONFIG_DIR = joinPath(sandbox, "config")
+// The capture index is published into the plugin's own page folder, which is
+// this repo: a suite that published would leave a file in it. Never from here.
+process.env.COMPRESS_CORE_NO_PUBLISH = "1"
 
-const suites = ["capture-store.test.mjs", "redact.test.mjs", "lab.test.mjs", "approved-lite.test.mjs", "gateway-cases.test.mjs", "engine-cases.test.mjs", "prefix-stability.test.mjs", "lite.test.mjs", "session-dedup.test.mjs", "headroom.test.mjs", "codex-responses.test.mjs", "rtk.test.mjs", "observability.test.mjs", "relevance.test.mjs", "ultra.test.mjs", "caveman.test.mjs", "aggressive.test.mjs", "ionizer.test.mjs", "llm.test.mjs", "ccr.test.mjs", "read-lifecycle.test.mjs", "body-limit.test.mjs", "audit.test.mjs", "page-catalog.test.mjs"] // storage + redaction + lab bench + all strategies + observability
+const suites = ["capture-store.test.mjs", "capture-command.test.mjs", "redact.test.mjs", "lab.test.mjs", "approved-lite.test.mjs", "gateway-cases.test.mjs", "engine-cases.test.mjs", "prefix-stability.test.mjs", "lite.test.mjs", "session-dedup.test.mjs", "headroom.test.mjs", "codex-responses.test.mjs", "rtk.test.mjs", "observability.test.mjs", "relevance.test.mjs", "ultra.test.mjs", "caveman.test.mjs", "aggressive.test.mjs", "ionizer.test.mjs", "llm.test.mjs", "ccr.test.mjs", "ccr-persist.test.mjs", "active-shapes.test.mjs", "read-lifecycle.test.mjs", "body-limit.test.mjs", "audit.test.mjs", "page-catalog.test.mjs", "page-save-flow.test.mjs"] // storage + redaction + lab bench + all strategies + observability + page save flow
 
 const only = process.argv[2]
 let any = false

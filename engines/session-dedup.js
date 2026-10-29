@@ -14,6 +14,17 @@
 //      状态，[CCR retrieve] marker 在后续轮无法兑现，所以 fuzzy 默认关（与上游一致），
 //      只在调用方声明了 omniroute_ccr_retrieve 工具时才会跑（上游同一门控）。
 //      要真正启用 fuzzy，需要后续接持久 CCR 存储（Bun 异步钩子/工具插件）。
+//   6. 【task-2 改造，有意的行为放宽】块粒度：上游只认「从某行到消息末尾」的
+//      后缀块——真实对话里重复内容两端常贴着别的话，suffix 对齐等于结构性
+//      0 命中（最近 50 条回放 0 中，还白烧 ~170ms）。本移植放宽为两类块的并集：
+//      a) 段落块：空行（\n{2,}）切分的整段，≥ minBlockChars，不限行数；
+//      b) 后缀行块：保留上游语义（≥3 行、≥ minBlockChars、到消息末尾），
+//         覆盖「前缀行紧贴重复块、无空行分隔」的形态。
+//      替换策略统一为「全局首次出现保留，其余出现（同消息内/跨消息）全部换成
+//      marker」，区间内非重叠、长块优先。marker 格式与 round-trip 协议不变。
+//      性能：后缀块改行级 rolling hash（fnv1a 行哈希 + Horner 双模合并），提取
+//      全程 O(文本)，sha256 只对真正替换的块算；候选先按哈希聚类，替换前逐条
+//      slice 比对原文，撞哈希不会错换。
 //
 // 协议覆盖：上游只认 body["messages"]（chat/anthropic）。responses/gemini 无 messages
 // 数组时本引擎不动（与上游一致；扩展覆盖属于后续工作）。
@@ -24,7 +35,7 @@ import { createCompressionStats } from "./lite.js"
 const ENGINE_ID = "session-dedup"
 const DEFAULT_MIN_BLOCK_CHARS = 80
 const MIN_BLOCK_LINES = 3
-const MAX_SUFFIX_STARTS = 2000
+const MAX_BLOCK_GROUPS = 4000 // 候选组上限：防爆内存，先到先服务（确定性）
 const MAX_TOTAL_BLOCK_BYTES = 8 * 1024 * 1024
 
 // ─── hash ────────────────────────────────────────────────────────────────────
@@ -34,173 +45,158 @@ function hashBlock(text) {
   return sha256hex(text).slice(0, 24)
 }
 
-// ─── suffix-block extraction（逐字） ─────────────────────────────────────────
+// ─── block extraction（task-2：段落块 ∪ 后缀行块） ────────────────────────
 
-function findSuffixBlocks(lines, minBlockChars) {
-  const n = lines.length
-  const seen = new Set()
-  const results = []
-  const maxStarts = Math.min(n, MAX_SUFFIX_STARTS)
-  let totalBlockBytes = 0
-  for (let start = 0; start < maxStarts; start++) {
-    const block = lines.slice(start).join("\n")
-    const blockLines = n - start
-    if (blockLines >= MIN_BLOCK_LINES && block.length >= minBlockChars && !seen.has(block)) {
-      seen.add(block)
-      results.push({ block, startLine: start })
-      totalBlockBytes += block.length
-      if (totalBlockBytes >= MAX_TOTAL_BLOCK_BYTES) break
+// rolling hash 参数：两个 < 2^25 的模数，lh*pow < 2^48，远在 2^53 精度内。
+const HASH_P1 = 16777213
+const HASH_P2 = 33554393
+const HASH_BASE = 257
+
+function fnv1a32(s, start, end) {
+  let h = 0x811c9dc5
+  for (let i = start; i < end; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return h >>> 0
+}
+
+// 返回 [{ start, end, key }]：key 相同 ≠ 内容相同（碰撞留给验证阶段 slice 比对）。
+function extractBlocks(text, minBlockChars) {
+  const out = []
+  // 1) 段落块：空行切分，任意行数，≥ minBlockChars
+  let segStart = 0
+  const re = /\n{2,}/g
+  let m
+  while ((m = re.exec(text)) !== null) {
+    if (m.index - segStart >= minBlockChars) {
+      out.push({ start: segStart, end: m.index, key: "p:" + fnv1a32(text, segStart, m.index) })
     }
+    segStart = m.index + m[0].length
   }
-  return results
-}
-
-// ─── intra-message（逐字；blockFreq 在上游恒为 1——seen 已去重——原样保留） ────
-
-function countLiteralOccurrences(text, needle) {
-  if (!needle) return 0
-  let count = 0
-  let offset = 0
-  while (true) {
-    const idx = text.indexOf(needle, offset)
-    if (idx === -1) return count
-    count++
-    offset = idx + needle.length
+  if (text.length - segStart >= minBlockChars) {
+    out.push({ start: segStart, end: text.length, key: "p:" + fnv1a32(text, segStart, text.length) })
   }
-}
-
-function replaceLiteralOccurrencesAfterFirst(text, needle, replacement) {
-  if (!needle) return text
-  const first = text.indexOf(needle)
-  if (first === -1) return text
-  let result = text.slice(0, first + needle.length)
-  let offset = first + needle.length
-  while (true) {
-    const idx = text.indexOf(needle, offset)
-    if (idx === -1) {
-      result += text.slice(offset)
-      return result
-    }
-    result += text.slice(offset, idx) + replacement
-    offset = idx + needle.length
-  }
-}
-
-function dedupeWithinMessage(text, minBlockChars, blockMap, deadline) {
+  // 2) 后缀行块（上游语义）：lines[i..end]，≥ MIN_BLOCK_LINES 行且 ≥ minBlockChars。
+  //    rolling hash 只算键，不 materialize 任何后缀串。
   const lines = text.split("\n")
-  const blocks = findSuffixBlocks(lines, minBlockChars)
-  if (blocks.length < 2) return { deduped: text, changed: false }
-
-  const blockFreq = new Map()
-  for (const { block } of blocks) {
-    blockFreq.set(block, (blockFreq.get(block) || 0) + 1)
+  const n = lines.length
+  if (n >= MIN_BLOCK_LINES) {
+    const starts = new Uint32Array(n)
+    const lh1 = new Uint32Array(n)
+    const lh2 = new Uint32Array(n)
+    let off = 0
+    for (let i = 0; i < n; i++) {
+      starts[i] = off
+      const h = fnv1a32(lines[i], 0, lines[i].length)
+      lh1[i] = h % HASH_P1
+      lh2[i] = h % HASH_P2
+      off += lines[i].length + 1
+    }
+    let h1 = 0, h2 = 0, pow1 = 1, pow2 = 1
+    for (let i = n - 1; i >= 0; i--) {
+      h1 = (lh1[i] * pow1 + h1) % HASH_P1
+      h2 = (lh2[i] * pow2 + h2) % HASH_P2
+      const lineCount = n - i
+      const clen = text.length - starts[i]
+      if (lineCount >= MIN_BLOCK_LINES && clen >= minBlockChars) {
+        out.push({ start: starts[i], end: text.length, key: "s:" + h1 + "_" + h2 })
+      }
+      pow1 = (pow1 * HASH_BASE) % HASH_P1
+      pow2 = (pow2 * HASH_BASE) % HASH_P2
+    }
   }
-  const sortedBlocks = [...blocks].sort((a, b) => {
-    const freqDiff = (blockFreq.get(b.block) || 0) - (blockFreq.get(a.block) || 0)
-    return freqDiff !== 0 ? freqDiff : b.block.length - a.block.length
-  })
-
-  let result = text
-  let changed = false
-  for (const { block } of sortedBlocks) {
-    if (deadline && Date.now() > deadline) break // 时间盒：到点即停，已替换的仍正确
-    const occurrences = countLiteralOccurrences(result, block)
-    if (occurrences < 2) continue
-    const sha = hashBlock(block)
-    const marker = `[dedup:ref sha=${sha}]`
-    result = replaceLiteralOccurrencesAfterFirst(result, block, marker)
-    changed = true
-    if (blockMap && !blockMap.has(sha)) blockMap.set(sha, block)
-  }
-  return { deduped: result, changed }
+  return out
 }
 
-// ─── two-pass dedup（逐字） ──────────────────────────────────────────────────
+// ─── 统一 two-pass：全局首次出现保留，其余出现全替换 ────────────────────────
 
 function dedupMessageTexts(msgTexts, minBlockChars, currentTurnStart, blockMap, deadline) {
   const deduped = new Map()
   let dedupCount = 0
   const over = () => deadline && Date.now() > deadline
 
-  if (msgTexts.length === 1) {
-    const { text, msgIdx } = msgTexts[0]
-    const r = dedupeWithinMessage(text, minBlockChars, blockMap, deadline)
-    if (r.changed) {
-      deduped.set(msgIdx, r.deduped)
-      dedupCount++
-    }
-    return { deduped, dedupCount }
-  }
-
-  // 性能适配（行为不可见）：每个 slot 的 suffix 块与其 sha 只计算一次，
-  // Pass 1 / Pass 2 复用同一数组。上游是每 Pass 各算一遍，输出完全相同。
-  // 时间盒：超时的 slot 退化为 blocks=[]（不参与 owning/替换，少压缩但不错误）。
+  // 提取 + 全局分组（msgTexts 顺序 = 消息顺序，组内 entries 顺序 = 出现顺序）
+  const groups = new Map()
   const perSlot = []
-  for (const { msgIdx, messageIndex, text } of msgTexts) {
-    if (over()) {
-      perSlot.push({ msgIdx, messageIndex, text, blocks: [] })
-      continue
-    }
-    perSlot.push({
-      msgIdx,
-      messageIndex,
-      text,
-      blocks: findSuffixBlocks(text.split("\n"), minBlockChars).map(({ block }) => ({
-        block,
-        sha: hashBlock(block),
-      })),
-    })
-  }
-
-  // Pass 1: firstSeen sha → { ownerMsgIdx, block }
-  // firstSeen 同时充当 sha→原文 还原图（每个被替换块都经 owner.block === block 验证）
-  const firstSeen = new Map()
-  for (const { msgIdx, blocks } of perSlot) {
-    for (const { block, sha } of blocks) {
-      if (!firstSeen.has(sha)) {
-        firstSeen.set(sha, { ownerMsgIdx: msgIdx, block })
+  for (let s = 0; s < msgTexts.length; s++) {
+    const { msgIdx, messageIndex, text } = msgTexts[s]
+    let blocks = []
+    if (!over()) {
+      blocks = extractBlocks(text, minBlockChars) // 时间盒：超时的 slot 退化为不参与
+      for (const b of blocks) {
+        let g = groups.get(b.key)
+        if (!g) {
+          g = []
+          groups.set(b.key, g)
+        }
+        g.push({ slot: s, start: b.start, end: b.end })
       }
     }
-  }
-  if (blockMap) {
-    for (const [sha, { block }] of firstSeen) {
-      if (!blockMap.has(sha)) blockMap.set(sha, block)
-    }
+    perSlot.push({ msgIdx, messageIndex, text })
   }
 
-  // Pass 2: 只替换「严格更早消息首次出现」的块；当前轮（>= currentTurnStart）不改。
-  for (const { msgIdx, messageIndex, text, blocks } of perSlot) {
-    if (messageIndex >= currentTurnStart) continue
-
-    const dupBlocks = []
-    for (const { block, sha } of blocks) {
-      const owner = firstSeen.get(sha)
-      if (owner && owner.ownerMsgIdx < msgIdx && owner.block === block) {
-        dupBlocks.push({ block, sha })
+  // 候选组：验证（防哈希碰撞错换）→ owner=全局首次出现 → 其余出现进替换表
+  const replPerSlot = new Map()
+  let materialized = 0
+  let groupCount = 0
+  for (const entries of groups.values()) {
+    if (entries.length < 2) continue
+    if (over()) break
+    if (++groupCount > MAX_BLOCK_GROUPS) break
+    const first = entries[0]
+    const block = perSlot[first.slot].text.slice(first.start, first.end)
+    materialized += block.length
+    if (materialized > MAX_TOTAL_BLOCK_BYTES) break
+    const verified = [first]
+    for (let k = 1; k < entries.length; k++) {
+      const e = entries[k]
+      const t = perSlot[e.slot].text
+      if (e.end - e.start === block.length && t.slice(e.start, e.end) === block) verified.push(e)
+    }
+    if (verified.length < 2) continue
+    const sha = hashBlock(block)
+    if (blockMap && !blockMap.has(sha)) blockMap.set(sha, block)
+    for (let k = 1; k < verified.length; k++) {
+      const e = verified[k]
+      let arr = replPerSlot.get(e.slot)
+      if (!arr) {
+        arr = []
+        replPerSlot.set(e.slot, arr)
       }
+      arr.push({ start: e.start, end: e.end, sha })
     }
-    if (dupBlocks.length === 0) continue
+  }
 
-    dupBlocks.sort((a, b) => b.block.length - a.block.length)
-
-    let result = text
-    let changed = false
-    const replaced = new Set()
-    for (const { block, sha } of dupBlocks) {
-      if ([...replaced].some((r) => r.includes(block))) continue
-      const idx = result.indexOf(block)
-      if (idx !== -1) {
-        const marker = `[dedup:ref sha=${sha}]`
-        result = result.slice(0, idx) + marker + result.slice(idx + block.length)
-        changed = true
-        replaced.add(block)
-        break // 每条消息每轮只替换一个块（上游逐字行为）
+  // 应用替换：当前轮豁免；区间内非重叠（长优先、位置次之、sha 决胜）；从右往左 splice
+  for (const [s, repls] of replPerSlot) {
+    const slot = perSlot[s]
+    if (slot.messageIndex >= currentTurnStart) continue
+    repls.sort((a, b) =>
+      (b.end - b.start) - (a.end - a.start) ||
+      a.start - b.start ||
+      (a.sha < b.sha ? -1 : a.sha > b.sha ? 1 : 0)
+    )
+    const accepted = []
+    for (const r of repls) {
+      if (over()) break
+      let ok = true
+      for (const a of accepted) {
+        if (r.start < a.end && a.start < r.end) {
+          ok = false
+          break
+        }
       }
+      if (ok) accepted.push(r)
     }
-    if (changed) {
-      deduped.set(msgIdx, result)
-      dedupCount++
+    if (accepted.length === 0) continue
+    accepted.sort((a, b) => b.start - a.start)
+    let result = slot.text
+    for (const r of accepted) {
+      result = result.slice(0, r.start) + `[dedup:ref sha=${r.sha}]` + result.slice(r.end)
     }
+    deduped.set(slot.msgIdx, result)
+    dedupCount++
   }
   return { deduped, dedupCount }
 }

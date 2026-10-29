@@ -169,4 +169,24 @@ export async function run() {
     check("OBS-12 preserve 全关 + preserveCurrentTurn: true 后历史都折叠，正在发送的那一轮仍原样",
       free.messages[0].content === "sys\n\n" && free.messages[5].content === noisy)
   }
+  // OBS-13: a conversation over the capture cap must still leave a row. Before
+  // this, an oversized request disappeared from the list with nothing said, since
+  // the summary entry it fell back to lived only in stats.json, which the page
+  // does not read. Dropping the text is fine; dropping the request is not.
+  {
+    const dir = await mkdtemp(join(tmpdir(), "compress-core-oversize-"))
+    process.env.COMPRESS_CORE_DATA_DIR = dir
+    const chunk = "x".repeat(1_200_000)
+    const body = { model: "oversize-test", messages: [{ role: "user", content: chunk }, { role: "user", content: chunk }] }
+    const ctx = { protocol: "chat", model: "oversize-test", agent: "node-test", origin: "local", options: { ...allOff, capture: true }, state: {} }
+    assert.ok(await hooks.onRequest(body, ctx))
+    const listed = JSON.parse(await readFile(join(dir, "captures-index.json"), "utf8"))
+    assert.equal(listed.length, 1)
+    assert.equal(listed[0].summary, true)
+    assert.ok(listed[0].before > 2_000_000)
+    const stored = JSON.parse(await readFile(join(dir, "captures", `${listed[0].id}.json`), "utf8"))
+    assert.equal(stored.beforeText, "")
+    assert.equal(stored.afterText, "")
+    check("OBS-13 超限快照退化成仅摘要，不再整条消失", true)
+  }
 }

@@ -496,3 +496,19 @@ session-dedup.js
 ├── callerSupportsCcrRetrieve(body) → boolean
 └── apply(body, stepConfig) → {body, compressed, stats}
 ```
+
+---
+
+## 变更记录（2026-10-29 · goal mvt0a83q-fvzhss task-2）
+
+**块粒度放宽（有意的行为变更）**：上游只认「从某行到消息末尾」的后缀块，真实流量结构性 0 命中（最近 50 条回放 0 中、均耗 170ms）。现提取 = **段落块**（`\n{2,}` 切分、≥ minBlockChars、不限行数）∪ **后缀行块**（≥3 行、≥ minBlockChars、到消息末尾，上游语义保留）。
+
+- 后缀块提取改为行级 rolling hash（fnv1a-32 行哈希 + Horner 双模合并，模数 16777213/33554393，乘积 < 2^48 安全），全程 O(文本)；sha256 只对真正替换的块计算。
+- 候选按哈希聚类后**逐条 slice 比对原文**再替换，撞哈希不错换。
+- 替换策略统一为「全局首次出现保留，其余出现（同消息内/跨消息）全部替换」；同消息多区块非重叠、长优先、位置次之、sha 决胜，确定性输出。
+- 单消息路径不再特殊（dedupeWithinMessage / countLiteralOccurrences / replaceLiteralOccurrencesAfterFirst / findSuffixBlocks 移除），统一走 dedupMessageTexts。
+- 重锁测试：A-03b（3 次出现 → 保首次换后两，取代上游重叠 quirk 输出）、A-06（2 行 ≥80 字符的段落块现在会换，取代 <3 行不换）。
+- 新增 N-1（中段段落块跨消息命中+round-trip）、N-2（多消息 body 的消息内段落重复）、N-3（幂等）、N-4（全局首次保留）。
+- 回放基线（50 条真实 capture）：命中 0→29/50，省 0→40513B，均耗 170.4ms→3.0ms。
+
+模块函数表（旧）：`findSuffixBlocks / countLiteralOccurrences / replaceLiteralOccurrencesAfterFirst / dedupeWithinMessage` 已移除，替换为 `extractBlocks(text, minBlockChars) → [{start,end,key}]` + 统一 `dedupMessageTexts`。

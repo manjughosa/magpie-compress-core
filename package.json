@@ -25,7 +25,14 @@
     "lab.js",
     "observability.hooks.js",
     "options-commands.js",
-    "page",
+    "page/*.html",
+    "page/*.js",
+    "page/*.css",
+    "page/icon.svg",
+    "!page/captures",
+    "!page/captures-index.js",
+    "!page/compress-stats.js",
+    "page-publish.js",
     "pipeline.js",
     "stats-writer.js",
     "telemetry-store.js"
@@ -96,7 +103,7 @@
         "lastTurns": 0
       },
       "gatewayTimeoutMs": 4000,
-      "capture": false
+      "capture": true
     }
   },
   "scripts": {

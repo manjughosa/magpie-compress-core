@@ -51,7 +51,7 @@ export const ENGINES = [
   {
     id: "lite",
     fields: [
-      { key: "compressToolResults", type: "boolean", label: "压缩工具输出", description: "对 tool_result 做空白与格式清理", defaultValue: true },
+      { key: "compressToolResults", type: "boolean", label: "压缩工具输出", description: "超过 maxToolLength 的工具输出只留头部并标记截断（有损，默认关）", defaultValue: false },
       { key: "preserveSystemPrompt", type: "boolean", label: "保护系统提示词", description: "完全不碰 system 消息", defaultValue: false },
       { key: "maxToolLength", type: "number", label: "工具输出上限", description: "超过这个字符数的工具输出会被截断", defaultValue: 2000, min: 200, max: 20000 },
     ],

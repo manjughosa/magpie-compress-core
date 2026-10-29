@@ -7,10 +7,24 @@ import { runPipeline, clone, byteLength, INTERNAL_MARKER, removeInternalMarker }
 import { conversationView } from "./adapter.js"
 import { persist, redact, redactSecrets } from "./telemetry-store.js"
 import { record as recordCompression, flush as flushStats, snapshot as statsSnapshot } from "./stats-writer.js"
-import { saveCapture } from "./capture-store.js"
-import { processCaptureCommand, processLabCommand, captureCommandId } from "./options-commands.js"
+import { saveCapture, refreshCapturesIndex } from "./capture-store.js"
+import { processCaptureCommand, processCcrCommand, processLabCommand, captureCommandId } from "./options-commands.js"
+import { createPersistentCcrStore } from "./ccr-store-file.js"
+
+// CCR 跨请求共享 store：引擎换出去的原文在这里活过请求边界，retrieve 工具
+// 进程（mcp/ccr-retrieve-server.mjs）读同一份文件兑现 marker。
+// 惰性创建：宿主还没起数据目录时不抢跑；首次加载完成前是空 store（fail-open）。
+let ccrStore = null
+function ccrStoreHandle() {
+  if (!ccrStore) ccrStore = createPersistentCcrStore()
+  return ccrStore
+}
 
 let options = {}
+// The page's list is a file beside it, and a host may start long after that file
+// was last written (a fresh install, an update that replaced the plugin folder).
+// One republish per process closes that gap without touching every request.
+let published = false
 const hash = text => createHash("sha256").update(text).digest("hex").slice(0, 16)
 
 function finishOptions(ctx) {
@@ -34,14 +48,20 @@ export async function onRequest(body, ctx) {
     finishOptions(ctx)
     if (options.observability === false) return undefined
     if (ctx.origin === "local") {
+      if (!published) {
+        published = true
+        void refreshCapturesIndex().catch(() => {})
+      }
       await processLabCommand(ctx.options)
       await processCaptureCommand(ctx.options)
+      await processCcrCommand(ctx.options)
     }
     // Unknown / non-local origins must not export request-derived data.
     if (ctx.origin !== "local") return undefined
     const before = clone(body)
     const working = clone(body)
-    const record = runPipeline(working, { ...ctx, state: {} }, options, before)
+    const ccr = ccrStoreHandle()
+    const record = runPipeline(working, { ...ctx, state: {}, ccrStore: ccr.get(), persistCcrStore: ccr.persist }, options, before)
     record.id = randomUUID()
     record.type = "request"
     record.session = record.session ? `sha256:${hash(record.session)}` : ""
@@ -52,19 +72,27 @@ export async function onRequest(body, ctx) {
     if (options.telemetry?.enabled !== false) await persist(record)
     // Keep the page's numbers current; a failure here never reaches the caller.
     recordCompression(record)
-    // Capture stores the full conversation text on disk and republishes it to
-    // the page, so it stays off unless the operator asks for it explicitly.
-    // The page's session list is built from these snapshots, so with capture
-    // off that list is simply empty — the intended default.
-    if (options.capture === true) {
+    // Capture stores the full conversation text on disk and publishes its index
+    // to the page, so only an explicit false keeps it off: an operator who never
+    // touched the switch gets the list. The page's session list is built from
+    // these snapshots, so with capture off that list is simply empty.
+    if (options.capture !== false) {
       // A capture is the one place the whole conversation is written out, so
       // every credential in it is masked before it reaches disk or the page.
       const beforeText = redactSecrets(conversationView(before, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || "")
       const afterText = redactSecrets(conversationView(working, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || "")
       const captureId = captureCommandId()
       const agent = String(ctx.agent || "").slice(0, 40)
-      const snapshotRecord = { id: captureId, at: record.ts, agent, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), beforeText, afterText, beforeBytes: record.beforeBytes, afterBytes: record.afterBytes, savedBytes: record.savedBytes, report: record }
+      const meta = { id: captureId, at: record.ts, agent, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), beforeBytes: record.beforeBytes, afterBytes: record.afterBytes, savedBytes: record.savedBytes }
+      const snapshotRecord = { ...meta, beforeText, afterText, report: record }
       let saved = await saveCapture(snapshotRecord)
+      if (!saved.saved && saved.reason === "too_large") {
+        // A conversation over the cap would otherwise vanish from the list with
+        // nothing said. Keep the row and its numbers, drop only the text, and mark
+        // it so the list says "summary only" instead of offering a diff that is
+        // not there.
+        saved = await saveCapture({ ...meta, summary: true, beforeText: "", afterText: "" })
+      }
       if (saved.saved) {
         const current = statsSnapshot()
         current.captures.unshift({ id: captureId, at: record.ts, agent, protocol: ctx.protocol, model: String(ctx.model || "").slice(0, 160), before: record.beforeBytes, after: record.afterBytes, saved: record.savedBytes, summary: false })

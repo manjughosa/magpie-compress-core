@@ -18,6 +18,7 @@ import { mkdir, readFile, writeFile, rename, unlink } from "node:fs/promises"
 import { join } from "node:path"
 import { homedir } from "node:os"
 import { telemetryDir } from "./telemetry-store.js"
+import { publishPageScript } from "./page-publish.js"
 
 const FLUSH_MS = 30_000        // at most one write every half minute
 const KEEP_RECENT = 50
@@ -119,6 +120,26 @@ function merge(base, delta) {
   }
 }
 
+// What the panel draws with, and nothing more: `page/view.js`'s meter reads the
+// totals and the newest request, its cards read each strategy's runs and bytes.
+// `recent` is cut to that one row, since the meter is its only reader; the request
+// text never enters this file.
+function pageSummary(s) {
+  const c = s && typeof s === "object" ? s : blank()
+  const recent = Array.isArray(c.recent) ? c.recent.slice(0, 1) : []
+  return {
+    at: c.at || null,
+    requests: num(c.requests),
+    beforeBytes: num(c.beforeBytes),
+    afterBytes: num(c.afterBytes),
+    savedBytes: num(c.savedBytes),
+    savedTokens: num(c.savedTokens),
+    failOpen: num(c.failOpen),
+    strategies: mergeStrategies(c.strategies, {}),
+    recent,
+  }
+}
+
 // The stored list outlives this process, so "clear" cannot be a write into
 // summary.captures alone: it must also win over what is on disk.
 export function clearCaptureIndex() {
@@ -190,6 +211,8 @@ export async function flush(force = false) {
     await mkdir(telemetryDir(), { recursive: true })
     await writeFile(tmp, JSON.stringify(next, null, 2) + "\n", "utf8")
     await rename(tmp, path)
+    // The page cannot read this file, so the part it draws with goes beside it.
+    await publishPageScript("compress-stats.js", "__COMPRESS_CORE_STATS__", pageSummary(next))
     // Everything this process knows is now on disk; the next request must not
     // count it twice.
     summary = blank()

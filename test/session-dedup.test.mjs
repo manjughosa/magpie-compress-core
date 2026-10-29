@@ -53,14 +53,12 @@ export async function run() {
     const r0 = applySessionDedup({ messages: [user(text2)] })
     check("A-03a 单消息2次出现保首次", r0.compressed &&
       r0.body.messages[0].content === BLOCK + "\n\n" + MARK)
-    // 3 次出现（重叠）：上游逐字行为锁定——
-    // "B\n\nB" 的第二次与第一次重叠 → replace 不变；
-    // "\n"+B（98字符）长于 B（97）先处理 → 最终 B\n\nMARK_B\nMARK_(\nB)
+    // 3 次出现：task-2 后语义 = 保首次，其余全换（非重叠区间替换）
     const text3 = BLOCK + "\n\n" + BLOCK + "\n\n" + BLOCK
     const r = applySessionDedup({ messages: [user(text3)] })
-    const expected = BLOCK + "\n\n" + MARK + "\n" + `[dedup:ref sha=${sha("\n" + BLOCK)}]`
-    check("A-03b 重叠三次的上游quirk", r.compressed && r.body.messages[0].content === expected)
-    check("A-03c quirk也round-trip", restoreDedup(r.body.messages[0].content,
+    const expected = BLOCK + "\n\n" + MARK + "\n\n" + MARK
+    check("A-03b 三次出现保首次换后两", r.compressed && r.body.messages[0].content === expected)
+    check("A-03c round-trip逐字节还原", restoreDedup(r.body.messages[0].content,
       Object.fromEntries(r.blockMap)) === text3)
   }
 
@@ -76,7 +74,9 @@ export async function run() {
 
     const twoLines = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n" + "b".repeat(60) // 2 lines, >80 chars
     const r3 = applySessionDedup({ messages: [user(twoLines), user(twoLines), asst()] })
-    check("A-06 <3行不换", !r3.compressed)
+    // task-2：段落块不限行数，2 行 ≥80 字符的长段现在会换（锁新行为）
+    check("A-06 2行长段落块会换", r3.compressed &&
+      r3.body.messages[1].content === `[dedup:ref sha=${sha(twoLines)}]`)
   }
 
   // A-07/A-08 marker 格式
@@ -247,5 +247,38 @@ export async function run() {
     const ctx2 = ctxFor("responses")
     const body2 = { input: [{ role: "user", content: BLOCK }] }
     check("engine.apply 非messages协议不动", !apply(body2, ctx2, {}))
+  }
+
+  // ─── task-2 新增：段落块语义 ───
+  {
+    // N-1 段落块嵌在消息中段（两端贴别的话，无空行对齐到末尾）——旧 suffix 结构性不中
+    const SHARED = "shared paragraph: " + "x".repeat(100)
+    const pad = (t) => t + " " + "y".repeat(90)
+    const m0 = pad("before zero") + "\n\n" + SHARED + "\n\n" + pad("after zero")
+    const m1 = pad("before one") + "\n\n" + SHARED + "\n\n" + pad("after one")
+    const r = applySessionDedup({ messages: [user(m0), user(m1), asst()] })
+    const MARK_S = `[dedup:ref sha=${sha(SHARED)}]`
+    check("N-1 中段段落块跨消息命中", r.compressed &&
+      r.body.messages[0].content === m0 &&
+      r.body.messages[1].content === pad("before one") + "\n\n" + MARK_S + "\n\n" + pad("after one"))
+    check("N-1b round-trip", restoreDedup(r.body.messages[1].content,
+      Object.fromEntries(r.blockMap)) === m1)
+
+    // N-2 多消息 body 里的消息内段落重复（旧代码只在单消息路径做 intra）
+    const m2 = SHARED + "\n\n" + SHARED
+    const r2 = applySessionDedup({ messages: [user(m2), user("other"), asst()] })
+    check("N-2 消息内段落重复也命中", r2.compressed &&
+      r2.body.messages[0].content === SHARED + "\n\n" + MARK_S)
+
+    // N-3 幂等：对输出再跑一遍不再变
+    const again = applySessionDedup({ messages: r.body.messages.map((x) => ({ ...x })) })
+    check("N-3 输出重跑幂等", !again.compressed)
+
+    // N-4 多出现只保全局首次（三条消息同段，首条不动）
+    const r4 = applySessionDedup({ messages: [user(m0), user(m0), user(m0), asst()] })
+    check("N-4 同内容后两条全换", r4.body.messages[0].content === m0 &&
+      !r4.body.messages[1].content.includes(SHARED) &&
+      !r4.body.messages[2].content.includes(SHARED) &&
+      r4.body.messages[1].content.includes("[dedup:ref"))
   }
 }

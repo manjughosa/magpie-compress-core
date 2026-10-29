@@ -44,7 +44,8 @@ export const why = "把大的重复/连续块换成内容寻址引用，原文�
 export const description =
   "Lossless — replaces large repeated/contiguous blocks with content-addressed references instead of deleting them; the original content stays retrievable."
 export const lossy = false
-export const cacheImpact = "low"
+export const cacheImpact = "low"
+
 export const defaultOn = true
 export const stackPriority = 4
 export const isSingleMode = false
@@ -614,7 +615,7 @@ export function applyCcr(body, cfg, opts) {
     } catch {
       callerCanRetrieve = false
     }
-    if (!callerCanRetrieve) return empty
+    if (!callerCanRetrieve) return { ...empty, gateReason: "no_retrieve_tool" }
   }
 
   const view = conversationView(body, opts.protocol)
@@ -631,7 +632,10 @@ export function applyCcr(body, cfg, opts) {
   const principalId = opts.principalId || undefined
 
   const start = Date.now()
-  const store = makeStore()
+  // 宿主注入了跨请求共享 store 就用它（持久层，见 ccr-store-file.js）；
+  // 否则退回本次请求内的内存 store（moejs 同步路径没有 fs，只能如此）。
+  const shared = !!(opts.store && opts.store.entries instanceof Map)
+  const store = shared ? opts.store : makeStore()
   const segments = view.segments
   const originals = segments.map((s) => s.text)
   const corpus = minRepeat > 1 ? originals.join("\n") : ""
@@ -663,6 +667,11 @@ export function applyCcr(body, cfg, opts) {
 
   if (replacedCount === 0) return empty
 
+  // 共享 store 有新条目：通知宿主调度落盘。失败不传染本次替换。
+  if (shared && typeof opts.persistStore === "function") {
+    try { opts.persistStore(store) } catch { /* persist is best-effort */ }
+  }
+
   // #8033：教能取回的调用方 marker → 工具契约（幂等，一次会话只插一条）。
   if (cfg["requireRetrieveTool"] !== false) {
     try {
@@ -685,15 +694,23 @@ export function apply(body, ctx, cfg) {
     const r = applyCcr(body, cfg, {
       protocol: ctxObj.protocol,
       principalId: (cfg && cfg.principalId) || ctxObj.session || undefined,
+      store: ctxObj.ccrStore,
+      persistStore: ctxObj.persistCcrStore,
     })
-    if (!r.compressed) return false
+    if (!r.compressed) {
+      // 门控原因留给管线当 skip reason（「没声明 retrieve 工具」≠「没有可压内容」）。
+      if (r.gateReason && ctxObj.state) ctxObj.state.ccrGateReason = r.gateReason
+      return false
+    }
     if (ctxObj.state) {
-      // 原文留在本次请求的 state 里：同请求内可 round-trip 校验，跨请求取不回（见文件头 5）。
+      // 原文留在本次请求的 state 里：同请求内可 round-trip 校验。
+      // 共享 store 不塞进 state——pipeline 每个引擎前都 structuredClone(ctx.state)，
+      // 全量 store 进去会被深拷贝一整轮。
       ctxObj.state.ccr = {
         replacedCount: r.replacedCount,
         stats: r.stats,
         map: r.map,
-        store: r.store,
+        store: ctxObj.ccrStore ? null : r.store,
       }
     }
     return true

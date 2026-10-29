@@ -2,6 +2,7 @@ import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/p
 import { join } from "node:path"
 import { randomUUID } from "node:crypto"
 import { telemetryDir } from "./telemetry-store.js"
+import { publishPageScript } from "./page-publish.js"
 
 export const MAX_CAPTURE_BYTES = 2000000
 // How many sessions are kept: newest first, everything older is dropped from
@@ -10,10 +11,13 @@ export const KEEP_CAPTURES = 50
 const ID_PATTERN = /^[A-Za-z0-9-]{8,80}$/
 const encoder = new TextEncoder()
 const directory = () => join(telemetryDir(), "captures")
-// A capture keeps the whole conversation text, so it lives in exactly one place:
-// this plugin's own folder under magpie's config directory. It used to be copied
-// beside the page as a loadable script, which put conversations inside the
-// installed package; a page can no longer read them, and that is the point.
+// A capture keeps the whole conversation text, so it lives in exactly two places
+// on purpose: this plugin's own folder under magpie's config directory (the
+// durable copy), and a loadable script beside the page (the only channel the
+// sandboxed viewer can read — CSP is `connect-src 'none'`, scripts in the
+// page's own folder are allowed). The operator asked for the click-through
+// diff back, so the per-capture publish returns; the script carries exactly
+// what the JSON copy carries, keyed by capture id.
 let queue = Promise.resolve()
 
 function enqueue(operation) {
@@ -27,6 +31,58 @@ function enqueue(operation) {
 // The list therefore comes from the store itself: this index is derived from
 // the captures on disk and published beside the page with them.
 const indexEntries = () => join(telemetryDir(), "captures-index.json")
+
+// The page cannot fetch (`connect-src 'none'`) and magpie grants it no read of
+// our own files, so the one channel left is a script in the page's folder, which
+// magpie serves beside `app.js`. The index script carries metadata only; each
+// capture additionally gets its own script with the full before/after text so
+// the click-through diff works — the operator asked for that view back.
+const publishIndex = () => publishPageScript("captures-index.js", "__COMPRESS_CAPTURES_INDEX__", index || [])
+
+const capturesPageDir = () => process.env.COMPRESS_CORE_PAGE_DIR
+  ? join(process.env.COMPRESS_CORE_PAGE_DIR, "captures")
+  : join(import.meta.dirname, "page", "captures")
+
+// Same shape the viewer expects: one store object on globalThis, keyed by id.
+function captureScript(record) {
+  return `globalThis.__COMPRESS_CAPTURES__=globalThis.__COMPRESS_CAPTURES__||{};globalThis.__COMPRESS_CAPTURES__[${JSON.stringify(record.id)}]=${JSON.stringify(record)};\n`
+}
+
+async function publishCapture(record) {
+  if (process.env.COMPRESS_CORE_NO_PUBLISH === "1") return false
+  const dir = capturesPageDir()
+  const target = join(dir, `${record.id}.js`)
+  const temp = join(dir, `.${record.id}.${process.pid}.${randomUUID()}.tmp`)
+  try {
+    await mkdir(dir, { recursive: true })
+    await writeFile(temp, captureScript(record), "utf8")
+    await rename(temp, target)
+    return true
+  } catch {
+    try { await rm(temp, { force: true }) } catch { /* The JSON copy is still on disk. */ }
+    return false
+  }
+}
+
+async function unpublishCapture(id) {
+  try { await rm(join(capturesPageDir(), `${id}.js`), { force: true }) } catch { /* Best effort. */ }
+}
+
+async function republishAll() {
+  const list = await loadIndex()
+  // 直读文件而不是 readCapture：这里已经在 enqueue 的队列里，再入队等于
+  // 等自己 —— 那是死锁，refreshCapturesIndex 从 b4af800 回归后一直卡在这。
+  const { readFile } = await import("node:fs/promises")
+  for (const entry of list) {
+    if (!ID_PATTERN.test(entry.id)) continue
+    try {
+      const record = JSON.parse(await readFile(join(directory(), `${entry.id}.json`), "utf8"))
+      if (record && record.id === entry.id) await publishCapture(record)
+    } catch { /* A capture without a readable body is skipped. */ }
+  }
+  return list.length
+}
+
 let index = null
 // Which folder the cached list was built from. The store folder is read from the
 // environment, that value can move under a long-lived process (tests, the lab,
@@ -89,6 +145,7 @@ async function writeIndex() {
     await writeFile(temp, JSON.stringify(index), "utf8")
     await rename(temp, indexEntries())
   } catch { /* Rebuilt from the captures on the next load. */ }
+  await publishIndex()
 }
 
 async function prune() {
@@ -119,6 +176,10 @@ export function refreshCapturesIndex() {
     index = null
     const list = await loadIndex()
     await writeIndex()
+    // Republish every capture script too: a fresh install or an update that
+    // replaced the plugin folder starts with an empty page/captures, and the
+    // viewer's per-capture loader would otherwise 404 on old ids.
+    await republishAll()
     return { listed: list.length }
   })
 }
@@ -136,11 +197,13 @@ export function saveCapture(record) {
       await writeFile(temp, data, "utf8")
       await rename(temp, path)
       const expired = await prune()
+      const published = await publishCapture(record)
       // Keep the page's list in step with the store: the viewer renders this.
       const listed = await loadIndex()
       index = [indexEntry(record), ...listed.filter(entry => entry.id !== record.id && !expired.includes(entry.id))].slice(0, KEEP_CAPTURES)
       await writeIndex()
-      return { saved: true }
+      await Promise.all(expired.map(id => unpublishCapture(id)))
+      return { saved: true, published }
     } catch {
       try { await rm(temp, { force: true }) } catch { /* Preserve the original failure reason. */ }
       return { saved: false, reason: "write_failed" }
@@ -164,7 +227,7 @@ export function clearCaptures() {
       if (!entry.isFile() || !entry.name.endsWith(".json")) continue
       try {
         await rm(join(directory(), entry.name), { force: true })
-        // Nothing else to remove: the JSON copy is the only copy.
+        await unpublishCapture(entry.name.slice(0, -".json".length))
         cleared++
       } catch { /* Other captures can still be cleared. */ }
     }
