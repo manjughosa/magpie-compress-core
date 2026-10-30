@@ -232,7 +232,7 @@ export const ENGINES = [
   {
     id: "ultra",
     fields: [
-      { key: "compressionRate", type: "number", label: "剪枝比例", description: "最多剪掉多少比例的 token（默认 0.5）", defaultValue: 0.5, min: 0.05, max: 0.95 },
+      { key: "compressionRate", type: "number", label: "保留比例", description: "剪枝后保留多少比例的 token（默认 0.5 = 保留一半），数值越低压得越狠。上游语义是「keep」不是「prune」", defaultValue: 0.5, min: 0.05, max: 0.95 },
       { key: "minScoreThreshold", type: "number", label: "分数门槛", description: "低于此分的 token 才可剪，分数越高剪得越少（默认 0.3）", defaultValue: 0.3, min: 0, max: 1 },
       { key: "maxTokensPerMessage", type: "number", label: "单条上限", description: "单条消息最多处理的 token 数，0 表示不限", defaultValue: 0, min: 0, max: 100000 },
     ],

@@ -61,7 +61,7 @@ export const label = "Caveman"
 export const why =
   "按语言规则表删掉啰嗦措辞、客套话、冗余从句，保留代码与事实（约 30% 压缩）。"
 export const lossy = true
-export const cacheImpact = "moderate"
+export const cacheImpact = "moderate"
 export const defaultOn = false
 export const stackPriority = 20
 export const isSingleMode = false
@@ -569,12 +569,17 @@ function recapitalizeSentences(text) {
   })
 }
 
-/** 规则删词后留下的空白/重复标点收尾。前六条与原版一致，最后一条是中文适配。 */
+/** 规则删词后留下的空白/重复标点收尾。前六条与原版一致，末两条是中日韩与拉丁适配。 */
 export function cleanupArtifacts(text) {
   if (!text) return ""
   return text
     .replace(/[ \t]{2,}/g, " ")
     .replace(/[ \t]+([,.;:!?])/g, "$1")
+    // 拉丁标点收尾（下面那条 CJK 规则的同源缺口）：删掉填充词会留下「now. , what」，
+    // 上一条把空格收成「now.,」。句末标点后面直接跟逗号/分号/冒号在英文里不成立，
+    // 丢掉后者。缩写是例外——「e.g., 」「i.e., 」「etc., 」的逗号必须留着，所以用
+    // 负向后顾挡住它们。原版两条都没有（只有英文语境，作者补了 CJK 这条）。
+    .replace(/([.!?])(?<!\b(?:e\.g|i\.e|etc|cf|vs|al|viz|approx|et\.al)\.)([,;:]+)/g, "$1")
     .replace(/([.!?]){2,}/g, (match) => match[match.length - 1])
     .replace(/[ \t]+$/gm, "")
     .replace(/\n{3,}/g, "\n\n")

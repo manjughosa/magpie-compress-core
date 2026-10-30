@@ -362,4 +362,15 @@ export async function run() {
       meta.every((m) => typeof m.name === "string" && Array.isArray(m.intensities) && m.intensities.length > 0),
     )
   }
+
+  // ---- cleanup 的拉丁标点收尾（CJK 那条的同源缺口：删掉填充词会留下「now., what」）----
+  check("93 cleanup 句末点后去掉多余逗号", cleanupArtifacts("for a while now., what") === "for a while now. what")
+  check("94 cleanup 感叹号后去掉多余逗号", cleanupArtifacts("end of sentence!, next") === "end of sentence! next")
+  check("95 cleanup 冒号同样收尾", cleanupArtifacts("colon case.: next") === "colon case. next")
+  check("96 cleanup 缩写 e.g., 的逗号必须留着", cleanupArtifacts("use e.g., apples") === "use e.g., apples")
+  check("97 cleanup 缩写 i.e., 的逗号必须留着", cleanupArtifacts("or i.e., pears") === "or i.e., pears")
+  check("98 cleanup 缩写 et al., 的逗号必须留着", cleanupArtifacts("see Smith et al., 2020") === "see Smith et al., 2020")
+  check("99 cleanup 缩写 etc., 的逗号必须留着", cleanupArtifacts("etc., and so on") === "etc., and so on")
+  check("100 cleanup 正常文本不动", cleanupArtifacts("plain text no change") === "plain text no change")
+  check("101 cleanup CJK 收尾仍然生效", cleanupArtifacts("见上。，然后继续") === "见上。然后继续")
 }

@@ -414,6 +414,55 @@ import { conversationView } from "../adapter.js"
 
 export const id = "lite"
 
+// configSchema —— 面板契约。catalog.js 的静态 fields 只声明了三个键，但 apply() 实际读
+// 五个：preserveCurrentTurn 与 supportsVision 在 README「缓存与前缀」里写得很详细，
+// 面板却根本设不到（引擎里只能靠手写 options）。按 gen-page-catalog 的约定「已移植的
+// 引擎以实现为准」，这里把 apply() 真正读的键全部导出。
+// treatAllAsHistory 不列：它是试压台专用开关（见 applyLiteCompression 的注释），生产路径
+// 上等价于默认行为，暴露出来只会让人以为它是个有用的旋钮。
+export const configSchema = [
+  {
+    key: "compressToolResults",
+    type: "boolean",
+    label: "压缩工具输出",
+    description:
+      "超过 maxToolLength 的工具输出只留头部并标记截断（有损，默认关）。开启会改写模型已读过的消息、前缀失配；只留头部意味着报错常在尾部时会丢。要保住报错行请改用 rtk（它按 severity 词表保护）。",
+    defaultValue: false,
+  },
+  {
+    key: "maxToolLength",
+    type: "number",
+    label: "工具输出上限",
+    description: "超过这个字符数的工具输出会被截断，仅在「压缩工具输出」开启时生效。低于 2000 回落到 2000。",
+    defaultValue: 2000,
+    min: 200,
+    max: 20000,
+  },
+  {
+    key: "preserveSystemPrompt",
+    type: "boolean",
+    label: "保护系统提示词",
+    description: "完全不碰 system 消息。默认关：system 段也参与空白折叠与同文去重。",
+    defaultValue: false,
+  },
+  {
+    key: "preserveCurrentTurn",
+    type: "boolean",
+    label: "保护当前轮",
+    description:
+      "默认关：全量改写，严格前缀稳定，缓存一次都不失配（代价是刚打的字也会被折叠空白）。开启换回保守模式：最后一条 assistant 之后的消息原样送出，只在它变成历史的那一轮被改写一次、缓存失配一次。",
+    defaultValue: false,
+  },
+  {
+    key: "supportsVision",
+    type: "boolean",
+    label: "目标模型看得见图",
+    description:
+      "默认 true（不动图）。设成 false 才把 data:image/* 附件换成一行 [image: png] 占位——那是「模型读不了图」的兼容处理，不是压缩。早前的版本按模型名自动判定，结果名字不像视觉模型的会把用户截图换掉。",
+    defaultValue: true,
+  },
+]
+
 export function apply(body, ctx, cfg) {
   if (!body || typeof body !== "object") return false
   const opts = {

@@ -134,6 +134,22 @@ export function restoreText(text) {
 
 export const id = "headroom"
 
+// configSchema —— 面板契约。与 catalog.js 的静态声明一致（只有 minRows 一个可调键），
+// 这里再导出一份是为了让「每个已移植引擎都以实现为准」这条不变量成立：面板不再回落到
+// catalog 的静态 fields，将来 apply() 多读一个键时也就不会出现「声明了但引擎不读」或
+// 「引擎读了但面板设不到」的死旋钮。见 test/config-contract.test.mjs。
+export const configSchema = [
+  {
+    key: "minRows",
+    type: "number",
+    label: "最小行数",
+    description: "表格化 JSON 的行数少于这个值就不压（压了也省不下什么）。",
+    defaultValue: DEFAULT_MIN_ROWS,
+    min: 2,
+    max: 200,
+  },
+]
+
 export function apply(body, ctx, cfg = {}) {
   if (!body || typeof body !== "object") return false
   if (cfg.enabled === false) return false

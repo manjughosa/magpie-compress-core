@@ -527,6 +527,42 @@ export function restoreDedup(text, map) {
 
 export const id = "session-dedup"
 
+// configSchema —— 面板契约。catalog.js 的静态 fields 把 minJaccard / shingleSize 声明成
+// 顶层数字旋钮，但 runFuzzyPass 只从 stepConfig.fuzzy 这个**子对象**里读它们
+// （stepConfig.fuzzy.minJaccard）：顶层写这两个键引擎永远看不见。而上游的
+// SESSION_DEDUP_SCHEMA 压根不暴露它们，只给 fuzzy 一个布尔开关。
+// 面板渲染器只支持扁平类型（number / boolean / select / multiselect），画不出嵌套
+// 子对象，所以这里按上游的契约给 fuzzy 一个布尔——引擎对布尔的解读是 { enabled: raw }。
+// 要调 minJaccard / shingleSize 只能手写 options（strategies["session-dedup"] 写成
+// { enabled: true, fuzzy: { enabled: true, minJaccard: 0.8 } }）。
+export const configSchema = [
+  {
+    key: "minBlockChars",
+    type: "number",
+    label: "最小块字符",
+    description: "小于这个长度的文本块不参与去重。",
+    defaultValue: DEFAULT_MIN_BLOCK_CHARS,
+    min: 20,
+    max: 4000,
+  },
+  {
+    key: "fuzzy",
+    type: "boolean",
+    label: "模糊近似去重",
+    description:
+      "把与更早消息相似度 ≥85% 的整条消息换成可取回的 CCR 引用。需要调用方带 CCR retrieve 工具，否则自动跳过。相似度阈值等细参只能手写 options。",
+    defaultValue: false,
+  },
+  {
+    key: "preserveCurrentTurn",
+    type: "boolean",
+    label: "保护当前轮",
+    description:
+      "默认关：正在发送的这一轮也照常去重，前缀严格稳定、缓存不失配。开启后当前轮原样送出，代价是它变成历史的那一轮被改写一次、缓存失配一次。",
+    defaultValue: false,
+  },
+]
+
 export function apply(body, ctx, cfg) {
   if (!body || typeof body !== "object") return false
   const r = applySessionDedup(body, cfg)

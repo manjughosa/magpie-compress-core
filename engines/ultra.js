@@ -434,8 +434,13 @@ export const ULTRA_SCHEMA = [
   {
     key: "compressionRate",
     type: "number",
-    label: "剪枝比例",
-    description: "Fraction of word tokens to keep (0–1). Lower = more aggressive.",
+    // 这个键是「保留比例」，不是「剪掉比例」——上游 types.ts 的原文：
+    // "Fraction of tokens to keep after heuristic pruning (0–1). Default 0.5 = keep 50%"，
+    // 代码里它被直接当作 pruneByScore 的 keepRate 传进去。旧的中文标签写「剪枝比例」、
+    // catalog.js 写「最多剪掉多少比例」，两处都与语义相反：想压掉 75% 的人会填 0.75，
+    // 实际得到的是保留 75%（只省下约 6%）。标签与说明必须和真实语义同向。
+    label: "保留比例",
+    description: "剪枝后**保留**多少比例的词 token（0–1，默认 0.5 = 保留一半）。数值越低压得越狠。",
     defaultValue: DEFAULT_ULTRA_CONFIG.compressionRate,
     min: 0,
     max: 1,
@@ -523,7 +528,7 @@ export const label = "Ultra"
 export const why = "启发式 token 级剪枝，最激进的纯本地压缩（约 75%）。"
 export const description = "Heuristic token pruning (+ optional SLM)."
 export const lossy = true
-export const cacheImpact = "high"
+export const cacheImpact = "high"
 export const defaultOn = false
 export const stackPriority = 40
 export const isSingleMode = false

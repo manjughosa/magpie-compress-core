@@ -20,28 +20,24 @@ globalThis.CompressCatalog = {
           "key": "minBlockChars",
           "type": "number",
           "label": "最小块字符",
-          "description": "小于这个长度的文本块不参与去重",
+          "description": "小于这个长度的文本块不参与去重。",
           "defaultValue": 80,
           "min": 20,
           "max": 4000
         },
         {
-          "key": "minJaccard",
-          "type": "number",
-          "label": "相似度阈值",
-          "description": "越高越保守，1 表示只合并完全相同的块",
-          "defaultValue": 0.85,
-          "min": 0.5,
-          "max": 1
+          "key": "fuzzy",
+          "type": "boolean",
+          "label": "模糊近似去重",
+          "description": "把与更早消息相似度 ≥85% 的整条消息换成可取回的 CCR 引用。需要调用方带 CCR retrieve 工具，否则自动跳过。相似度阈值等细参只能手写 options。",
+          "defaultValue": false
         },
         {
-          "key": "shingleSize",
-          "type": "number",
-          "label": "分片大小",
-          "description": "相似度计算的分片长度",
-          "defaultValue": 3,
-          "min": 2,
-          "max": 8
+          "key": "preserveCurrentTurn",
+          "type": "boolean",
+          "label": "保护当前轮",
+          "description": "默认关：正在发送的这一轮也照常去重，前缀严格稳定、缓存不失配。开启后当前轮原样送出，代价是它变成历史的那一轮被改写一次、缓存失配一次。",
+          "defaultValue": false
         }
       ]
     },
@@ -124,24 +120,38 @@ globalThis.CompressCatalog = {
           "key": "compressToolResults",
           "type": "boolean",
           "label": "压缩工具输出",
-          "description": "超过 maxToolLength 的工具输出只留头部并标记截断（有损，默认关）",
-          "defaultValue": false
-        },
-        {
-          "key": "preserveSystemPrompt",
-          "type": "boolean",
-          "label": "保护系统提示词",
-          "description": "完全不碰 system 消息",
+          "description": "超过 maxToolLength 的工具输出只留头部并标记截断（有损，默认关）。开启会改写模型已读过的消息、前缀失配；只留头部意味着报错常在尾部时会丢。要保住报错行请改用 rtk（它按 severity 词表保护）。",
           "defaultValue": false
         },
         {
           "key": "maxToolLength",
           "type": "number",
           "label": "工具输出上限",
-          "description": "超过这个字符数的工具输出会被截断",
+          "description": "超过这个字符数的工具输出会被截断，仅在「压缩工具输出」开启时生效。低于 2000 回落到 2000。",
           "defaultValue": 2000,
           "min": 200,
           "max": 20000
+        },
+        {
+          "key": "preserveSystemPrompt",
+          "type": "boolean",
+          "label": "保护系统提示词",
+          "description": "完全不碰 system 消息。默认关：system 段也参与空白折叠与同文去重。",
+          "defaultValue": false
+        },
+        {
+          "key": "preserveCurrentTurn",
+          "type": "boolean",
+          "label": "保护当前轮",
+          "description": "默认关：全量改写，严格前缀稳定，缓存一次都不失配（代价是刚打的字也会被折叠空白）。开启换回保守模式：最后一条 assistant 之后的消息原样送出，只在它变成历史的那一轮被改写一次、缓存失配一次。",
+          "defaultValue": false
+        },
+        {
+          "key": "supportsVision",
+          "type": "boolean",
+          "label": "目标模型看得见图",
+          "description": "默认 true（不动图）。设成 false 才把 data:image/* 附件换成一行 [image: png] 占位——那是「模型读不了图」的兼容处理，不是压缩。早前的版本按模型名自动判定，结果名字不像视觉模型的会把用户截图换掉。",
+          "defaultValue": true
         }
       ]
     },
@@ -165,25 +175,123 @@ globalThis.CompressCatalog = {
       "requires": null,
       "fields": [
         {
-          "key": "level",
+          "key": "intensity",
           "type": "select",
           "label": "强度",
-          "description": "minimal 只去噪音，aggressive 连摘要一起压",
+          "description": "minimal 放宽行数上限只去噪音，standard 默认，aggressive 收紧头尾保留、压得更狠。",
           "defaultValue": "standard",
           "options": [
             {
               "value": "minimal",
-              "label": "minimal"
+              "label": "轻（minimal）"
             },
             {
               "value": "standard",
-              "label": "standard"
+              "label": "标准（standard）"
             },
             {
               "value": "aggressive",
-              "label": "aggressive"
+              "label": "激进（aggressive）"
             }
           ]
+        },
+        {
+          "key": "maxLinesPerResult",
+          "type": "number",
+          "label": "每个结果最多行数",
+          "description": "工具输出超过这个行数就截断，保头+尾+报错行（severity 词表恒保留）。0 表示不按行截。",
+          "defaultValue": 120,
+          "min": 0,
+          "max": 10000
+        },
+        {
+          "key": "maxCharsPerResult",
+          "type": "number",
+          "label": "每个结果最多字符",
+          "description": "在行数截断之后再按字符兜底。0 表示不按字符截。",
+          "defaultValue": 0,
+          "min": 0,
+          "max": 1000000
+        },
+        {
+          "key": "deduplicateThreshold",
+          "type": "number",
+          "label": "重复行折叠阈值",
+          "description": "同一行连续出现达到这个次数就折叠成一条带计数的摘要。",
+          "defaultValue": 3,
+          "min": 2,
+          "max": 100
+        },
+        {
+          "key": "enableGrouping",
+          "type": "boolean",
+          "label": "相似行分组",
+          "description": "把结构相似的行归并成组（默认关，opt-in）。",
+          "defaultValue": false
+        },
+        {
+          "key": "groupingThreshold",
+          "type": "number",
+          "label": "分组阈值",
+          "description": "相似行达到这个条数才分组，仅在「相似行分组」开启时生效。",
+          "defaultValue": 3,
+          "min": 2,
+          "max": 100
+        },
+        {
+          "key": "disabledFilters",
+          "type": "multiselect",
+          "label": "停用的内置过滤器",
+          "description": "勾选的内置过滤器不生效。留空 = 全部启用。",
+          "defaultValue": [],
+          "options": [
+            {
+              "value": "git-status",
+              "label": "git-status"
+            },
+            {
+              "value": "git-log",
+              "label": "git-log"
+            },
+            {
+              "value": "git-diff",
+              "label": "git-diff"
+            },
+            {
+              "value": "docker-logs",
+              "label": "docker-logs"
+            },
+            {
+              "value": "npm-install",
+              "label": "npm-install"
+            },
+            {
+              "value": "build-typescript",
+              "label": "build-typescript"
+            },
+            {
+              "value": "error-stacktrace",
+              "label": "error-stacktrace"
+            },
+            {
+              "value": "generic-output",
+              "label": "generic-output"
+            }
+          ]
+        },
+        {
+          "key": "applyToToolResults",
+          "type": "boolean",
+          "label": "作用于工具结果",
+          "description": "对 tool / tool_result 内容做处理（默认开）。关掉基本等于停用本引擎。",
+          "defaultValue": true
+        },
+        {
+          "key": "preserveDocstrings",
+          "type": "boolean",
+          "label": "保留文档字符串",
+          "description": "代码块里的 docstring / 文档注释原样保留（默认开）。",
+          "defaultValue": true
         }
       ]
     },
@@ -203,28 +311,58 @@ globalThis.CompressCatalog = {
       "requires": null,
       "fields": [
         {
-          "key": "compressShell",
-          "type": "boolean",
-          "label": "压缩 shell 输出",
-          "defaultValue": true
+          "key": "minBytes",
+          "type": "number",
+          "label": "最小输出字节",
+          "description": "工具输出小于这个字节数就不压（压了也不划算）。",
+          "defaultValue": 512,
+          "min": 0,
+          "max": 2000000
         },
         {
-          "key": "compressPatch",
-          "type": "boolean",
-          "label": "压缩 patch 输出",
-          "defaultValue": true
+          "key": "maxOutputBytes",
+          "type": "number",
+          "label": "最大输出字节",
+          "description": "单个工具输出的处理上限，超过则不再尝试压缩。",
+          "defaultValue": 2097152,
+          "min": 1,
+          "max": 10000000
         },
         {
-          "key": "compressSearch",
-          "type": "boolean",
-          "label": "压缩 search 输出",
-          "defaultValue": true
+          "key": "maxCandidateBytes",
+          "type": "number",
+          "label": "最大候选字节",
+          "description": "参与压缩判断的候选块字节上限。",
+          "defaultValue": 524288,
+          "min": 1,
+          "max": 2000000
         },
         {
-          "key": "compressBuild",
-          "type": "boolean",
-          "label": "压缩 build 输出",
-          "defaultValue": true
+          "key": "maxLines",
+          "type": "number",
+          "label": "最多保留行数",
+          "description": "日志类输出折叠后最多保留的行数。",
+          "defaultValue": 160,
+          "min": 1,
+          "max": 10000
+        },
+        {
+          "key": "minSearchMatches",
+          "type": "number",
+          "label": "搜索结果最小匹配数",
+          "description": "web_search 类输出达到这个匹配条数才折叠。",
+          "defaultValue": 8,
+          "min": 2,
+          "max": 10000
+        },
+        {
+          "key": "minLogLines",
+          "type": "number",
+          "label": "日志最小行数",
+          "description": "日志类输出达到这个行数才折叠。",
+          "defaultValue": 24,
+          "min": 2,
+          "max": 10000
         }
       ]
     },
@@ -247,7 +385,7 @@ globalThis.CompressCatalog = {
           "key": "minRows",
           "type": "number",
           "label": "最小行数",
-          "description": "表格行数少于这个值就不压",
+          "description": "表格化 JSON 的行数少于这个值就不压（压了也省不下什么）。",
           "defaultValue": 8,
           "min": 2,
           "max": 200
@@ -676,8 +814,8 @@ globalThis.CompressCatalog = {
         {
           "key": "compressionRate",
           "type": "number",
-          "label": "剪枝比例",
-          "description": "Fraction of word tokens to keep (0–1). Lower = more aggressive.",
+          "label": "保留比例",
+          "description": "剪枝后**保留**多少比例的词 token（0–1，默认 0.5 = 保留一半）。数值越低压得越狠。",
           "defaultValue": 0.5,
           "min": 0,
           "max": 1

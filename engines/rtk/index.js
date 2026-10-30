@@ -116,6 +116,102 @@ const DEFAULTS = {
   preserveDocstrings: true,
 }
 
+// configSchema —— 面板契约。catalog.js 的静态 fields 写的是 `level`，但本引擎的
+// mergeRtkConfig 只认 `intensity`（逐字移植上游 engines/rtk/index.ts）：面板回落
+// 到 catalog 声明就会写出一个引擎从不读的键，强度选择形同虚设。按 gen-page-catalog
+// 的约定「已移植的引擎以实现为准」，这里导出真实键位，页面目录以它为准。
+// 只列 mergeRtkConfig 真正会读的键：customFiltersEnabled / trustProjectFilters /
+// enableRenderers / stripCodeComments 在移植里被写死成 false（无 AST、无外部源），
+// 暴露它们等于制造新的死旋钮，故不列。
+export const configSchema = [
+  {
+    key: "intensity",
+    type: "select",
+    label: "强度",
+    description: "minimal 放宽行数上限只去噪音，standard 默认，aggressive 收紧头尾保留、压得更狠。",
+    defaultValue: DEFAULTS.intensity,
+    options: [
+      { value: "minimal", label: "轻（minimal）" },
+      { value: "standard", label: "标准（standard）" },
+      { value: "aggressive", label: "激进（aggressive）" },
+    ],
+  },
+  {
+    key: "maxLinesPerResult",
+    type: "number",
+    label: "每个结果最多行数",
+    description: "工具输出超过这个行数就截断，保头+尾+报错行（severity 词表恒保留）。0 表示不按行截。",
+    defaultValue: DEFAULTS.maxLinesPerResult,
+    min: 0,
+    max: 10000,
+  },
+  {
+    key: "maxCharsPerResult",
+    type: "number",
+    label: "每个结果最多字符",
+    description: "在行数截断之后再按字符兜底。0 表示不按字符截。",
+    defaultValue: DEFAULTS.maxCharsPerResult,
+    min: 0,
+    max: 1000000,
+  },
+  {
+    key: "deduplicateThreshold",
+    type: "number",
+    label: "重复行折叠阈值",
+    description: "同一行连续出现达到这个次数就折叠成一条带计数的摘要。",
+    defaultValue: DEFAULTS.deduplicateThreshold,
+    min: 2,
+    max: 100,
+  },
+  {
+    key: "enableGrouping",
+    type: "boolean",
+    label: "相似行分组",
+    description: "把结构相似的行归并成组（默认关，opt-in）。",
+    defaultValue: DEFAULTS.enableGrouping,
+  },
+  {
+    key: "groupingThreshold",
+    type: "number",
+    label: "分组阈值",
+    description: "相似行达到这个条数才分组，仅在「相似行分组」开启时生效。",
+    defaultValue: DEFAULTS.groupingThreshold,
+    min: 2,
+    max: 100,
+  },
+  {
+    key: "disabledFilters",
+    type: "multiselect",
+    label: "停用的内置过滤器",
+    description: "勾选的内置过滤器不生效。留空 = 全部启用。",
+    defaultValue: [],
+    options: [
+      { value: "git-status", label: "git-status" },
+      { value: "git-log", label: "git-log" },
+      { value: "git-diff", label: "git-diff" },
+      { value: "docker-logs", label: "docker-logs" },
+      { value: "npm-install", label: "npm-install" },
+      { value: "build-typescript", label: "build-typescript" },
+      { value: "error-stacktrace", label: "error-stacktrace" },
+      { value: "generic-output", label: "generic-output" },
+    ],
+  },
+  {
+    key: "applyToToolResults",
+    type: "boolean",
+    label: "作用于工具结果",
+    description: "对 tool / tool_result 内容做处理（默认开）。关掉基本等于停用本引擎。",
+    defaultValue: DEFAULTS.applyToToolResults,
+  },
+  {
+    key: "preserveDocstrings",
+    type: "boolean",
+    label: "保留文档字符串",
+    description: "代码块里的 docstring / 文档注释原样保留（默认开）。",
+    defaultValue: DEFAULTS.preserveDocstrings,
+  },
+]
+
 function mergeRtkConfig(cfg) {
   const c = cfg && typeof cfg === "object" ? cfg : {}
   const merged = { ...DEFAULTS, ...c }

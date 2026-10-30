@@ -81,6 +81,16 @@ export function run() {
         "enabled,compressionRate,minScoreThreshold,maxTokensPerMessage",
     )
     check("M-14 DEFAULT_ULTRA_CONFIG 默认值", DEFAULT_ULTRA_CONFIG.compressionRate === 0.5 && DEFAULT_ULTRA_CONFIG.minScoreThreshold === 0.3)
+    // compressionRate 是「保留比例」，不是「剪掉比例」（上游 types.ts 原文：
+    // "Fraction of tokens to keep after heuristic pruning"，代码直接把它当 keepRate 传给
+    // pruneByScore）。标签曾经写成「剪枝比例」，语义正好相反：想压掉 75% 的人填 0.75，
+    // 实际保留 75%、只省下约 6%。这两条守住标签与说明不再反向。
+    check("M-15 compressionRate 标签是保留比例（不是剪枝比例）", ULTRA_SCHEMA.find((f) => f.key === "compressionRate").label === "保留比例")
+    check(
+      "M-16 compressionRate 说明写明 keep 语义",
+      /保留/.test(ULTRA_SCHEMA.find((f) => f.key === "compressionRate").description) &&
+        !/剪掉多少/.test(ULTRA_SCHEMA.find((f) => f.key === "compressionRate").description),
+    )
   }
 
   // ─── S 组：token 打分（#13454 回归）────────────────────────────────────
@@ -289,5 +299,28 @@ export function run() {
     const pct = ((before - after) / before) * 100
     console.log(`  info  ultra 实测：${before} → ${after} 字符，压缩 ${pct.toFixed(1)}%`)
     check("R-01 压缩率在合理区间", pct > 20 && pct < 90, `实际 ${pct.toFixed(1)}%`)
+  }
+
+  // ─── R 组补：compressionRate 的方向（保留比例，数值越低剪得越狠）──────────
+  // 标签文字可以被改错，但行为不会说谎：0.9 保留 90% 几乎不剪，0.3 保留 30% 剪得多。
+  // 上游 types.ts 把这个键定义为 "fraction of tokens to keep"，引擎直接当 keepRate 用。
+  //
+  // 注意 0.5 → 0.3 会**饱和**：pruneByScore 只剪 score < minScoreThreshold（0.3）的
+  // token，可剪池一旦被掏空，keepRate 再低也没有东西可剪。所以这里断言的是「单调不减」
+  // 而不是「严格递减」——keepRate 是剪枝量的上限，minScore 才是资格门槛，谁紧听谁的。
+  {
+    const long = PROSE + " " + PROSE + " " + PROSE
+    const savedAt = (rate) => {
+      const body = chatBody([{ role: "user", text: long }])
+      apply(body, ctxFor("chat"), { compressionRate: rate })
+      return long.length - body.messages[0].content.length
+    }
+    const keep90 = savedAt(0.9)
+    const keep50 = savedAt(0.5)
+    const keep30 = savedAt(0.3)
+    console.log(`  info  省下字符 keep0.9=${keep90} keep0.5=${keep50} keep0.3=${keep30}`)
+    check("R-02 保留比例越低剪得越多或持平（keep 语义，非严格递减：受 minScore 资格门槛饱和）", keep30 >= keep50 && keep50 >= keep90)
+    check("R-03 保留 90% 时几乎不剪（远少于保留 30%）", keep90 * 2 < keep30, `0.9→${keep90}, 0.3→${keep30}`)
+    check("R-04 保留比例 ≥1 时完全不动", savedAt(1) === 0)
   }
 }

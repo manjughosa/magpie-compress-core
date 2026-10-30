@@ -46,6 +46,71 @@ const DEFAULTS = {
   preserveToolNames: [],
 }
 
+// configSchema —— 面板契约。catalog.js 的静态 fields 声明的是 compressShell /
+// compressPatch / compressSearch / compressBuild 四个开关，但本引擎的 mergeConfig
+// 一个都不读（那四个键来自上游另一个组件 toolResultCompressor.ts，不是这个引擎）：
+// 面板回落 catalog 声明就会写出四个死键，用户在面板上拨动毫无效果，还会误以为已经
+// 调过。按 gen-page-catalog 的约定「已移植的引擎以实现为准」，这里导出 mergeConfig
+// 真正会读的键，与上游 engines/codexResponses/index.ts 的 schema 对齐。
+// 注意：本引擎只作用于 OpenAI Responses 协议（function_call_output 等），chat /
+// anthropic 流量不触发。
+export const configSchema = [
+  {
+    key: "minBytes",
+    type: "number",
+    label: "最小输出字节",
+    description: "工具输出小于这个字节数就不压（压了也不划算）。",
+    defaultValue: DEFAULTS.minBytes,
+    min: 0,
+    max: 2000000,
+  },
+  {
+    key: "maxOutputBytes",
+    type: "number",
+    label: "最大输出字节",
+    description: "单个工具输出的处理上限，超过则不再尝试压缩。",
+    defaultValue: DEFAULTS.maxOutputBytes,
+    min: 1,
+    max: 10000000,
+  },
+  {
+    key: "maxCandidateBytes",
+    type: "number",
+    label: "最大候选字节",
+    description: "参与压缩判断的候选块字节上限。",
+    defaultValue: DEFAULTS.maxCandidateBytes,
+    min: 1,
+    max: 2000000,
+  },
+  {
+    key: "maxLines",
+    type: "number",
+    label: "最多保留行数",
+    description: "日志类输出折叠后最多保留的行数。",
+    defaultValue: DEFAULTS.maxLines,
+    min: 1,
+    max: 10000,
+  },
+  {
+    key: "minSearchMatches",
+    type: "number",
+    label: "搜索结果最小匹配数",
+    description: "web_search 类输出达到这个匹配条数才折叠。",
+    defaultValue: DEFAULTS.minSearchMatches,
+    min: 2,
+    max: 10000,
+  },
+  {
+    key: "minLogLines",
+    type: "number",
+    label: "日志最小行数",
+    description: "日志类输出达到这个行数才折叠。",
+    defaultValue: DEFAULTS.minLogLines,
+    min: 2,
+    max: 10000,
+  },
+]
+
 // ─── 正则（与上游逐字一致） ──────────────────────────────────────────────
 
 const DIFF_HUNK_RE =
