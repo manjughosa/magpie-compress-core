@@ -42,7 +42,7 @@ try {
   const out = (j.content || []).map((b) => b.text || "").join("") || text
   console.log("MODEL SAYS:", out)
   console.log("---")
-  console.log(/\[dedup:ref sha=[0-9a-f]{24}\]/.test(out) ? "✓ 模型看到了 dedup 占位符 → 中间件在真实网关生效" : "✗ 回答中无 dedup 占位符（需人工判读上面原文）")
+  console.log(/\[dedup:ref sha=[0-9a-f]{24}/.test(out) ? "✓ 模型看到了 dedup 占位符 → 中间件在真实网关生效" : "✗ 回答中无 dedup 占位符（需人工判读上面原文）")
 } catch {
   console.log(text.slice(0, 500))
 }

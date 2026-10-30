@@ -179,7 +179,7 @@ export const ENGINES = [
     label: "Read Lifecycle",
     description:
       "Collapses Read tool results that a strictly-later Read or Write superseded, keeping only the newest view of each path.",
-    why: "同一文件反复 Read 时，把被后续 Read/Write 覆盖掉的旧结果折叠成短 stub，只留最新一次。",
+    why: "同一文件反复 Read 时，把被后续 Read/Write 覆盖掉的旧结果折叠成短 stub，只留最新一次。（注意：同一条路径被再次 Read/Write 时，更早的结果会被折叠，prefix 随之失配。）",
     stackPriority: 22,
     lossy: true,
     cacheImpact: "moderate",
@@ -199,7 +199,7 @@ export const ENGINES = [
     label: "Aggressive",
     description:
       "Summarizes older turns and progressively ages them out (~50%), keeping recent detail intact.",
-    why: "把较早的轮次摘要化并逐步老化，只保留最近的细节（约 50%）。",
+    why: "把较早的轮次摘要化并逐步老化，只保留最近的细节（约 50%）。（注意：每新增一轮对话都会重写更早的轮次，prompt cache 的 prefix 会随之前移失配。）",
     stackPriority: 30,
     lossy: true,
     cacheImpact: "high",

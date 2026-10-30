@@ -21,7 +21,7 @@ const BLOCK =
   "line two of the block with more text\n" +
   "line three of the block ends here ok" // 80+ chars, 3 lines
 const sha = (t) => sha256hex(t).slice(0, 24)
-const MARK = `[dedup:ref sha=${sha(BLOCK)}]`
+const MARK = `[dedup:ref sha=${sha(BLOCK)} — original appears earlier in this conversation]`
 
 const user = (text) => ({ role: "user", content: text })
 const asst = (text = "ok") => ({ role: "assistant", content: text })
@@ -76,15 +76,15 @@ export async function run() {
     const r3 = applySessionDedup({ messages: [user(twoLines), user(twoLines), asst()] })
     // task-2：段落块不限行数，2 行 ≥80 字符的长段现在会换（锁新行为）
     check("A-06 2行长段落块会换", r3.compressed &&
-      r3.body.messages[1].content === `[dedup:ref sha=${sha(twoLines)}]`)
+      r3.body.messages[1].content === `[dedup:ref sha=${sha(twoLines)} — original appears earlier in this conversation]`)
   }
 
   // A-07/A-08 marker 格式
   {
     const r = applySessionDedup({ messages: [user(BLOCK), user(BLOCK), asst()] })
     const m = r.body.messages[1].content
-    check("A-07 marker逐字格式", /^\[dedup:ref sha=[0-9a-f]{24}\]$/.test(m))
-    check("A-08 sha=sha256前24hex", m === `[dedup:ref sha=${sha256hex(BLOCK).slice(0, 24)}]`)
+    check("A-07 marker逐字格式", /^\[dedup:ref sha=[0-9a-f]{24} — original appears earlier in this conversation\]$/.test(m))
+    check("A-08 sha=sha256前24hex", m === `[dedup:ref sha=${sha256hex(BLOCK).slice(0, 24)} — original appears earlier in this conversation]`)
   }
 
   // A-09/A-10 首次保留/不同块
@@ -172,7 +172,7 @@ export async function run() {
     const LONGER = BLOCK + "\nextra line four here"
     const r = applySessionDedup({ messages: [user(LONGER), user(LONGER), asst()] })
     // 第二条消息里 LONGER 与 BLOCK 都是 dup；只换最长的 LONGER
-    check("A-22 重叠只换最长", r.body.messages[1].content === `[dedup:ref sha=${sha(LONGER)}]`)
+    check("A-22 重叠只换最长", r.body.messages[1].content === `[dedup:ref sha=${sha(LONGER)} — original appears earlier in this conversation]`)
   }
 
   // A-23 map round-trip
@@ -257,7 +257,7 @@ export async function run() {
     const m0 = pad("before zero") + "\n\n" + SHARED + "\n\n" + pad("after zero")
     const m1 = pad("before one") + "\n\n" + SHARED + "\n\n" + pad("after one")
     const r = applySessionDedup({ messages: [user(m0), user(m1), asst()] })
-    const MARK_S = `[dedup:ref sha=${sha(SHARED)}]`
+    const MARK_S = `[dedup:ref sha=${sha(SHARED)} — original appears earlier in this conversation]`
     check("N-1 中段段落块跨消息命中", r.compressed &&
       r.body.messages[0].content === m0 &&
       r.body.messages[1].content === pad("before one") + "\n\n" + MARK_S + "\n\n" + pad("after one"))

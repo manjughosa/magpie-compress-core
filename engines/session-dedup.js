@@ -193,7 +193,7 @@ function dedupMessageTexts(msgTexts, minBlockChars, currentTurnStart, blockMap, 
     accepted.sort((a, b) => b.start - a.start)
     let result = slot.text
     for (const r of accepted) {
-      result = result.slice(0, r.start) + `[dedup:ref sha=${r.sha}]` + result.slice(r.end)
+      result = result.slice(0, r.start) + `[dedup:ref sha=${r.sha} — original appears earlier in this conversation]` + result.slice(r.end)
     }
     deduped.set(slot.msgIdx, result)
     dedupCount++
@@ -311,7 +311,7 @@ function processMessages(messages, minBlockChars, blockMap, deadline, preserveCu
   })
   const dedupMap = []
   const seenRefs = new Set()
-  const refPattern = /\[dedup:ref sha=([0-9a-f]{24})\]/g
+  const refPattern = /\[dedup:ref sha=([0-9a-f]{24})[^\]]*\]/g
   for (const [, text] of deduped) {
     for (const match of text.matchAll(refPattern)) {
       const sha = match[1]
@@ -518,7 +518,7 @@ export function applySessionDedup(body, stepConfig) {
 // ─── round-trip 还原（map 来自 ctx.state；差异说明 4） ───────────────────────
 
 export function restoreDedup(text, map) {
-  return text.replace(/\[dedup:ref sha=([0-9a-f]{24})\]/g, (m, sha) =>
+  return text.replace(/\[dedup:ref sha=([0-9a-f]{24})[^\]]*\]/g, (m, sha) =>
     map && map[sha] !== undefined ? map[sha] : m
   )
 }

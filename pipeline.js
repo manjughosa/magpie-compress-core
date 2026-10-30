@@ -208,7 +208,7 @@ function dedupRoundTrip(beforeBody, body, ctx) {
   for (let i = 0; i < after.length; i++) {
     if (!after[i].includes("[dedup:ref sha=")) continue
     checked++
-    const restored = after[i].replace(/\[dedup:ref sha=([0-9a-f]{24})\]/g, (ref, sha) => map[sha] ?? ref)
+    const restored = after[i].replace(/\[dedup:ref sha=([0-9a-f]{24})[^\]]*\]/g, (ref, sha) => map[sha] ?? ref)
     if (restored === before[i]) passed++
   }
   return { checked, passed }
