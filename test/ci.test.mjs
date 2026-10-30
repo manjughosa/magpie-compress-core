@@ -1,4 +1,4 @@
-// test/ci.test.mjs — the 21 suites, seen by `bun test`.
+// test/ci.test.mjs — every suite, seen by `bun test`.
 //
 // Every suite exports { name, run } and asserts through helpers.check(), which
 // counts failures instead of throwing — so `bun test` loaded them and found no
@@ -10,6 +10,7 @@ import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { failedCount } from "./helpers.mjs"
+import { suites } from "./suites.mjs"
 
 // The same throwaway folders test/run.mjs uses: a capture keeps a whole
 // conversation, and one that landed in the installed plugin folder would put
@@ -17,32 +18,14 @@ import { failedCount } from "./helpers.mjs"
 const sandbox = mkdtempSync(join(tmpdir(), "compress-core-bun-"))
 process.env.COMPRESS_CORE_DATA_DIR = join(sandbox, "data")
 process.env.MAGPIE_CONFIG_DIR = join(sandbox, "config")
+// No page/ in this package: the capture suite would otherwise publish its
+// fixture beside a page that is not here (CI runs from a read-only checkout).
+process.env.COMPRESS_CORE_NO_PUBLISH = "1"
 
-// Kept in the same order as test/run.mjs.
-const suites = [
-  "capture-store.test.mjs",
-  "redact.test.mjs",
-  "lab.test.mjs",
-  "approved-lite.test.mjs",
-  "gateway-cases.test.mjs",
-  "engine-cases.test.mjs",
-  "prefix-stability.test.mjs",
-  "lite.test.mjs",
-  "session-dedup.test.mjs",
-  "headroom.test.mjs",
-  "codex-responses.test.mjs",
-  "rtk.test.mjs",
-  "observability.test.mjs",
-  "relevance.test.mjs",
-  "ultra.test.mjs",
-  "caveman.test.mjs",
-  "aggressive.test.mjs",
-  "ionizer.test.mjs",
-  "llm.test.mjs",
-  "ccr.test.mjs",
-  "read-lifecycle.test.mjs",
-  "body-limit.test.mjs", "audit.test.mjs", "page-catalog.test.mjs",
-]
+// The suite list lives in test/suites.mjs and is shared with run.mjs. This file
+// used to keep its own copy, and the copies drifted: capture-command,
+// ccr-persist, active-shapes and config-contract ran under `node test/run.mjs`
+// but never under `bun test`, so CI skipped four suites without saying so.
 
 for (const file of suites) {
   const mod = await import(`./${file}`)

@@ -22,6 +22,9 @@ export async function run() {
   // whichever file loads last, and this suite would write into one folder while
   // reading from another.
   process.env.COMPRESS_CORE_DATA_DIR = root
+  // Publish is asserted separately below with its own page dir; the base run
+  // keeps NO_PUBLISH on so the suite passes standalone and in parallel.
+  process.env.COMPRESS_CORE_NO_PUBLISH = "1"
   await clearCaptures()
   const original = { id: id(0), before: { text: "完整原文" }, after: { text: "完整结果" } }
   assert.deepEqual(await saveCapture(original), { saved: true, published: false })
@@ -122,4 +125,6 @@ export async function run() {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) await run()
+// Guarded against bun: under `bun test` argv[1] is this file, so an unguarded
+// self-run would execute the suite once at load and again from ci.test.mjs.
+if (typeof Bun === "undefined" && process.argv[1] === fileURLToPath(import.meta.url)) await run()

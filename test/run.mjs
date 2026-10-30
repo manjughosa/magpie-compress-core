@@ -3,9 +3,11 @@
 // Usage: node test/run.mjs [onlyThisTestName]
 
 import { failedCount } from "./helpers.mjs"
-import { mkdtempSync } from "node:fs"
+import { mkdtempSync, readdirSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join as joinPath } from "node:path"
+import { join as joinPath, dirname } from "node:path"
+import { fileURLToPath } from "node:url"
+import { suites, unlistedSuites } from "./suites.mjs"
 
 // Every suite runs against throwaway folders: a capture keeps the whole
 // conversation, and one that fell into the live plugin folder would put operator
@@ -19,7 +21,14 @@ process.env.MAGPIE_CONFIG_DIR = joinPath(sandbox, "config")
 // this repo: a suite that published would leave a file in it. Never from here.
 process.env.COMPRESS_CORE_NO_PUBLISH = "1"
 
-const suites = ["capture-store.test.mjs", "capture-command.test.mjs", "redact.test.mjs", "lab.test.mjs", "approved-lite.test.mjs", "gateway-cases.test.mjs", "engine-cases.test.mjs", "prefix-stability.test.mjs", "lite.test.mjs", "session-dedup.test.mjs", "headroom.test.mjs", "codex-responses.test.mjs", "rtk.test.mjs", "observability.test.mjs", "relevance.test.mjs", "ultra.test.mjs", "caveman.test.mjs", "aggressive.test.mjs", "ionizer.test.mjs", "llm.test.mjs", "ccr.test.mjs", "ccr-persist.test.mjs", "active-shapes.test.mjs", "read-lifecycle.test.mjs", "body-limit.test.mjs", "audit.test.mjs", "page-catalog.test.mjs", "page-save-flow.test.mjs", "config-contract.test.mjs"] // storage + redaction + lab bench + all strategies + observability + page save flow + 面板旋钮契约
+// The list lives in test/suites.mjs, shared with ci.test.mjs: two copies drifted
+// once already and CI silently skipped four suites.
+const here = dirname(fileURLToPath(import.meta.url))
+const strays = unlistedSuites(readdirSync(here))
+if (strays.length > 0) {
+  console.error(`suites not listed in test/suites.mjs: ${strays.join(", ")}`)
+  process.exit(2)
+}
 
 const only = process.argv[2]
 let any = false

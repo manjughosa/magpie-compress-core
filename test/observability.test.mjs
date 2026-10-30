@@ -189,4 +189,47 @@ export async function run() {
     assert.equal(stored.afterText, "")
     check("OBS-13 超限快照退化成仅摘要，不再整条消失", true)
   }
+  // OBS-14: capture must be OPT-IN. A fresh install hands the hooks options:{} —
+  // magpie does not apply package.json's magpie.options as defaults (it is only the
+  // options editor's starting example, OptionsExample in magpie's middleware.go). The
+  // gate used to read `options.capture !== false`, so {} → undefined !== false → ON:
+  // every local request's whole conversation was written to disk twice (data/captures
+  // + page/captures inside the package). Anything that keeps conversation text must
+  // not be on by default. This asserts the fix against the exact fresh-install call.
+  {
+    const dir = await mkdtemp(join(tmpdir(), "compress-core-capture-default-"))
+    const pageDir = join(dir, "page")
+    process.env.COMPRESS_CORE_DATA_DIR = dir
+    process.env.COMPRESS_CORE_PAGE_DIR = pageDir
+    delete process.env.COMPRESS_CORE_NO_PUBLISH // a fresh install publishes into the package
+    const privateNote = "my private note: the launch date is 2026-11-03"
+    const body = { model: "fresh-install", messages: [{ role: "system", content: "be brief" }, { role: "user", content: privateNote }] }
+    // Exactly the host's fresh-install call: no options were ever set by the operator.
+    const ctx = { protocol: "chat", model: "fresh-install", agent: "node-test", session: "fresh", origin: "local", options: {}, state: {} }
+    assert.ok(await hooks.onRequest(body, ctx))
+    await hooks.onResponse({}, { ...ctx, success: true })
+
+    // No capture may be written to either site, and the private text must not reach disk.
+    const dataCaptures = await readFile(join(dir, "captures-index.json"), "utf8").catch(() => "[]")
+    assert.equal(JSON.parse(dataCaptures).length, 0, "capture index must be empty with options:{}")
+    const published = await readFile(join(pageDir, "captures-index.js"), "utf8").catch(() => "")
+    assert.ok(!published.includes(privateNote), "private text must not be published to page/captures")
+    assert.ok(!published.includes("2026-11-03"), "no capture row should exist")
+    check("OBS-14 options:{} 时 capture 不落盘（全新安装默认关，需显式 capture:true）", true)
+
+    process.env.COMPRESS_CORE_NO_PUBLISH = "1" // restore for the rest of the suite
+  }
+  // OBS-15: the flip side — an operator who explicitly opts in still gets a capture,
+  // so the fix did not break the feature.
+  {
+    const dir = await mkdtemp(join(tmpdir(), "compress-core-capture-on-"))
+    process.env.COMPRESS_CORE_DATA_DIR = dir
+    process.env.COMPRESS_CORE_PAGE_DIR = join(dir, "page")
+    const body = repeatedBody("capture-on")
+    const ctx = { protocol: "chat", model: "capture-on", agent: "node-test", session: "on", origin: "local", options: { ...allOff, capture: true }, state: {} }
+    assert.ok(await hooks.onRequest(body, ctx))
+    const listed = JSON.parse(await readFile(join(dir, "captures-index.json"), "utf8"))
+    assert.equal(listed.length, 1, "explicit capture:true must still record")
+    check("OBS-15 显式 capture:true 时照常落盘（修默认没修坏功能）", true)
+  }
 }

@@ -1,0 +1,7 @@
+# CI runs bare `bun test`, which loads every *.test.mjs it finds. The backup/
+# snapshots are old copies of the plugin (gitignored, kept for local rollback);
+# their imports reference files that no longer exist beside them, and loading
+# one fails the whole run. Tests live in test/ only.
+[test]
+preload = []
+root = "test"

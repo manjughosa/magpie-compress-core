@@ -58,4 +58,6 @@ export async function run() {
   await rejects(runLab({ id: "lab-too-large", mode: "text", input: "界".repeat(MAX_LAB_BYTES), protocol: "chat", strategy: "lite" }), /字节/)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) await run()
+// Guarded against bun: under `bun test` argv[1] is this file, so an unguarded
+// self-run would execute the suite once at load and again from ci.test.mjs.
+if (typeof Bun === "undefined" && process.argv[1] === fileURLToPath(import.meta.url)) await run()

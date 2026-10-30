@@ -72,11 +72,18 @@ export async function onRequest(body, ctx) {
     if (options.telemetry?.enabled !== false) await persist(record)
     // Keep the page's numbers current; a failure here never reaches the caller.
     recordCompression(record)
-    // Capture stores the full conversation text on disk and publishes its index
-    // to the page, so only an explicit false keeps it off: an operator who never
-    // touched the switch gets the list. The page's session list is built from
-    // these snapshots, so with capture off that list is simply empty.
-    if (options.capture !== false) {
+    // Capture writes the whole conversation to disk and publishes its index into
+    // the package's page/ folder, so it is OPT-IN: only an explicit true turns it
+    // on. This cannot be `!== false`, because magpie never applies package.json's
+    // magpie.options as runtime defaults — that object is only the options editor's
+    // starting example (OptionsExample, magpie internal/plugin/middleware.go). A
+    // fresh install hands the hooks options:{}, where `undefined !== false` is true:
+    // every local request's conversation, code and private notes would land on disk
+    // in two places before the operator ever saw a switch. Masking hides credentials
+    // only. Telemetry (above) keeps no text and stays on by default; anything that
+    // keeps conversation text must not. With capture off the page's session list is
+    // simply empty.
+    if (options.capture === true) {
       // A capture is the one place the whole conversation is written out, so
       // every credential in it is masked before it reaches disk or the page.
       const beforeText = redactSecrets(conversationView(before, ctx.protocol)?.segments.map((s, i) => `[${i + 1}] [${s.role}] ${s.text}`).join("\n") || "")
