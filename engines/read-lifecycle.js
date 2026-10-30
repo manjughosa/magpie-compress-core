@@ -41,7 +41,7 @@ export const lossy = true
 export const cacheImpact = "moderate"
 
 export const defaultOn = false
-export const stackPriority = 2 // 上游 5；catalog 锁定 22，见文件头第 5 条
+export const stackPriority = 2 // 上游 5；必须早于 session-dedup(3)，见文件头第 5 条
 export const isSingleMode = false
 export const levels = undefined
 export const available = true

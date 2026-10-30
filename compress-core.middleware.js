@@ -9,7 +9,13 @@ export function onRequest(body, ctx) {
       return body
     }
     const options = ctx.options && typeof ctx.options === "object" ? ctx.options : {}
-    runPipeline(body, { ...ctx, state: {} }, options)
+    // This path has no shared CCR store: the Bun hook owns it. Running ccr here
+    // would replace blocks with markers whose originals were never persisted, so
+    // the retrieve tool could never return them. Leave ccr to the Bun path.
+    const safe = options.strategies && options.strategies.ccr
+      ? { ...options, strategies: { ...options.strategies, ccr: false } }
+      : options
+    runPipeline(body, { ...ctx, state: {} }, safe)
     return body
   } catch (error) {
     // A failed compression never becomes a failed model request.

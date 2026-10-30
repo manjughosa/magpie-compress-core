@@ -529,10 +529,21 @@ function messageContainsSentinel(message) {
  * 只对 messages 数组生效（chat / anthropic）；responses 的 instructions、gemini 的
  * systemInstruction 不碰——留白好过写错位置。
  */
-export function injectCcrProtocolInstruction(body) {
-  if (!body || !Array.isArray(body.messages)) return false
+export function injectCcrProtocolInstruction(body, protocol) {
+  if (!body || typeof body !== "object") return false
   if (!callerSupportsCcrRetrieve(body)) return false
-  if (body.messages.some(messageContainsSentinel)) return false
+  if (Array.isArray(body.messages) && body.messages.some(messageContainsSentinel)) return false
+  if (typeof body.system === "string" && body.system.includes(CCR_PROTOCOL_MARKER_SENTINEL)) return false
+  if (Array.isArray(body.system) && body.system.some(messageContainsSentinel)) return false
+  // Anthropic 的 messages 里不允许 role:"system"（顶层的 system 字段才是它），
+  // 放进去上游直接 400。chat 才用 messages 里的 system 消息。
+  if (protocol === "anthropic") {
+    if (typeof body.system === "string") body.system = body.system + "\n\n" + CCR_PROTOCOL_INSTRUCTION
+    else if (Array.isArray(body.system)) body.system.push({ type: "text", text: CCR_PROTOCOL_INSTRUCTION })
+    else body.system = CCR_PROTOCOL_INSTRUCTION
+    return true
+  }
+  if (!Array.isArray(body.messages)) return false
   body.messages.unshift({ role: "system", content: CCR_PROTOCOL_INSTRUCTION })
   return true
 }
@@ -675,7 +686,7 @@ export function applyCcr(body, cfg, opts) {
   // #8033：教能取回的调用方 marker → 工具契约（幂等，一次会话只插一条）。
   if (cfg["requireRetrieveTool"] !== false) {
     try {
-      injectCcrProtocolInstruction(body)
+      injectCcrProtocolInstruction(body, opts.protocol)
     } catch {
       // 注入失败不影响已完成的替换
     }
@@ -693,7 +704,7 @@ export function apply(body, ctx, cfg) {
     const ctxObj = ctx || {}
     const r = applyCcr(body, cfg, {
       protocol: ctxObj.protocol,
-      principalId: (cfg && cfg.principalId) || ctxObj.session || undefined,
+      principalId: (cfg && cfg.principalId) || undefined, // 不能用 session：retrieve server 看不到会话，查的是 anon 区
       store: ctxObj.ccrStore,
       persistStore: ctxObj.persistCcrStore,
     })

@@ -110,7 +110,16 @@ function canonical(value) {
 
 function normalizeMessageWhitespace(content) {
   if (!content) return ""
-  return content.replace(/\n{3,}/g, "\n\n").replace(/[ \t]+$/gm, "")
+  // Whitespace-only messages must collapse to "" — "\n\n\n" used to come out as
+  // "\n\n", leaving a block that looks empty but is not.
+  if (content.trim() === "") return ""
+  // Trim each line separately: the old /[ \t]+$/gm backtracked per line and was
+  // quadratic on long space runs (40k spaces took ~800ms). split/map is linear.
+  return content
+    .replace(/\n{3,}/g, "\n\n")
+    .split("\n")
+    .map((line) => line.replace(/[ 	]+$/, ""))
+    .join("\n")
 }
 
 export function collapseWhitespace(body, options) {

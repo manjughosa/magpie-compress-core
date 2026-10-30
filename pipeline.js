@@ -3,7 +3,9 @@ import { PIPELINE } from "./engines/index.js"
 import { conversationView } from "./adapter.js"
 import { restoreText } from "./engines/headroom.js"
 
-export const INTERNAL_MARKER = "__magpieCompressCore"
+// A Symbol, not a string: JSON.stringify ignores symbol keys, so the hand-off
+// flag between the Bun hook and the moejs middleware can never reach the vendor.
+export const INTERNAL_MARKER = Symbol.for("magpie.compressCore.done")
 export const TELEMETRY_VERSION = 1
 
 export function clone(value) {
