@@ -17,8 +17,9 @@
 //   4. config schema 在只有 enabled 的上游基础上，补了 catalog 要求的 stub 相关键
 //      （keepStub / stubChars / stubKeepSummary）与工具名列表（readToolNames / writeToolNames）。
 //      工具名列表为空 = 用上游内置集合；非空 = 替换内置集合（要加自定义名字就整列列出来）。
-//   5. stackPriority：上游 engine 元数据写的是 5（"跑在内容引擎之前"），但 catalog.js 已把
-//      read-lifecycle 锁在 22（catalog 禁改），本模块导出的 stackPriority 跟随 catalog = 22，
+//   5. stackPriority：上游 engine 元数据写的是 5（"跑在内容引擎之前"）。本移植原本锁在
+//      22，结果排在 session-dedup(3) 之后：dedup 先把重复块换成引用，read-lifecycle 再把
+//      被引用的原副本折叠成 stub，文件内容就只剩互相指向的标记。现改为 2，排在 dedup 之前。
 //      实际执行顺序由 catalog 的 ORDER 决定。上游的 5 只作为设计意图记录在这里。
 //   6. 砍掉的东西：EngineConfigField 的 validate()（pipeline 不做校验）、metadata 里的
 //      targetLatencyMs/supportsPreview/stable（面板不用）、apply 里对 stepConfig 的解构糖。
@@ -37,9 +38,10 @@ export const why = "同一个文件被反复 Read 时，把被后续 Read/Write 
 export const description =
   "Collapses stale/superseded file-Read tool results: when the same path is re-read or modified later in the conversation, earlier Reads are replaced with a short stub, keeping the current Read intact. Lossy + opt-in (default off). Supports Anthropic and OpenAI tool shapes."
 export const lossy = true
-export const cacheImpact = "moderate"
+export const cacheImpact = "moderate"
+
 export const defaultOn = false
-export const stackPriority = 22 // 上游 5；catalog 锁定 22，见文件头第 5 条
+export const stackPriority = 2 // 上游 5；catalog 锁定 22，见文件头第 5 条
 export const isSingleMode = false
 export const levels = undefined
 export const available = true

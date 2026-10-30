@@ -610,7 +610,7 @@ globalThis.CompressCatalog = {
       "label": "Read Lifecycle",
       "description": "Collapses Read tool results that a strictly-later Read or Write superseded, keeping only the newest view of each path.",
       "why": "同一文件反复 Read 时，把被后续 Read/Write 覆盖掉的旧结果折叠成短 stub，只留最新一次。（注意：同一条路径被再次 Read/Write 时，更早的结果会被折叠，prefix 随之失配。）",
-      "stackPriority": 22,
+      "stackPriority": 2,
       "lossy": true,
       "cacheImpact": "moderate",
       "isSingleMode": false,
@@ -920,6 +920,7 @@ globalThis.CompressCatalog = {
     }
   ],
   "order": [
+    "read-lifecycle",
     "session-dedup",
     "ccr",
     "lite",
@@ -928,7 +929,6 @@ globalThis.CompressCatalog = {
     "headroom",
     "relevance",
     "caveman",
-    "read-lifecycle",
     "aggressive",
     "llmlingua",
     "ultra",

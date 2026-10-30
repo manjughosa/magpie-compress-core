@@ -22,6 +22,8 @@ import {
   stackPriority,
 } from "../engines/read-lifecycle.js"
 import { check, ctxFor, bodyChars } from "./helpers.mjs"
+import { runPipeline } from "../pipeline.js"
+import { ENGINES } from "../catalog.js"
 
 export const name = "read-lifecycle"
 
@@ -53,7 +55,7 @@ const readTwice = (path = "/src/app.js") => ({
 export async function run() {
   // ---- 元数据 ----
   check("meta id", id === "read-lifecycle")
-  check("meta lossy/opt-in", lossy === true && defaultOn === false && stackPriority === 22)
+  check("meta lossy/opt-in", lossy === true && defaultOn === false && stackPriority === 2)
   check("schema 有工具名与 stub 摘要", ["readToolNames", "writeToolNames", "stubKeepSummary", "keepStub"].every((k) => configSchema.some((f) => f.key === k)))
 
   // ---- 基础判定 ----
@@ -269,5 +271,31 @@ export async function run() {
     const pct = ((before - after) / before) * 100
     console.log(`  info  两次 Read 同一文件：${before} → ${after} 字节（${pct.toFixed(2)}%），折叠 ${r.collapsedCount} 处`)
     check("有实际节省", pct > 20, `${pct.toFixed(2)}%`)
+  }
+  // ---- 与 session-dedup 同时开启：不能把内容压成两个互相指向的标记 ----
+  // 旧顺序里 session-dedup(3) 先跑：它把第二次 Read 换成引用，指向第一次的内容；
+  // 随后 read-lifecycle(22) 又把第一次 Read 折叠成 stub，于是引用指向 stub，
+  // 文件内容从请求里彻底消失。现在 read-lifecycle 排在前面(2)，先折叠再让 dedup 看最终文本。
+  {
+    const long = "FILE CONTENT LINE ".repeat(80)
+    const body = {
+      model: "m",
+      messages: [
+        { role: "user", content: "读两次同一个文件" },
+        readCall("c1", "/src/app.js"),
+        toolResult("c1", long),
+        readCall("c2", "/src/app.js"),
+        toolResult("c2", long),
+      ],
+    }
+    const strategies = Object.fromEntries(ENGINES.map((e) => [e.id, false]))
+    strategies["read-lifecycle"] = true
+    strategies["session-dedup"] = true
+    runPipeline(body, ctxFor("chat"), { preserve: { system: false, lastTurns: 0 }, strategies })
+    const text = JSON.stringify(body)
+    const hasContent = text.includes("FILE CONTENT LINE")
+    const stubs = (text.match(/read superseded/g) || []).length
+    check("RL+dedup 文件内容至少完整保留一份", hasContent, `stubs=${stubs}`)
+    check("RL+dedup 不会两个都变成标记", !(stubs > 0 && !hasContent))
   }
 }
