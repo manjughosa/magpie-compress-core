@@ -11,6 +11,7 @@
     apply: () => apply2,
     applySessionDedup: () => applySessionDedup,
     callerSupportsCcrRetrieve: () => callerSupportsCcrRetrieve,
+    configSchema: () => configSchema2,
     findNearDuplicates: () => findNearDuplicates,
     id: () => id2,
     jaccard: () => jaccard,
@@ -159,6 +160,7 @@
     applyLiteCompression: () => applyLiteCompression,
     collapseWhitespace: () => collapseWhitespace,
     compressToolResults: () => compressToolResults,
+    configSchema: () => configSchema,
     createCompressionStats: () => createCompressionStats,
     dedupSystemPrompt: () => dedupSystemPrompt,
     id: () => id,
@@ -401,9 +403,19 @@
     }
     return value;
   }
+  function trimLineEnd(line) {
+    let e = line.length;
+    while (e > 0) {
+      const c = line.charCodeAt(e - 1);
+      if (c !== 32 && c !== 9) break;
+      e--;
+    }
+    return e === line.length ? line : line.slice(0, e);
+  }
   function normalizeMessageWhitespace(content) {
     if (!content) return "";
-    return content.replace(/\n{3,}/g, "\n\n").replace(/[ \t]+$/gm, "");
+    if (content.trim() === "") return content;
+    return content.replace(/\n{3,}/g, "\n\n").split("\n").map(trimLineEnd).join("\n");
   }
   function collapseWhitespace(body, options) {
     options = options || {};
@@ -617,6 +629,45 @@
     };
   }
   var id = "lite";
+  var configSchema = [
+    {
+      key: "compressToolResults",
+      type: "boolean",
+      label: "\u538B\u7F29\u5DE5\u5177\u8F93\u51FA",
+      description: "\u8D85\u8FC7 maxToolLength \u7684\u5DE5\u5177\u8F93\u51FA\u53EA\u7559\u5934\u90E8\u5E76\u6807\u8BB0\u622A\u65AD\uFF08\u6709\u635F\uFF0C\u9ED8\u8BA4\u5173\uFF09\u3002\u5F00\u542F\u4F1A\u6539\u5199\u6A21\u578B\u5DF2\u8BFB\u8FC7\u7684\u6D88\u606F\u3001\u524D\u7F00\u5931\u914D\uFF1B\u53EA\u7559\u5934\u90E8\u610F\u5473\u7740\u62A5\u9519\u5E38\u5728\u5C3E\u90E8\u65F6\u4F1A\u4E22\u3002\u8981\u4FDD\u4F4F\u62A5\u9519\u884C\u8BF7\u6539\u7528 rtk\uFF08\u5B83\u6309 severity \u8BCD\u8868\u4FDD\u62A4\uFF09\u3002",
+      defaultValue: false
+    },
+    {
+      key: "maxToolLength",
+      type: "number",
+      label: "\u5DE5\u5177\u8F93\u51FA\u4E0A\u9650",
+      description: "\u8D85\u8FC7\u8FD9\u4E2A\u5B57\u7B26\u6570\u7684\u5DE5\u5177\u8F93\u51FA\u4F1A\u88AB\u622A\u65AD\uFF0C\u4EC5\u5728\u300C\u538B\u7F29\u5DE5\u5177\u8F93\u51FA\u300D\u5F00\u542F\u65F6\u751F\u6548\u3002\u4F4E\u4E8E 2000 \u56DE\u843D\u5230 2000\u3002",
+      defaultValue: 2e3,
+      min: 200,
+      max: 2e4
+    },
+    {
+      key: "preserveSystemPrompt",
+      type: "boolean",
+      label: "\u4FDD\u62A4\u7CFB\u7EDF\u63D0\u793A\u8BCD",
+      description: "\u5B8C\u5168\u4E0D\u78B0 system \u6D88\u606F\u3002\u9ED8\u8BA4\u5173\uFF1Asystem \u6BB5\u4E5F\u53C2\u4E0E\u7A7A\u767D\u6298\u53E0\u4E0E\u540C\u6587\u53BB\u91CD\u3002",
+      defaultValue: false
+    },
+    {
+      key: "preserveCurrentTurn",
+      type: "boolean",
+      label: "\u4FDD\u62A4\u5F53\u524D\u8F6E",
+      description: "\u9ED8\u8BA4\u5173\uFF1A\u5168\u91CF\u6539\u5199\uFF0C\u4E25\u683C\u524D\u7F00\u7A33\u5B9A\uFF0C\u7F13\u5B58\u4E00\u6B21\u90FD\u4E0D\u5931\u914D\uFF08\u4EE3\u4EF7\u662F\u521A\u6253\u7684\u5B57\u4E5F\u4F1A\u88AB\u6298\u53E0\u7A7A\u767D\uFF09\u3002\u5F00\u542F\u6362\u56DE\u4FDD\u5B88\u6A21\u5F0F\uFF1A\u6700\u540E\u4E00\u6761 assistant \u4E4B\u540E\u7684\u6D88\u606F\u539F\u6837\u9001\u51FA\uFF0C\u53EA\u5728\u5B83\u53D8\u6210\u5386\u53F2\u7684\u90A3\u4E00\u8F6E\u88AB\u6539\u5199\u4E00\u6B21\u3001\u7F13\u5B58\u5931\u914D\u4E00\u6B21\u3002",
+      defaultValue: false
+    },
+    {
+      key: "supportsVision",
+      type: "boolean",
+      label: "\u76EE\u6807\u6A21\u578B\u770B\u5F97\u89C1\u56FE",
+      description: "\u9ED8\u8BA4 true\uFF08\u4E0D\u52A8\u56FE\uFF09\u3002\u8BBE\u6210 false \u624D\u628A data:image/* \u9644\u4EF6\u6362\u6210\u4E00\u884C [image: png] \u5360\u4F4D\u2014\u2014\u90A3\u662F\u300C\u6A21\u578B\u8BFB\u4E0D\u4E86\u56FE\u300D\u7684\u517C\u5BB9\u5904\u7406\uFF0C\u4E0D\u662F\u538B\u7F29\u3002\u65E9\u524D\u7684\u7248\u672C\u6309\u6A21\u578B\u540D\u81EA\u52A8\u5224\u5B9A\uFF0C\u7ED3\u679C\u540D\u5B57\u4E0D\u50CF\u89C6\u89C9\u6A21\u578B\u7684\u4F1A\u628A\u7528\u6237\u622A\u56FE\u6362\u6389\u3002",
+      defaultValue: true
+    }
+  ];
   function apply(body, ctx, cfg) {
     if (!body || typeof body !== "object") return false;
     const opts = {
@@ -668,153 +719,143 @@
   // engines/session-dedup.js
   var DEFAULT_MIN_BLOCK_CHARS = 80;
   var MIN_BLOCK_LINES = 3;
-  var MAX_SUFFIX_STARTS = 2e3;
+  var MAX_BLOCK_GROUPS = 4e3;
   var MAX_TOTAL_BLOCK_BYTES = 8 * 1024 * 1024;
   function hashBlock(text) {
     return sha256hex(text).slice(0, 24);
   }
-  function findSuffixBlocks(lines, minBlockChars) {
-    const n = lines.length;
-    const seen = /* @__PURE__ */ new Set();
-    const results = [];
-    const maxStarts = Math.min(n, MAX_SUFFIX_STARTS);
-    let totalBlockBytes = 0;
-    for (let start = 0; start < maxStarts; start++) {
-      const block = lines.slice(start).join("\n");
-      const blockLines = n - start;
-      if (blockLines >= MIN_BLOCK_LINES && block.length >= minBlockChars && !seen.has(block)) {
-        seen.add(block);
-        results.push({ block, startLine: start });
-        totalBlockBytes += block.length;
-        if (totalBlockBytes >= MAX_TOTAL_BLOCK_BYTES) break;
+  var HASH_P1 = 16777213;
+  var HASH_P2 = 33554393;
+  var HASH_BASE = 257;
+  function fnv1a32(s, start, end) {
+    let h = 2166136261;
+    for (let i = start; i < end; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  function extractBlocks(text, minBlockChars) {
+    const out = [];
+    let segStart = 0;
+    const re = /\n{2,}/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index - segStart >= minBlockChars) {
+        out.push({ start: segStart, end: m.index, key: "p:" + fnv1a32(text, segStart, m.index) });
       }
+      segStart = m.index + m[0].length;
     }
-    return results;
-  }
-  function countLiteralOccurrences(text, needle) {
-    if (!needle) return 0;
-    let count = 0;
-    let offset = 0;
-    while (true) {
-      const idx = text.indexOf(needle, offset);
-      if (idx === -1) return count;
-      count++;
-      offset = idx + needle.length;
+    if (text.length - segStart >= minBlockChars) {
+      out.push({ start: segStart, end: text.length, key: "p:" + fnv1a32(text, segStart, text.length) });
     }
-  }
-  function replaceLiteralOccurrencesAfterFirst(text, needle, replacement) {
-    if (!needle) return text;
-    const first = text.indexOf(needle);
-    if (first === -1) return text;
-    let result = text.slice(0, first + needle.length);
-    let offset = first + needle.length;
-    while (true) {
-      const idx = text.indexOf(needle, offset);
-      if (idx === -1) {
-        result += text.slice(offset);
-        return result;
-      }
-      result += text.slice(offset, idx) + replacement;
-      offset = idx + needle.length;
-    }
-  }
-  function dedupeWithinMessage(text, minBlockChars, blockMap, deadline) {
     const lines = text.split("\n");
-    const blocks = findSuffixBlocks(lines, minBlockChars);
-    if (blocks.length < 2) return { deduped: text, changed: false };
-    const blockFreq = /* @__PURE__ */ new Map();
-    for (const { block } of blocks) {
-      blockFreq.set(block, (blockFreq.get(block) || 0) + 1);
+    const n = lines.length;
+    if (n >= MIN_BLOCK_LINES) {
+      const starts = new Uint32Array(n);
+      const lh1 = new Uint32Array(n);
+      const lh2 = new Uint32Array(n);
+      let off = 0;
+      for (let i = 0; i < n; i++) {
+        starts[i] = off;
+        const h = fnv1a32(lines[i], 0, lines[i].length);
+        lh1[i] = h % HASH_P1;
+        lh2[i] = h % HASH_P2;
+        off += lines[i].length + 1;
+      }
+      let h1 = 0, h2 = 0, pow1 = 1, pow2 = 1;
+      for (let i = n - 1; i >= 0; i--) {
+        h1 = (lh1[i] * pow1 + h1) % HASH_P1;
+        h2 = (lh2[i] * pow2 + h2) % HASH_P2;
+        const lineCount = n - i;
+        const clen = text.length - starts[i];
+        if (lineCount >= MIN_BLOCK_LINES && clen >= minBlockChars) {
+          out.push({ start: starts[i], end: text.length, key: "s:" + h1 + "_" + h2 });
+        }
+        pow1 = pow1 * HASH_BASE % HASH_P1;
+        pow2 = pow2 * HASH_BASE % HASH_P2;
+      }
     }
-    const sortedBlocks = [...blocks].sort((a, b) => {
-      const freqDiff = (blockFreq.get(b.block) || 0) - (blockFreq.get(a.block) || 0);
-      return freqDiff !== 0 ? freqDiff : b.block.length - a.block.length;
-    });
-    let result = text;
-    let changed = false;
-    for (const { block } of sortedBlocks) {
-      if (deadline && Date.now() > deadline) break;
-      const occurrences = countLiteralOccurrences(result, block);
-      if (occurrences < 2) continue;
-      const sha = hashBlock(block);
-      const marker = `[dedup:ref sha=${sha}]`;
-      result = replaceLiteralOccurrencesAfterFirst(result, block, marker);
-      changed = true;
-      if (blockMap && !blockMap.has(sha)) blockMap.set(sha, block);
-    }
-    return { deduped: result, changed };
+    return out;
   }
   function dedupMessageTexts(msgTexts, minBlockChars, currentTurnStart, blockMap, deadline) {
     const deduped = /* @__PURE__ */ new Map();
     let dedupCount = 0;
     const over = () => deadline && Date.now() > deadline;
-    if (msgTexts.length === 1) {
-      const { text, msgIdx } = msgTexts[0];
-      const r = dedupeWithinMessage(text, minBlockChars, blockMap, deadline);
-      if (r.changed) {
-        deduped.set(msgIdx, r.deduped);
-        dedupCount++;
-      }
-      return { deduped, dedupCount };
-    }
+    const groups = /* @__PURE__ */ new Map();
     const perSlot = [];
-    for (const { msgIdx, messageIndex, text } of msgTexts) {
-      if (over()) {
-        perSlot.push({ msgIdx, messageIndex, text, blocks: [] });
-        continue;
-      }
-      perSlot.push({
-        msgIdx,
-        messageIndex,
-        text,
-        blocks: findSuffixBlocks(text.split("\n"), minBlockChars).map(({ block }) => ({
-          block,
-          sha: hashBlock(block)
-        }))
-      });
-    }
-    const firstSeen = /* @__PURE__ */ new Map();
-    for (const { msgIdx, blocks } of perSlot) {
-      for (const { block, sha } of blocks) {
-        if (!firstSeen.has(sha)) {
-          firstSeen.set(sha, { ownerMsgIdx: msgIdx, block });
+    for (let s = 0; s < msgTexts.length; s++) {
+      const { msgIdx, messageIndex, text } = msgTexts[s];
+      let blocks = [];
+      if (!over()) {
+        blocks = extractBlocks(text, minBlockChars);
+        for (const b of blocks) {
+          let g = groups.get(b.key);
+          if (!g) {
+            g = [];
+            groups.set(b.key, g);
+          }
+          g.push({ slot: s, start: b.start, end: b.end });
         }
       }
+      perSlot.push({ msgIdx, messageIndex, text });
     }
-    if (blockMap) {
-      for (const [sha, { block }] of firstSeen) {
-        if (!blockMap.has(sha)) blockMap.set(sha, block);
+    const replPerSlot = /* @__PURE__ */ new Map();
+    let materialized = 0;
+    let groupCount = 0;
+    for (const entries of groups.values()) {
+      if (entries.length < 2) continue;
+      if (over()) break;
+      if (++groupCount > MAX_BLOCK_GROUPS) break;
+      const first = entries[0];
+      const block = perSlot[first.slot].text.slice(first.start, first.end);
+      materialized += block.length;
+      if (materialized > MAX_TOTAL_BLOCK_BYTES) break;
+      const verified = [first];
+      for (let k = 1; k < entries.length; k++) {
+        const e = entries[k];
+        const t = perSlot[e.slot].text;
+        if (e.end - e.start === block.length && t.slice(e.start, e.end) === block) verified.push(e);
+      }
+      if (verified.length < 2) continue;
+      const sha = hashBlock(block);
+      if (blockMap && !blockMap.has(sha)) blockMap.set(sha, block);
+      for (let k = 1; k < verified.length; k++) {
+        const e = verified[k];
+        let arr = replPerSlot.get(e.slot);
+        if (!arr) {
+          arr = [];
+          replPerSlot.set(e.slot, arr);
+        }
+        arr.push({ start: e.start, end: e.end, sha });
       }
     }
-    for (const { msgIdx, messageIndex, text, blocks } of perSlot) {
-      if (messageIndex >= currentTurnStart) continue;
-      const dupBlocks = [];
-      for (const { block, sha } of blocks) {
-        const owner = firstSeen.get(sha);
-        if (owner && owner.ownerMsgIdx < msgIdx && owner.block === block) {
-          dupBlocks.push({ block, sha });
+    for (const [s, repls] of replPerSlot) {
+      const slot = perSlot[s];
+      if (slot.messageIndex >= currentTurnStart) continue;
+      repls.sort(
+        (a, b) => b.end - b.start - (a.end - a.start) || a.start - b.start || (a.sha < b.sha ? -1 : a.sha > b.sha ? 1 : 0)
+      );
+      const accepted = [];
+      for (const r of repls) {
+        if (over()) break;
+        let ok = true;
+        for (const a of accepted) {
+          if (r.start < a.end && a.start < r.end) {
+            ok = false;
+            break;
+          }
         }
+        if (ok) accepted.push(r);
       }
-      if (dupBlocks.length === 0) continue;
-      dupBlocks.sort((a, b) => b.block.length - a.block.length);
-      let result = text;
-      let changed = false;
-      const replaced = /* @__PURE__ */ new Set();
-      for (const { block, sha } of dupBlocks) {
-        if ([...replaced].some((r) => r.includes(block))) continue;
-        const idx = result.indexOf(block);
-        if (idx !== -1) {
-          const marker = `[dedup:ref sha=${sha}]`;
-          result = result.slice(0, idx) + marker + result.slice(idx + block.length);
-          changed = true;
-          replaced.add(block);
-          break;
-        }
+      if (accepted.length === 0) continue;
+      accepted.sort((a, b) => b.start - a.start);
+      let result = slot.text;
+      for (const r of accepted) {
+        result = result.slice(0, r.start) + `[dedup:ref sha=${r.sha} \u2014 original appears earlier in this conversation]` + result.slice(r.end);
       }
-      if (changed) {
-        deduped.set(msgIdx, result);
-        dedupCount++;
-      }
+      deduped.set(slot.msgIdx, result);
+      dedupCount++;
     }
     return { deduped, dedupCount };
   }
@@ -917,7 +958,7 @@
     });
     const dedupMap = [];
     const seenRefs = /* @__PURE__ */ new Set();
-    const refPattern = /\[dedup:ref sha=([0-9a-f]{24})\]/g;
+    const refPattern = /\[dedup:ref sha=([0-9a-f]{24})[^\]]*\]/g;
     for (const [, text] of deduped) {
       for (const match of text.matchAll(refPattern)) {
         const sha = match[1];
@@ -1079,11 +1120,36 @@
   }
   function restoreDedup(text, map) {
     return text.replace(
-      /\[dedup:ref sha=([0-9a-f]{24})\]/g,
+      /\[dedup:ref sha=([0-9a-f]{24})[^\]]*\]/g,
       (m, sha) => map && map[sha] !== void 0 ? map[sha] : m
     );
   }
   var id2 = "session-dedup";
+  var configSchema2 = [
+    {
+      key: "minBlockChars",
+      type: "number",
+      label: "\u6700\u5C0F\u5757\u5B57\u7B26",
+      description: "\u5C0F\u4E8E\u8FD9\u4E2A\u957F\u5EA6\u7684\u6587\u672C\u5757\u4E0D\u53C2\u4E0E\u53BB\u91CD\u3002",
+      defaultValue: DEFAULT_MIN_BLOCK_CHARS,
+      min: 20,
+      max: 4e3
+    },
+    {
+      key: "fuzzy",
+      type: "boolean",
+      label: "\u6A21\u7CCA\u8FD1\u4F3C\u53BB\u91CD",
+      description: "\u628A\u4E0E\u66F4\u65E9\u6D88\u606F\u76F8\u4F3C\u5EA6 \u226585% \u7684\u6574\u6761\u6D88\u606F\u6362\u6210\u53EF\u53D6\u56DE\u7684 CCR \u5F15\u7528\u3002\u9700\u8981\u8C03\u7528\u65B9\u5E26 CCR retrieve \u5DE5\u5177\uFF0C\u5426\u5219\u81EA\u52A8\u8DF3\u8FC7\u3002\u76F8\u4F3C\u5EA6\u9608\u503C\u7B49\u7EC6\u53C2\u53EA\u80FD\u624B\u5199 options\u3002",
+      defaultValue: false
+    },
+    {
+      key: "preserveCurrentTurn",
+      type: "boolean",
+      label: "\u4FDD\u62A4\u5F53\u524D\u8F6E",
+      description: "\u9ED8\u8BA4\u5173\uFF1A\u6B63\u5728\u53D1\u9001\u7684\u8FD9\u4E00\u8F6E\u4E5F\u7167\u5E38\u53BB\u91CD\uFF0C\u524D\u7F00\u4E25\u683C\u7A33\u5B9A\u3001\u7F13\u5B58\u4E0D\u5931\u914D\u3002\u5F00\u542F\u540E\u5F53\u524D\u8F6E\u539F\u6837\u9001\u51FA\uFF0C\u4EE3\u4EF7\u662F\u5B83\u53D8\u6210\u5386\u53F2\u7684\u90A3\u4E00\u8F6E\u88AB\u6539\u5199\u4E00\u6B21\u3001\u7F13\u5B58\u5931\u914D\u4E00\u6B21\u3002",
+      defaultValue: false
+    }
+  ];
   function apply2(body, ctx, cfg) {
     if (!body || typeof body !== "object") return false;
     const r = applySessionDedup(body, cfg);
@@ -1106,6 +1172,7 @@
   var rtk_exports = {};
   __export(rtk_exports, {
     apply: () => apply3,
+    configSchema: () => configSchema3,
     id: () => id3
   });
 
@@ -2238,6 +2305,94 @@
     stripCodeComments: false,
     preserveDocstrings: true
   };
+  var configSchema3 = [
+    {
+      key: "intensity",
+      type: "select",
+      label: "\u5F3A\u5EA6",
+      description: "minimal \u653E\u5BBD\u884C\u6570\u4E0A\u9650\u53EA\u53BB\u566A\u97F3\uFF0Cstandard \u9ED8\u8BA4\uFF0Caggressive \u6536\u7D27\u5934\u5C3E\u4FDD\u7559\u3001\u538B\u5F97\u66F4\u72E0\u3002",
+      defaultValue: DEFAULTS.intensity,
+      options: [
+        { value: "minimal", label: "\u8F7B\uFF08minimal\uFF09" },
+        { value: "standard", label: "\u6807\u51C6\uFF08standard\uFF09" },
+        { value: "aggressive", label: "\u6FC0\u8FDB\uFF08aggressive\uFF09" }
+      ]
+    },
+    {
+      key: "maxLinesPerResult",
+      type: "number",
+      label: "\u6BCF\u4E2A\u7ED3\u679C\u6700\u591A\u884C\u6570",
+      description: "\u5DE5\u5177\u8F93\u51FA\u8D85\u8FC7\u8FD9\u4E2A\u884C\u6570\u5C31\u622A\u65AD\uFF0C\u4FDD\u5934+\u5C3E+\u62A5\u9519\u884C\uFF08severity \u8BCD\u8868\u6052\u4FDD\u7559\uFF09\u30020 \u8868\u793A\u4E0D\u6309\u884C\u622A\u3002",
+      defaultValue: DEFAULTS.maxLinesPerResult,
+      min: 0,
+      max: 1e4
+    },
+    {
+      key: "maxCharsPerResult",
+      type: "number",
+      label: "\u6BCF\u4E2A\u7ED3\u679C\u6700\u591A\u5B57\u7B26",
+      description: "\u5728\u884C\u6570\u622A\u65AD\u4E4B\u540E\u518D\u6309\u5B57\u7B26\u515C\u5E95\u30020 \u8868\u793A\u4E0D\u6309\u5B57\u7B26\u622A\u3002",
+      defaultValue: DEFAULTS.maxCharsPerResult,
+      min: 0,
+      max: 1e6
+    },
+    {
+      key: "deduplicateThreshold",
+      type: "number",
+      label: "\u91CD\u590D\u884C\u6298\u53E0\u9608\u503C",
+      description: "\u540C\u4E00\u884C\u8FDE\u7EED\u51FA\u73B0\u8FBE\u5230\u8FD9\u4E2A\u6B21\u6570\u5C31\u6298\u53E0\u6210\u4E00\u6761\u5E26\u8BA1\u6570\u7684\u6458\u8981\u3002",
+      defaultValue: DEFAULTS.deduplicateThreshold,
+      min: 2,
+      max: 100
+    },
+    {
+      key: "enableGrouping",
+      type: "boolean",
+      label: "\u76F8\u4F3C\u884C\u5206\u7EC4",
+      description: "\u628A\u7ED3\u6784\u76F8\u4F3C\u7684\u884C\u5F52\u5E76\u6210\u7EC4\uFF08\u9ED8\u8BA4\u5173\uFF0Copt-in\uFF09\u3002",
+      defaultValue: DEFAULTS.enableGrouping
+    },
+    {
+      key: "groupingThreshold",
+      type: "number",
+      label: "\u5206\u7EC4\u9608\u503C",
+      description: "\u76F8\u4F3C\u884C\u8FBE\u5230\u8FD9\u4E2A\u6761\u6570\u624D\u5206\u7EC4\uFF0C\u4EC5\u5728\u300C\u76F8\u4F3C\u884C\u5206\u7EC4\u300D\u5F00\u542F\u65F6\u751F\u6548\u3002",
+      defaultValue: DEFAULTS.groupingThreshold,
+      min: 2,
+      max: 100
+    },
+    {
+      key: "disabledFilters",
+      type: "multiselect",
+      label: "\u505C\u7528\u7684\u5185\u7F6E\u8FC7\u6EE4\u5668",
+      description: "\u52FE\u9009\u7684\u5185\u7F6E\u8FC7\u6EE4\u5668\u4E0D\u751F\u6548\u3002\u7559\u7A7A = \u5168\u90E8\u542F\u7528\u3002",
+      defaultValue: [],
+      options: [
+        { value: "git-status", label: "git-status" },
+        { value: "git-log", label: "git-log" },
+        { value: "git-diff", label: "git-diff" },
+        { value: "docker-logs", label: "docker-logs" },
+        { value: "npm-install", label: "npm-install" },
+        { value: "build-typescript", label: "build-typescript" },
+        { value: "error-stacktrace", label: "error-stacktrace" },
+        { value: "generic-output", label: "generic-output" }
+      ]
+    },
+    {
+      key: "applyToToolResults",
+      type: "boolean",
+      label: "\u4F5C\u7528\u4E8E\u5DE5\u5177\u7ED3\u679C",
+      description: "\u5BF9 tool / tool_result \u5185\u5BB9\u505A\u5904\u7406\uFF08\u9ED8\u8BA4\u5F00\uFF09\u3002\u5173\u6389\u57FA\u672C\u7B49\u4E8E\u505C\u7528\u672C\u5F15\u64CE\u3002",
+      defaultValue: DEFAULTS.applyToToolResults
+    },
+    {
+      key: "preserveDocstrings",
+      type: "boolean",
+      label: "\u4FDD\u7559\u6587\u6863\u5B57\u7B26\u4E32",
+      description: "\u4EE3\u7801\u5757\u91CC\u7684 docstring / \u6587\u6863\u6CE8\u91CA\u539F\u6837\u4FDD\u7559\uFF08\u9ED8\u8BA4\u5F00\uFF09\u3002",
+      defaultValue: DEFAULTS.preserveDocstrings
+    }
+  ];
   function mergeRtkConfig(cfg) {
     const c = cfg && typeof cfg === "object" ? cfg : {};
     const merged = { ...DEFAULTS, ...c };
@@ -2578,6 +2733,7 @@ ${stripped.text}
   var codex_responses_exports = {};
   __export(codex_responses_exports, {
     apply: () => apply4,
+    configSchema: () => configSchema4,
     id: () => id4
   });
   var SUPPORTED_TYPES = /* @__PURE__ */ new Set([
@@ -2607,6 +2763,62 @@ ${stripped.text}
     minLogLines: 24,
     preserveToolNames: []
   };
+  var configSchema4 = [
+    {
+      key: "minBytes",
+      type: "number",
+      label: "\u6700\u5C0F\u8F93\u51FA\u5B57\u8282",
+      description: "\u5DE5\u5177\u8F93\u51FA\u5C0F\u4E8E\u8FD9\u4E2A\u5B57\u8282\u6570\u5C31\u4E0D\u538B\uFF08\u538B\u4E86\u4E5F\u4E0D\u5212\u7B97\uFF09\u3002",
+      defaultValue: DEFAULTS2.minBytes,
+      min: 0,
+      max: 2e6
+    },
+    {
+      key: "maxOutputBytes",
+      type: "number",
+      label: "\u6700\u5927\u8F93\u51FA\u5B57\u8282",
+      description: "\u5355\u4E2A\u5DE5\u5177\u8F93\u51FA\u7684\u5904\u7406\u4E0A\u9650\uFF0C\u8D85\u8FC7\u5219\u4E0D\u518D\u5C1D\u8BD5\u538B\u7F29\u3002",
+      defaultValue: DEFAULTS2.maxOutputBytes,
+      min: 1,
+      max: 1e7
+    },
+    {
+      key: "maxCandidateBytes",
+      type: "number",
+      label: "\u6700\u5927\u5019\u9009\u5B57\u8282",
+      description: "\u53C2\u4E0E\u538B\u7F29\u5224\u65AD\u7684\u5019\u9009\u5757\u5B57\u8282\u4E0A\u9650\u3002",
+      defaultValue: DEFAULTS2.maxCandidateBytes,
+      min: 1,
+      max: 2e6
+    },
+    {
+      key: "maxLines",
+      type: "number",
+      label: "\u6700\u591A\u4FDD\u7559\u884C\u6570",
+      description: "\u65E5\u5FD7\u7C7B\u8F93\u51FA\u6298\u53E0\u540E\u6700\u591A\u4FDD\u7559\u7684\u884C\u6570\u3002",
+      defaultValue: DEFAULTS2.maxLines,
+      min: 1,
+      max: 1e4
+    },
+    {
+      key: "minSearchMatches",
+      type: "number",
+      label: "\u641C\u7D22\u7ED3\u679C\u6700\u5C0F\u5339\u914D\u6570",
+      description: "web_search \u7C7B\u8F93\u51FA\u8FBE\u5230\u8FD9\u4E2A\u5339\u914D\u6761\u6570\u624D\u6298\u53E0\u3002",
+      defaultValue: DEFAULTS2.minSearchMatches,
+      min: 2,
+      max: 1e4
+    },
+    {
+      key: "minLogLines",
+      type: "number",
+      label: "\u65E5\u5FD7\u6700\u5C0F\u884C\u6570",
+      description: "\u65E5\u5FD7\u7C7B\u8F93\u51FA\u8FBE\u5230\u8FD9\u4E2A\u884C\u6570\u624D\u6298\u53E0\u3002",
+      defaultValue: DEFAULTS2.minLogLines,
+      min: 2,
+      max: 1e4
+    }
+  ];
   var DIFF_HUNK_RE = /^@@{1,2}\s+-\d+(?:,\d+)?(?:\s+-\d+(?:,\d+)?)*\s+\+\d+(?:,\d+)?(?:,\d+)?\s+@@{1,2}/m;
   var SEARCH_LINE_RE = /^\s*(?:[\w./-]+:\d+(?::\d+)?:|\d+(?::\d+)?[-:])\s*\S/m;
   var IMPORTANT_LOG_RE = /(?:^|\b)(?:error|warning|warn|failed|failure|fatal|panic|exception|traceback|assertion|exit\s+code)\b/i;
@@ -2810,6 +3022,7 @@ ${stripped.text}
   var headroom_exports = {};
   __export(headroom_exports, {
     apply: () => apply5,
+    configSchema: () => configSchema5,
     crushText: () => crushText,
     id: () => id5,
     restoreText: () => restoreText,
@@ -4278,6 +4491,17 @@ ${GCF_FENCE_CLOSE}`;
     return result;
   }
   var id5 = "headroom";
+  var configSchema5 = [
+    {
+      key: "minRows",
+      type: "number",
+      label: "\u6700\u5C0F\u884C\u6570",
+      description: "\u8868\u683C\u5316 JSON \u7684\u884C\u6570\u5C11\u4E8E\u8FD9\u4E2A\u503C\u5C31\u4E0D\u538B\uFF08\u538B\u4E86\u4E5F\u7701\u4E0D\u4E0B\u4EC0\u4E48\uFF09\u3002",
+      defaultValue: DEFAULT_MIN_ROWS,
+      min: 2,
+      max: 200
+    }
+  ];
   function apply5(body, ctx, cfg = {}) {
     if (!body || typeof body !== "object") return false;
     if (cfg.enabled === false) return false;
@@ -4311,7 +4535,7 @@ ${GCF_FENCE_CLOSE}`;
     applyRelevanceToText: () => applyRelevanceToText,
     available: () => available,
     cacheImpact: () => cacheImpact,
-    configSchema: () => configSchema,
+    configSchema: () => configSchema6,
     defaultOn: () => defaultOn,
     description: () => description,
     id: () => id6,
@@ -4361,7 +4585,7 @@ ${GCF_FENCE_CLOSE}`;
       max: 1
     }
   ];
-  var configSchema = RELEVANCE_SCHEMA;
+  var configSchema6 = RELEVANCE_SCHEMA;
   function validateRelevanceConfig(config) {
     const errors = [];
     if (config.enabled !== void 0 && typeof config.enabled !== "boolean") {
@@ -4556,7 +4780,7 @@ ${GCF_FENCE_CLOSE}`;
     apply: () => apply7,
     available: () => available2,
     cacheImpact: () => cacheImpact2,
-    configSchema: () => configSchema2,
+    configSchema: () => configSchema7,
     defaultOn: () => defaultOn2,
     description: () => description2,
     extractPreservedBlocks: () => extractPreservedBlocks,
@@ -4883,16 +5107,16 @@ ${GCF_FENCE_CLOSE}`;
     { pattern: /\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/g, kind: "latex_block" },
     { pattern: /^#{1,6}\s+.+$/gm, kind: "markdown_heading" },
     { pattern: /^\|.*\|$/gm, kind: "markdown_table" },
-    { pattern: /^\|?[\s:]*-{3,}[\s:]*(\|[\s:]*-{3,}[\s:]*)*\|?$/gm, kind: "markdown_table" },
-    { pattern: /^\s*#(?:set|show|let|import|include)\b.+$/gm, kind: "typst_directive" },
+    { pattern: /^\|?[ \t:]*-{3,}[ \t:]*(\|[ \t:]*-{3,}[ \t:]*)*\|?$/gm, kind: "markdown_table" },
+    { pattern: /^[ \t]*#(?:set|show|let|import|include)\b[^\n]*$/gm, kind: "typst_directive" },
     { pattern: /`[^`\n]+`/g, kind: "inline_code" },
-    { pattern: /\[[^\]\n]*\]\([^)\s]+\)/g, kind: "markdown_link" },
+    { pattern: /\[[^\]\n]{0,1000}\]\([^)\s]{1,2000}\)/g, kind: "markdown_link" },
     { pattern: /\bhttps?:\/\/[^\s)\]"'>]+/g, kind: "url" },
     { pattern: /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g, kind: "const_case" },
     { pattern: /\bprocess\.env\.[A-Za-z_][A-Za-z0-9_]*/g, kind: "env_var" },
     { pattern: /\$[A-Z_][A-Z0-9_]*\b/g, kind: "env_var" },
     { pattern: /\b\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?\b/g, kind: "version" },
-    { pattern: /\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)+\(\)?/g, kind: "dotted_identifier" },
+    { pattern: /\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*){1,8}(?:\(\))?/g, kind: "dotted_identifier" },
     { pattern: /\b[A-Za-z_$][\w$]*\s*\([^()\n]*\)/g, kind: "function_call" },
     { pattern: /(?:^|\s)(?:\.{0,2}\/[A-Za-z0-9_@./-]+|[A-Za-z]:\\[A-Za-z0-9_.\\/-]+)/g, kind: "file_path" },
     { pattern: /\b(?:TypeError|ReferenceError|SyntaxError|RangeError|URIError|EvalError|Error|Exception):[^\n]+/g, kind: "error_message" }
@@ -4931,8 +5155,7 @@ ${GCF_FENCE_CLOSE}`;
     if (blocks.length === 0) return pruneByScore(text, rate, minScore);
     const placeholderToContent = /* @__PURE__ */ new Map();
     for (const b of blocks) placeholderToContent.set(b.placeholder, b.content);
-    const escaped = blocks.map((b) => b.placeholder.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-    const splitRe = new RegExp(`(${escaped.join("|")})`, "g");
+    const splitRe = /(\u0000OMNI_CAVEMAN_[^\u0000]*\u0000)/g;
     return withPlaceholders.split(splitRe).map((part) => {
       if (!part) return "";
       const preserved = placeholderToContent.get(part);
@@ -4957,8 +5180,13 @@ ${GCF_FENCE_CLOSE}`;
     {
       key: "compressionRate",
       type: "number",
-      label: "\u526A\u679D\u6BD4\u4F8B",
-      description: "Fraction of word tokens to keep (0\u20131). Lower = more aggressive.",
+      // 这个键是「保留比例」，不是「剪掉比例」——上游 types.ts 的原文：
+      // "Fraction of tokens to keep after heuristic pruning (0–1). Default 0.5 = keep 50%"，
+      // 代码里它被直接当作 pruneByScore 的 keepRate 传进去。旧的中文标签写「剪枝比例」、
+      // catalog.js 写「最多剪掉多少比例」，两处都与语义相反：想压掉 75% 的人会填 0.75，
+      // 实际得到的是保留 75%（只省下约 6%）。标签与说明必须和真实语义同向。
+      label: "\u4FDD\u7559\u6BD4\u4F8B",
+      description: "\u526A\u679D\u540E**\u4FDD\u7559**\u591A\u5C11\u6BD4\u4F8B\u7684\u8BCD token\uFF080\u20131\uFF0C\u9ED8\u8BA4 0.5 = \u4FDD\u7559\u4E00\u534A\uFF09\u3002\u6570\u503C\u8D8A\u4F4E\u538B\u5F97\u8D8A\u72E0\u3002",
       defaultValue: DEFAULT_ULTRA_CONFIG.compressionRate,
       min: 0,
       max: 1
@@ -4982,7 +5210,7 @@ ${GCF_FENCE_CLOSE}`;
       max: 32768
     }
   ];
-  var configSchema2 = ULTRA_SCHEMA;
+  var configSchema7 = ULTRA_SCHEMA;
   function validateUltraConfig(config) {
     const errors = [];
     const cfg = config && typeof config === "object" ? config : {};
@@ -5038,6 +5266,7 @@ ${GCF_FENCE_CLOSE}`;
       let changed = false;
       for (const seg of view.segments) {
         if (typeof seg.text !== "string" || seg.text.length === 0) continue;
+        if (seg.text.trim() === "") continue;
         if (conf.preserveSystemPrompt && seg.role === "system") continue;
         if (seg.text.indexOf(COMPRESSED_PREFIX) === 0) continue;
         if (conf.maxTokensPerMessage > 0) {
@@ -5065,7 +5294,7 @@ ${GCF_FENCE_CLOSE}`;
     cacheImpact: () => cacheImpact3,
     cleanupArtifacts: () => cleanupArtifacts,
     compressText: () => compressText,
-    configSchema: () => configSchema3,
+    configSchema: () => configSchema8,
     defaultOn: () => defaultOn3,
     estimateCompressionTokens: () => estimateCompressionTokens,
     extractPreservedBlocks: () => extractPreservedBlocks2,
@@ -5899,7 +6128,7 @@ ${GCF_FENCE_CLOSE}`;
     { value: "pt-BR", label: "Portugu\xEAs (BR)" },
     { value: "ru", label: "\u0420\u0443\u0441\u0441\u043A\u0438\u0439" }
   ];
-  var configSchema3 = [
+  var configSchema8 = [
     {
       // 键名跟 catalog.js 一致用 lang；resolveConfig 同时认 language 别名。
       key: "lang",
@@ -6101,17 +6330,17 @@ ${GCF_FENCE_CLOSE}`;
       },
       { pattern: /\\begin\{[A-Za-z*]+\}[\s\S]*?\\end\{[A-Za-z*]+\}/g, kind: "latex_block" },
       { pattern: /^#{1,6}\s+.+$/gm, kind: "markdown_heading" },
-      { pattern: /^\s*\|.*\|\s*$/gm, kind: "markdown_table" },
-      { pattern: /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/gm, kind: "markdown_table" },
-      { pattern: /^\s*#(?:set|show|let|import|include)\b.+$/gm, kind: "typst_directive" },
+      { pattern: /^[ \t]*\|[^\n]*\|[ \t]*$/gm, kind: "markdown_table" },
+      { pattern: /^[ \t]*(?:\|[ \t]*)?:?-{3,}:?[ \t]*(?:\|[ \t]*:?-{3,}:?[ \t]*)+\|?[ \t]*$/gm, kind: "markdown_table" },
+      { pattern: /^[ \t]*#(?:set|show|let|import|include)\b[^\n]*$/gm, kind: "typst_directive" },
       { pattern: /`[^`\n]+`/g, kind: "inline_code" },
-      { pattern: /\[[^\]\n]+\]\([^) \n]+(?:\s+"[^"]*")?\)/g, kind: "markdown_link" },
+      { pattern: /\[[^\]\n]{1,1000}\]\([^) \n]{1,2000}(?:\s+"[^"]{0,1000}")?\)/g, kind: "markdown_link" },
       { pattern: /\bhttps?:\/\/[^\s)\]"'>]+/gi, kind: "url" },
       { pattern: /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g, kind: "const_case" },
       { pattern: /\bprocess\.env\.[A-Za-z_][A-Za-z0-9_]*\b/g, kind: "env_var" },
       { pattern: /\$[A-Z_][A-Z0-9_]*\b/g, kind: "env_var" },
       { pattern: /\b\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?\b/g, kind: "version" },
-      { pattern: /\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)+\(\)?/g, kind: "dotted_identifier" },
+      { pattern: /\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*){1,8}(?:\(\))?/g, kind: "dotted_identifier" },
       { pattern: /\b[A-Za-z_$][\w$]*\s*\([^()\n]*\)/g, kind: "function_call" },
       {
         pattern: /(?:^|\s)(?:\.{0,2}\/[A-Za-z0-9_@./-]+|[A-Za-z]:\\[A-Za-z0-9_.\\/-]+)/g,
@@ -6128,11 +6357,13 @@ ${GCF_FENCE_CLOSE}`;
     return { text: result, blocks };
   }
   function restorePreservedBlocks(text, blocks) {
-    let result = text;
-    for (const block of blocks) {
-      result = result.split(block.placeholder).join(block.content);
-    }
-    return result;
+    if (!blocks || blocks.length === 0) return text;
+    const byPlaceholder = /* @__PURE__ */ new Map();
+    for (const block of blocks) byPlaceholder.set(block.placeholder, block.content);
+    return text.replace(/\u0000OMNI_CAVEMAN_[^\u0000]*\u0000/g, (m) => {
+      const content = byPlaceholder.get(m);
+      return content === void 0 ? m : content;
+    });
   }
   function shouldPreserve(text, preservePatterns) {
     return preservePatterns.some((pattern) => {
@@ -6169,7 +6400,7 @@ ${GCF_FENCE_CLOSE}`;
     return collectMatches(text, /\bhttps?:\/\/[^\s)\]"'>]+/gi, 200);
   }
   function collectMarkdownLinks(text) {
-    return collectMatches(text, /\[[^\]\n]+\]\([^) \n]+(?:\s+"[^"]*")?\)/g, 200);
+    return collectMatches(text, /\[[^\]\n]{1,1000}\]\([^) \n]{1,2000}(?:\s+"[^"]{0,1000}")?\)/g, 200);
   }
   function collectFrontmatter(text) {
     if (!text.startsWith("---\n")) return [];
@@ -6183,7 +6414,7 @@ ${GCF_FENCE_CLOSE}`;
     return collectMatches(text, /^#{1,6}\s+.+$/gm, 200);
   }
   function collectTableRows(text) {
-    return collectMatches(text, /^\s*\|.*\|\s*$/gm, 200);
+    return collectMatches(text, /^[ \t]*\|[^\n]*\|[ \t]*$/gm, 200);
   }
   function collectMathBlocks(text) {
     return collectMatches(text, /\$\$[\s\S]*?\$\$/g, 50).concat(collectMatches(text, /\\\[[\s\S]*?\\\]/g, 50));
@@ -6249,9 +6480,9 @@ ${GCF_FENCE_CLOSE}`;
   }
   function cleanupArtifacts(text) {
     if (!text) return "";
-    return text.replace(/[ \t]{2,}/g, " ").replace(/[ \t]+([,.;:!?])/g, "$1").replace(/([.!?]){2,}/g, (match) => match[match.length - 1]).replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n").replace(/^\n+/, "").replace(/\n+$/, "").replace(/([。！？；])[，,、]/g, "$1");
+    return text.replace(/[ \t]{2,}/g, " ").replace(/[ \t]+([,.;:!?])/g, "$1").replace(/([.!?])(?<!\b(?:e\.g|i\.e|etc|cf|vs|al|viz|approx|et\.al)\.)([,;:]+)/g, "$1").replace(/([.!?]){2,}/g, (match) => match[match.length - 1]).replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n").replace(/^\n+/, "").replace(/\n+$/, "").replace(/([。！？；])[，,、]/g, "$1");
   }
-  var PROTECTED_STRUCTURE_RE = /```|~~~|`|https?:\/\/|\[[^\]\n]{1,1000}\]\([^)[ \t\n]{1,2000}(?:[ \t]+"[^"]{0,1000}")?\)|^#{1,6}\s+|^[ \t]*\|(?:[^|\n]{0,1000}\|){1,100}[ \t]*$|\$\$|\\\[|\\begin\{|^\s*#(?:set|show|let|import|include)\b|\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b|\bprocess\.env\.[A-Za-z_][A-Za-z0-9_]*\b|\$[A-Z_][A-Z0-9_]*\b|\b\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?\b|\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)+\(\)?|\b[A-Za-z_$][\w$]*[ \t]*\([^()\n]{0,1000}\)|(?:^|\s)(?:\.{0,2}\/[A-Za-z0-9_@./-]+|[A-Za-z]:\\[A-Za-z0-9_.\\/-]+)|\b(?:TypeError|ReferenceError|SyntaxError|RangeError|URIError|EvalError|Error|Exception):[^\n]{0,1000}/im;
+  var PROTECTED_STRUCTURE_RE = /```|~~~|`|https?:\/\/|\[[^\]\n]{1,1000}\]\([^)[ \t\n]{1,2000}(?:[ \t]+"[^"]{0,1000}")?\)|^#{1,6}\s+|^[ \t]*\|(?:[^|\n]{0,1000}\|){1,100}[ \t]*$|\$\$|\\\[|\\begin\{|^\s*#(?:set|show|let|import|include)\b|\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b|\bprocess\.env\.[A-Za-z_][A-Za-z0-9_]*\b|\$[A-Z_][A-Z0-9_]*\b|\b\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?\b|\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*){1,8}(?:\(\))?|\b[A-Za-z_$][\w$]*[ \t]*\([^()\n]{0,1000}\)|(?:^|\s)(?:\.{0,2}\/[A-Za-z0-9_@./-]+|[A-Za-z]:\\[A-Za-z0-9_.\\/-]+)|\b(?:TypeError|ReferenceError|SyntaxError|RangeError|URIError|EvalError|Error|Exception):[^\n]{0,1000}/im;
   var PROTECTED_STRUCTURE_PREFILTER_RE = /[`~\[\]\|$#\\/:_()0-9]/;
   function hasProtectedStructure(text) {
     if (!PROTECTED_STRUCTURE_PREFILTER_RE.test(text)) return false;
@@ -6336,6 +6567,14 @@ ${GCF_FENCE_CLOSE}`;
     };
     if (typeof textPart !== "string" || textPart.length === 0) return result;
     if (textPart.length < config.minMessageLength) return result;
+    if (textPart.length > 2e3) {
+      let nonWs = 0;
+      for (let i = 0; i < textPart.length; i++) {
+        const c = textPart.charCodeAt(i);
+        if (c !== 32 && c !== 9 && c !== 10 && c !== 13) nonWs++;
+      }
+      if (nonWs * 10 < textPart.length) return result;
+    }
     const customPreservation = compileUserPreservePatterns(config.preservePatterns);
     if (customPreservation.warnings.length > 0) result.warnings = result.warnings.concat(customPreservation.warnings);
     const shouldExtract = customPreservation.patterns.length > 0 || hasProtectedStructure(textPart);
@@ -6404,7 +6643,7 @@ ${GCF_FENCE_CLOSE}`;
     available: () => available4,
     cacheImpact: () => cacheImpact4,
     compressToolResult: () => compressToolResult,
-    configSchema: () => configSchema4,
+    configSchema: () => configSchema9,
     defaultOn: () => defaultOn4,
     id: () => id9,
     isCodeLikeLine: () => isCodeLikeLine2,
@@ -6426,7 +6665,7 @@ ${GCF_FENCE_CLOSE}`;
   var isSingleMode4 = false;
   var levels4 = void 0;
   var available4 = true;
-  var configSchema4 = [
+  var configSchema9 = [
     {
       key: "keepTurns",
       type: "number",
@@ -6915,7 +7154,7 @@ ${GCF_FENCE_CLOSE}`;
     apply: () => apply10,
     available: () => available5,
     cacheImpact: () => cacheImpact5,
-    configSchema: () => configSchema5,
+    configSchema: () => configSchema10,
     defaultOn: () => defaultOn5,
     fnv1a: () => fnv1a2,
     id: () => id10,
@@ -6944,7 +7183,7 @@ ${GCF_FENCE_CLOSE}`;
   var levels5 = void 0;
   var available5 = true;
   var sampling = true;
-  var configSchema5 = [
+  var configSchema10 = [
     {
       key: "sampleRate",
       type: "number",
@@ -7129,7 +7368,7 @@ ${GCF_FENCE_CLOSE}`;
     applyAsync: () => applyAsync,
     available: () => available6,
     cacheImpact: () => cacheImpact6,
-    configSchema: () => configSchema6,
+    configSchema: () => configSchema11,
     defaultOn: () => defaultOn6,
     extractPreservedBlocks: () => extractPreservedBlocks3,
     findFencedCodeBlocks: () => findFencedCodeBlocks2,
@@ -7155,7 +7394,7 @@ ${GCF_FENCE_CLOSE}`;
   var isSingleMode6 = false;
   var levels6 = void 0;
   var available6 = false;
-  var configSchema6 = [
+  var configSchema11 = [
     {
       key: "maxChars",
       type: "number",
@@ -7276,17 +7515,17 @@ ${GCF_FENCE_CLOSE}`;
     },
     { pattern: /\\begin\{[A-Za-z*]+\}[\s\S]*?\\end\{[A-Za-z*]+\}/g, kind: "latex_block" },
     { pattern: /^#{1,6}\s+.+$/gm, kind: "markdown_heading" },
-    { pattern: /^\s*\|.*\|\s*$/gm, kind: "markdown_table" },
-    { pattern: /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/gm, kind: "markdown_table" },
-    { pattern: /^\s*#(?:set|show|let|import|include)\b.+$/gm, kind: "typst_directive" },
+    { pattern: /^[ \t]*\|[^\n]*\|[ \t]*$/gm, kind: "markdown_table" },
+    { pattern: /^[ \t]*(?:\|[ \t]*)?:?-{3,}:?[ \t]*(?:\|[ \t]*:?-{3,}:?[ \t]*)+\|?[ \t]*$/gm, kind: "markdown_table" },
+    { pattern: /^[ \t]*#(?:set|show|let|import|include)\b[^\n]*$/gm, kind: "typst_directive" },
     { pattern: /`[^`\n]+`/g, kind: "inline_code" },
-    { pattern: /\[[^\]\n]+\]\([^) \n]+(?:\s+"[^"]*")?\)/g, kind: "markdown_link" },
+    { pattern: /\[[^\]\n]{1,1000}\]\([^) \n]{1,2000}(?:\s+"[^"]{0,1000}")?\)/g, kind: "markdown_link" },
     { pattern: /\bhttps?:\/\/[^\s)\]"'>]+/gi, kind: "url" },
     { pattern: /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g, kind: "const_case" },
     { pattern: /\bprocess\.env\.[A-Za-z_][A-Za-z0-9_]*\b/g, kind: "env_var" },
     { pattern: /\$[A-Z_][A-Z0-9_]*\b/g, kind: "env_var" },
     { pattern: /\b\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?\b/g, kind: "version" },
-    { pattern: /\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)+\(\)?/g, kind: "dotted_identifier" },
+    { pattern: /\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*){1,8}(?:\(\))?/g, kind: "dotted_identifier" },
     { pattern: /\b[A-Za-z_$][\w$]*\s*\([^()\n]*\)/g, kind: "function_call" },
     {
       pattern: /(?:^|\s)(?:\.{0,2}\/[A-Za-z0-9_@./-]+|[A-Za-z]:\\[A-Za-z0-9_.\\/-]+)/g,
@@ -7472,7 +7711,7 @@ ${GCF_FENCE_CLOSE}`;
     buildCcrReplacementText: () => buildCcrReplacementText,
     cacheImpact: () => cacheImpact7,
     callerSupportsCcrRetrieve: () => callerSupportsCcrRetrieve2,
-    configSchema: () => configSchema7,
+    configSchema: () => configSchema12,
     defaultOn: () => defaultOn7,
     description: () => description3,
     effectiveMinChars: () => effectiveMinChars,
@@ -7523,7 +7762,7 @@ ${GCF_FENCE_CLOSE}`;
   var MAX_CCR_TTL_SECONDS = 7 * 24 * 60 * 60;
   var MAX_CCR_MCP_FULL_BYTES = 256 * 1024;
   var ANON = "__anon__";
-  var configSchema7 = [
+  var configSchema12 = [
     {
       key: "enabled",
       type: "boolean",
@@ -7574,7 +7813,7 @@ ${GCF_FENCE_CLOSE}`;
       defaultValue: true
     }
   ];
-  var CCR_SCHEMA = configSchema7;
+  var CCR_SCHEMA = configSchema12;
   function utf8ByteLength(text) {
     let bytes = 0;
     for (let i = 0; i < text.length; i++) {
@@ -7883,10 +8122,19 @@ ${GCF_FENCE_CLOSE}`;
     }
     return false;
   }
-  function injectCcrProtocolInstruction(body) {
-    if (!body || !Array.isArray(body.messages)) return false;
+  function injectCcrProtocolInstruction(body, protocol) {
+    if (!body || typeof body !== "object") return false;
     if (!callerSupportsCcrRetrieve2(body)) return false;
-    if (body.messages.some(messageContainsSentinel)) return false;
+    if (Array.isArray(body.messages) && body.messages.some(messageContainsSentinel)) return false;
+    if (typeof body.system === "string" && body.system.includes(CCR_PROTOCOL_MARKER_SENTINEL)) return false;
+    if (Array.isArray(body.system) && body.system.some(messageContainsSentinel)) return false;
+    if (protocol === "anthropic") {
+      if (typeof body.system === "string") body.system = body.system + "\n\n" + CCR_PROTOCOL_INSTRUCTION;
+      else if (Array.isArray(body.system)) body.system.push({ type: "text", text: CCR_PROTOCOL_INSTRUCTION });
+      else body.system = CCR_PROTOCOL_INSTRUCTION;
+      return true;
+    }
+    if (!Array.isArray(body.messages)) return false;
     body.messages.unshift({ role: "system", content: CCR_PROTOCOL_INSTRUCTION });
     return true;
   }
@@ -7947,7 +8195,7 @@ ${GCF_FENCE_CLOSE}`;
       } catch {
         callerCanRetrieve = false;
       }
-      if (!callerCanRetrieve) return empty;
+      if (!callerCanRetrieve) return { ...empty, gateReason: "no_retrieve_tool" };
     }
     const view = conversationView(body, opts.protocol);
     if (!view || view.segments.length === 0) return empty;
@@ -7957,7 +8205,8 @@ ${GCF_FENCE_CLOSE}`;
     const minRepeat = typeof cfg["minRepeat"] === "number" ? Math.max(1, cfg["minRepeat"]) : DEFAULT_MIN_REPEAT;
     const principalId = opts.principalId || void 0;
     const start = Date.now();
-    const store = makeStore();
+    const shared = !!(opts.store && opts.store.entries instanceof Map);
+    const store = shared ? opts.store : makeStore();
     const segments = view.segments;
     const originals = segments.map((s) => s.text);
     const corpus = minRepeat > 1 ? originals.join("\n") : "";
@@ -7984,9 +8233,15 @@ ${GCF_FENCE_CLOSE}`;
       }
     }
     if (replacedCount === 0) return empty;
+    if (shared && typeof opts.persistStore === "function") {
+      try {
+        opts.persistStore(store);
+      } catch {
+      }
+    }
     if (cfg["requireRetrieveTool"] !== false) {
       try {
-        injectCcrProtocolInstruction(body);
+        injectCcrProtocolInstruction(body, opts.protocol);
       } catch {
       }
     }
@@ -7999,15 +8254,21 @@ ${GCF_FENCE_CLOSE}`;
       const ctxObj = ctx || {};
       const r = applyCcr(body, cfg, {
         protocol: ctxObj.protocol,
-        principalId: cfg && cfg.principalId || ctxObj.session || void 0
+        principalId: cfg && cfg.principalId || void 0,
+        // 不能用 session：retrieve server 看不到会话，查的是 anon 区
+        store: ctxObj.ccrStore,
+        persistStore: ctxObj.persistCcrStore
       });
-      if (!r.compressed) return false;
+      if (!r.compressed) {
+        if (r.gateReason && ctxObj.state) ctxObj.state.ccrGateReason = r.gateReason;
+        return false;
+      }
       if (ctxObj.state) {
         ctxObj.state.ccr = {
           replacedCount: r.replacedCount,
           stats: r.stats,
           map: r.map,
-          store: r.store
+          store: ctxObj.ccrStore ? null : r.store
         };
       }
       return true;
@@ -8027,7 +8288,7 @@ ${GCF_FENCE_CLOSE}`;
     classifyTool: () => classifyTool,
     collapseResponseOutputs: () => collapseResponseOutputs,
     collapseSupersededReads: () => collapseSupersededReads,
-    configSchema: () => configSchema8,
+    configSchema: () => configSchema13,
     defaultOn: () => defaultOn8,
     description: () => description4,
     extractInvocations: () => extractInvocations,
@@ -8052,7 +8313,7 @@ ${GCF_FENCE_CLOSE}`;
   var lossy8 = true;
   var cacheImpact8 = "moderate";
   var defaultOn8 = false;
-  var stackPriority8 = 22;
+  var stackPriority8 = 2;
   var isSingleMode8 = false;
   var levels8 = void 0;
   var available8 = true;
@@ -8074,7 +8335,7 @@ ${GCF_FENCE_CLOSE}`;
   ];
   var FALLBACK_PATH = "file";
   var DEFAULT_STUB_CHARS = 120;
-  var configSchema8 = [
+  var configSchema13 = [
     { key: "enabled", type: "boolean", label: "Enabled", defaultValue: true },
     {
       key: "keepStub",
@@ -8566,8 +8827,8 @@ ${GCF_FENCE_CLOSE}`;
       ],
       label: "Read Lifecycle",
       description: "Collapses Read tool results that a strictly-later Read or Write superseded, keeping only the newest view of each path.",
-      why: "\u540C\u4E00\u6587\u4EF6\u53CD\u590D Read \u65F6\uFF0C\u628A\u88AB\u540E\u7EED Read/Write \u8986\u76D6\u6389\u7684\u65E7\u7ED3\u679C\u6298\u53E0\u6210\u77ED stub\uFF0C\u53EA\u7559\u6700\u65B0\u4E00\u6B21\u3002",
-      stackPriority: 22,
+      why: "\u540C\u4E00\u6587\u4EF6\u53CD\u590D Read \u65F6\uFF0C\u628A\u88AB\u540E\u7EED Read/Write \u8986\u76D6\u6389\u7684\u65E7\u7ED3\u679C\u6298\u53E0\u6210\u77ED stub\uFF0C\u53EA\u7559\u6700\u65B0\u4E00\u6B21\u3002\uFF08\u6CE8\u610F\uFF1A\u540C\u4E00\u6761\u8DEF\u5F84\u88AB\u518D\u6B21 Read/Write \u65F6\uFF0C\u66F4\u65E9\u7684\u7ED3\u679C\u4F1A\u88AB\u6298\u53E0\uFF0Cprefix \u968F\u4E4B\u5931\u914D\u3002\uFF09",
+      stackPriority: 2,
       lossy: true,
       cacheImpact: "moderate",
       isSingleMode: false,
@@ -8585,7 +8846,7 @@ ${GCF_FENCE_CLOSE}`;
       ],
       label: "Aggressive",
       description: "Summarizes older turns and progressively ages them out (~50%), keeping recent detail intact.",
-      why: "\u628A\u8F83\u65E9\u7684\u8F6E\u6B21\u6458\u8981\u5316\u5E76\u9010\u6B65\u8001\u5316\uFF0C\u53EA\u4FDD\u7559\u6700\u8FD1\u7684\u7EC6\u8282\uFF08\u7EA6 50%\uFF09\u3002",
+      why: "\u628A\u8F83\u65E9\u7684\u8F6E\u6B21\u6458\u8981\u5316\u5E76\u9010\u6B65\u8001\u5316\uFF0C\u53EA\u4FDD\u7559\u6700\u8FD1\u7684\u7EC6\u8282\uFF08\u7EA6 50%\uFF09\u3002\uFF08\u6CE8\u610F\uFF1A\u6BCF\u65B0\u589E\u4E00\u8F6E\u5BF9\u8BDD\u90FD\u4F1A\u91CD\u5199\u66F4\u65E9\u7684\u8F6E\u6B21\uFF0Cprompt cache \u7684 prefix \u4F1A\u968F\u4E4B\u524D\u79FB\u5931\u914D\u3002\uFF09",
       stackPriority: 30,
       lossy: true,
       cacheImpact: "high",
@@ -8617,7 +8878,7 @@ ${GCF_FENCE_CLOSE}`;
     {
       id: "ultra",
       fields: [
-        { key: "compressionRate", type: "number", label: "\u526A\u679D\u6BD4\u4F8B", description: "\u6700\u591A\u526A\u6389\u591A\u5C11\u6BD4\u4F8B\u7684 token\uFF08\u9ED8\u8BA4 0.5\uFF09", defaultValue: 0.5, min: 0.05, max: 0.95 },
+        { key: "compressionRate", type: "number", label: "\u4FDD\u7559\u6BD4\u4F8B", description: "\u526A\u679D\u540E\u4FDD\u7559\u591A\u5C11\u6BD4\u4F8B\u7684 token\uFF08\u9ED8\u8BA4 0.5 = \u4FDD\u7559\u4E00\u534A\uFF09\uFF0C\u6570\u503C\u8D8A\u4F4E\u538B\u5F97\u8D8A\u72E0\u3002\u4E0A\u6E38\u8BED\u4E49\u662F\u300Ckeep\u300D\u4E0D\u662F\u300Cprune\u300D", defaultValue: 0.5, min: 0.05, max: 0.95 },
         { key: "minScoreThreshold", type: "number", label: "\u5206\u6570\u95E8\u69DB", description: "\u4F4E\u4E8E\u6B64\u5206\u7684 token \u624D\u53EF\u526A\uFF0C\u5206\u6570\u8D8A\u9AD8\u526A\u5F97\u8D8A\u5C11\uFF08\u9ED8\u8BA4 0.3\uFF09", defaultValue: 0.3, min: 0, max: 1 },
         { key: "maxTokensPerMessage", type: "number", label: "\u5355\u6761\u4E0A\u9650", description: "\u5355\u6761\u6D88\u606F\u6700\u591A\u5904\u7406\u7684 token \u6570\uFF0C0 \u8868\u793A\u4E0D\u9650", defaultValue: 0, min: 0, max: 1e5 }
       ],
@@ -8724,7 +8985,6 @@ ${GCF_FENCE_CLOSE}`;
   }
 
   // pipeline.js
-  var INTERNAL_MARKER = "__magpieCompressCore";
   var TELEMETRY_VERSION = 1;
   function clone(value) {
     return typeof structuredClone === "function" ? structuredClone(value) : JSON.parse(JSON.stringify(value));
@@ -8888,6 +9148,7 @@ ${GCF_FENCE_CLOSE}`;
     if (engine.id === "codex-responses") return "no_eligible_response_item";
     if (engine.id === "headroom") return "no_eligible_json_array_or_not_smaller";
     if (engine.id === "session-dedup") return "no_repeat_eligible_block";
+    if (engine.id === "ccr") return ctx.state?.ccrGateReason || "nothing_to_remove";
     if (engine.id === "rtk") return "no_matching_tool_output_filter";
     return "nothing_to_remove";
   }
@@ -8914,7 +9175,7 @@ ${GCF_FENCE_CLOSE}`;
     for (let i = 0; i < after.length; i++) {
       if (!after[i].includes("[dedup:ref sha=")) continue;
       checked++;
-      const restored = after[i].replace(/\[dedup:ref sha=([0-9a-f]{24})\]/g, (ref, sha) => map[sha] ?? ref);
+      const restored = after[i].replace(/\[dedup:ref sha=([0-9a-f]{24})[^\]]*\]/g, (ref, sha) => map[sha] ?? ref);
       if (restored === before[i]) passed++;
     }
     return { checked, passed };
@@ -9055,9 +9316,6 @@ ${GCF_FENCE_CLOSE}`;
       strategies: records
     };
   }
-  function removeInternalMarker(body) {
-    if (body && typeof body === "object") delete body[INTERNAL_MARKER];
-  }
 
   // lab.js
   var MAX_LAB_BYTES = 256e3;
@@ -9115,7 +9373,6 @@ ${GCF_FENCE_CLOSE}`;
       const result = await runPipeline(body, ctx, bench);
       const report = result;
       const record = report.strategies.find((item) => item.id === strategy) || null;
-      removeInternalMarker(body, options, strategy);
       const after = body;
       return {
         id: id14,

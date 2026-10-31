@@ -59,16 +59,6 @@
     },
     "panels": [
       {
-        "slot": "settings",
-        "title": "Compression",
-        "titles": {
-          "zh": "压缩",
-          "zh-TW": "壓縮",
-          "ja": "圧縮"
-        },
-        "file": "page/settings.html"
-      },
-      {
         "slot": "usage",
         "title": "Compression",
         "titles": {
