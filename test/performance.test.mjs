@@ -15,6 +15,13 @@ const CASES = [
   { label: "40k spaces + a", n: 40000, make: (n) => " ".repeat(n) + "a" },
   { label: "\\n \\n × 20k", n: 20000, make: (n) => "\n \n".repeat(n) },
   { label: "a. × 30k", n: 30000, make: (n) => "a.".repeat(n) },
+  // The review's adversarial shapes: they drove the table/link regexes and the
+  // placeholder restore paths quadratic.
+  { label: "a.b( × 20k", n: 20000, make: (n) => "a.b(".repeat(n) },
+  { label: "[x]( × 20k", n: 20000, make: (n) => "[x](".repeat(n) },
+  { label: "1.1. × 20k", n: 20000, make: (n) => "1.1.".repeat(n) },
+  { label: "long newline run", n: 20000, make: (n) => "\n".repeat(4 * n) + "word ".repeat(Math.floor(n / 5)) },
+  { label: "long space run", n: 20000, make: (n) => " ".repeat(4 * n) + "word ".repeat(Math.floor(n / 5)) },
 ]
 
 function timeOnce(engine, content) {

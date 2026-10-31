@@ -333,7 +333,7 @@ const BUILTIN_PATTERNS = [
   { pattern: /^\|?[ \t:]*-{3,}[ \t:]*(\|[ \t:]*-{3,}[ \t:]*)*\|?$/gm, kind: "markdown_table" },
   { pattern: /^[ \t]*#(?:set|show|let|import|include)\b[^\n]*$/gm, kind: "typst_directive" },
   { pattern: /`[^`\n]+`/g, kind: "inline_code" },
-  { pattern: /\[[^\]\n]*\]\([^)\s]+\)/g, kind: "markdown_link" },
+  { pattern: /\[[^\]\n]{0,1000}\]\([^)\s]{1,2000}\)/g, kind: "markdown_link" },
   { pattern: /\bhttps?:\/\/[^\s)\]"'>]+/g, kind: "url" },
   { pattern: /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g, kind: "const_case" },
   { pattern: /\bprocess\.env\.[A-Za-z_][A-Za-z0-9_]*/g, kind: "env_var" },
@@ -397,8 +397,9 @@ export function pruneProseOnly(text, rate, minScore) {
   const placeholderToContent = new Map()
   for (const b of blocks) placeholderToContent.set(b.placeholder, b.content)
 
-  const escaped = blocks.map((b) => b.placeholder.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-  const splitRe = new RegExp(`(${escaped.join("|")})`, "g")
+  // One sentinel regex, not one alternation branch per placeholder: 20k branches
+  // took ~14s. The placeholder shape is fixed.
+  const splitRe = /(\u0000OMNI_CAVEMAN_[^\u0000]*\u0000)/g
 
   return withPlaceholders
     .split(splitRe)

@@ -54,6 +54,9 @@ async function loadStore(file) {
 
 /** 取回计数写回文件（ramp 靠它跨进程生效）。读-改-写，计数按 key 取 max。 */
 async function persistCounts(file, store) {
+  // The lock file sits beside the store, so create the directory before asking for
+  // the lock (open() in a missing directory fails and the lock is never taken).
+  await mkdir(dirname(file), { recursive: true })
   const held = await acquireLock(file)
   // Could not take the lock: skip rather than write unlocked (that is the race the
   // lock exists to prevent). The counts are only ramp hints; the next call retries.

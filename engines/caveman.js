@@ -360,11 +360,11 @@ export function extractPreservedBlocks(text, options) {
     },
     { pattern: /\\begin\{[A-Za-z*]+\}[\s\S]*?\\end\{[A-Za-z*]+\}/g, kind: "latex_block" },
     { pattern: /^#{1,6}\s+.+$/gm, kind: "markdown_heading" },
-    { pattern: /^\s*\|.*\|\s*$/gm, kind: "markdown_table" },
-    { pattern: /^[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(?:\|[ \t]*:?-{3,}:?[ \t]*)+\|?[ \t]*$/gm, kind: "markdown_table" },
+    { pattern: /^[ \t]*\|[^\n]*\|[ \t]*$/gm, kind: "markdown_table" },
+    { pattern: /^[ \t]*(?:\|[ \t]*)?:?-{3,}:?[ \t]*(?:\|[ \t]*:?-{3,}:?[ \t]*)+\|?[ \t]*$/gm, kind: "markdown_table" },
     { pattern: /^[ \t]*#(?:set|show|let|import|include)\b[^\n]*$/gm, kind: "typst_directive" },
     { pattern: /`[^`\n]+`/g, kind: "inline_code" },
-    { pattern: /\[[^\]\n]+\]\([^) \n]+(?:\s+"[^"]*")?\)/g, kind: "markdown_link" },
+    { pattern: /\[[^\]\n]{1,1000}\]\([^) \n]{1,2000}(?:\s+"[^"]{0,1000}")?\)/g, kind: "markdown_link" },
     { pattern: /\bhttps?:\/\/[^\s)\]"'>]+/gi, kind: "url" },
     { pattern: /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g, kind: "const_case" },
     { pattern: /\bprocess\.env\.[A-Za-z_][A-Za-z0-9_]*\b/g, kind: "env_var" },
@@ -390,11 +390,16 @@ export function extractPreservedBlocks(text, options) {
 }
 
 export function restorePreservedBlocks(text, blocks) {
-  let result = text
-  for (const block of blocks) {
-    result = result.split(block.placeholder).join(block.content)
-  }
-  return result
+  if (!blocks || blocks.length === 0) return text
+  const byPlaceholder = new Map()
+  for (const block of blocks) byPlaceholder.set(block.placeholder, block.content)
+  // One pass over the text. split/join per block was O(blocks x length) — 20k blocks
+  // took ~9s. The placeholder has a fixed sentinel shape, so a single regex plus a
+  // Map lookup restores them all in O(length).
+  return text.replace(/\u0000OMNI_CAVEMAN_[^\u0000]*\u0000/g, (m) => {
+    const content = byPlaceholder.get(m)
+    return content === undefined ? m : content
+  })
 }
 
 export function shouldPreserve(text, preservePatterns) {
@@ -443,7 +448,7 @@ function collectUrls(text) {
 }
 
 function collectMarkdownLinks(text) {
-  return collectMatches(text, /\[[^\]\n]+\]\([^) \n]+(?:\s+"[^"]*")?\)/g, 200)
+  return collectMatches(text, /\[[^\]\n]{1,1000}\]\([^) \n]{1,2000}(?:\s+"[^"]{0,1000}")?\)/g, 200)
 }
 
 function collectFrontmatter(text) {
@@ -460,7 +465,7 @@ function collectHeadings(text) {
 }
 
 function collectTableRows(text) {
-  return collectMatches(text, /^\s*\|.*\|\s*$/gm, 200)
+  return collectMatches(text, /^[ \t]*\|[^\n]*\|[ \t]*$/gm, 200)
 }
 
 function collectMathBlocks(text) {

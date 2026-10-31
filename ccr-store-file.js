@@ -81,31 +81,34 @@ export async function loadCcrStoreFile(file) {
 const MAX_CCR_STORE_FILE_BYTES = 80 * 1024 * 1024
 
 async function writeStoreFile(file, store) {
-  const doc = serializeCcrStore(store)
-  // retrievalCounts 是单调递增的：retrieve 工具进程也会写这个文件，直接覆盖
-  // 会把它的计数抹掉。落盘前读回旧文件，计数按 key 取 max 合并；条目以内存为准。
-  try {
-    const old = hydrateCcrStore(JSON.parse(await readFile(file, "utf8")))
-    for (const [k, v] of old.retrievalCounts) {
-      if (v > (doc.retrievalCounts.find(([dk]) => dk === k)?.[1] || 0)) {
-        const idx = doc.retrievalCounts.findIndex(([dk]) => dk === k)
-        if (idx === -1) doc.retrievalCounts.push([k, v])
-        else doc.retrievalCounts[idx][1] = v
-      }
-    }
-  } catch {
-    // 没有旧文件可合并，直接写
-  }
+  // The lock file lives beside the store, so the directory must exist first: an
+  // `open(lock, "wx")` in a missing directory fails with ENOENT and the lock is
+  // never taken (the whole write would be skipped).
+  await mkdir(join(file, ".."), { recursive: true })
   // Same lock the MCP server's persistCounts takes: both writers are
-  // read-modify-write on the same file, so an unlocked write here would drop the
-  // other side's retrieval counts.
+  // read-modify-write on the same file.
   const held = await acquireLock(file)
-  if (!held) return
+  if (!held) return false
   try {
-    await mkdir(join(file, ".."), { recursive: true })
+    const doc = serializeCcrStore(store)
+    // Read-merge INSIDE the lock. Reading before it let the MCP server write count
+    // 3 and release, and then this write put back the stale counts it read earlier.
+    try {
+      const old = hydrateCcrStore(JSON.parse(await readFile(file, "utf8")))
+      for (const [k, v] of old.retrievalCounts) {
+        if (v > (doc.retrievalCounts.find(([dk]) => dk === k)?.[1] || 0)) {
+          const idx = doc.retrievalCounts.findIndex(([dk]) => dk === k)
+          if (idx === -1) doc.retrievalCounts.push([k, v])
+          else doc.retrievalCounts[idx][1] = v
+        }
+      }
+    } catch {
+      // 没有旧文件可合并，直接写
+    }
     const tmp = file + ".tmp"
     await writeFile(tmp, JSON.stringify(doc))
     await rename(tmp, file)
+    return true
   } finally {
     await releaseLock(held)
   }
@@ -137,7 +140,19 @@ export function createPersistentCcrStore(file = ccrStoreFile()) {
   function flush() {
     if (!dirty) return
     dirty = false
-    chain = chain.then(() => writeStoreFile(file, store)).catch(() => {})
+    chain = chain.then(async () => {
+      const written = await writeStoreFile(file, store).catch(() => false)
+      // A skipped write (lock busy) must not lose the block: keep it dirty and
+      // schedule another attempt. Clearing `dirty` and forgetting is how a marker
+      // stayed in the request while its original never reached disk.
+      if (!written) {
+        dirty = true
+        if (!timer) {
+          timer = setTimeout(() => { timer = null; flush() }, FLUSH_DELAY_MS)
+          if (typeof timer.unref === "function") timer.unref()
+        }
+      }
+    })
   }
   return {
     get() { return store },
