@@ -6,11 +6,12 @@
 // when that suite's own counter moved. `node test/run.mjs` still runs them
 // directly; neither entry point needs the other.
 import { test, expect } from "bun:test"
-import { mkdtempSync } from "node:fs"
+import { mkdtempSync, readdirSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { failedCount } from "./helpers.mjs"
-import { suites } from "./suites.mjs"
+import { suites, unlistedSuites } from "./suites.mjs"
 
 // The same throwaway folders test/run.mjs uses: a capture keeps a whole
 // conversation, and one that landed in the installed plugin folder would put
@@ -26,6 +27,15 @@ process.env.COMPRESS_CORE_NO_PUBLISH = "1"
 // used to keep its own copy, and the copies drifted: capture-command,
 // ccr-persist, active-shapes and config-contract ran under `node test/run.mjs`
 // but never under `bun test`, so CI skipped four suites without saying so.
+// This test keeps the list from drifting again: a *.test.mjs that nobody put in
+// suites.mjs is exactly how those four got skipped.
+{
+  const here = dirname(fileURLToPath(import.meta.url))
+  const strays = unlistedSuites(readdirSync(here))
+  test("every test file is listed in suites.mjs", () => {
+    expect(strays).toEqual([])
+  })
+}
 
 for (const file of suites) {
   const mod = await import(`./${file}`)

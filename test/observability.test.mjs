@@ -5,7 +5,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { check } from "./helpers.mjs"
 import { ENGINES } from "../catalog.js"
-import { runPipeline, clone, INTERNAL_MARKER } from "../pipeline.js"
+import { runPipeline, clone } from "../pipeline.js"
 import { summarize, readEvents } from "../telemetry-store.js"
 import * as middleware from "../compress-core.middleware.js"
 import * as hooks from "../observability.hooks.js"
@@ -56,19 +56,21 @@ export async function run() {
     check("OBS-03 headroom GCF 解码语义相等", true)
   }
   {
-    const body = repeatedBody(), marked = clone(body)
-    marked[INTERNAL_MARKER] = { version: 1 }
-    const out = middleware.onRequest(marked, { protocol: "chat", options: dedupOnly, state: {} }) || marked
-    assert.equal(out[INTERNAL_MARKER], undefined)
-    assert.deepEqual(out, body)
-    check("OBS-04 Bun 已压缩时 moejs 只去内部标记，不重复执行", true)
+    // The host JSON round-trips the hook's result, so the middleware can no longer
+    // see an in-process hand-off flag (there is none any more). It runs the pipeline
+    // again on an already-compressed body; that second pass must change nothing.
+    const body = repeatedBody()
+    middleware.onRequest(body, { protocol: "chat", options: dedupOnly, state: {} })
+    const once = JSON.stringify(body)
+    middleware.onRequest(body, { protocol: "chat", options: dedupOnly, state: {} })
+    assert.equal(JSON.stringify(body), once)
+    check("OBS-04 对已压缩 body 再跑一遍不再改变（重入幂等）", true)
   }
   {
     const body = repeatedBody()
     const out = middleware.onRequest(body, { protocol: "chat", options: dedupOnly, state: {} }) || body
     assert.ok(JSON.stringify(out).includes("[dedup:ref sha="))
-    assert.equal(out[INTERNAL_MARKER], undefined)
-    check("OBS-05 无 Bun 标记时 moejs 独立压缩兜底", true)
+    check("OBS-05 moejs 单独运行时仍会压缩（兜底）", true)
   }
   {
     const summary = summarize([{ type: "fail_open", ts: new Date().toISOString(), stage: "bun_onRequest", error: "test" }], allOff)
@@ -95,8 +97,10 @@ export async function run() {
     const ctx = { protocol: "chat", model: "echo-test", agent: "node-test", session: "raw-session-id", origin: "local", state: {}, options }
     const out = await hooks.onRequest(body, ctx)
     assert.ok(out)
-    assert.ok(out[INTERNAL_MARKER])
     const compressed = JSON.stringify(out)
+    // Item 3: the hook's result, serialized the way the host hands it over
+    // (JSON.parse(JSON.stringify(result))), must carry no internal hand-off key.
+    assert.ok(!compressed.includes("__magpieCompressCore"))
     await hooks.onResponse({}, { ...ctx, success: true })
     const events = await readEvents()
     const request = events.find(e => e.type === "request")
@@ -107,8 +111,7 @@ export async function run() {
     assert.ok(!JSON.stringify(events).includes("raw-session-id"))
     assert.ok(request.beforeSha256 && request.afterSha256 && request.beforeSha256 !== request.afterSha256)
     const cleaned = middleware.onRequest(out, ctx) || out
-    assert.equal(cleaned[INTERNAL_MARKER], undefined)
-    assert.equal(JSON.stringify(cleaned), compressed.replace(/,"__magpieCompressCore":\{"version":1\}/, ""))
+    assert.ok(!JSON.stringify(cleaned).includes("__magpieCompressCore"))
     check("OBS-07 Bun真管线→JSONL→响应→moejs清理，默认无原文", true)
 
     const sampleOptions = { ...options, telemetry: { enabled: true, port, samples: true } }

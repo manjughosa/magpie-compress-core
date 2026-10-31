@@ -399,4 +399,21 @@ export async function run() {
     check("58 gemini system 段不动", gem.systemInstruction.parts[0].text === "a\n\n\n\nb")
     check("59 gemini 当前轮不动", gem.contents[2].parts[0].text === "now\n\n\n\nthen")
   }
+
+  // ---- item 6: lite must be linear. 40k spaces used to take ~700ms because the
+  // trailing-trim regex retried from every position; doubling the input must not
+  // quadruple the time.
+  {
+    const timed = (n) => {
+      const body = { model: "m", messages: [{ role: "user", content: " ".repeat(n) + "a" }] }
+      const t0 = Date.now()
+      apply(body, ctxFor("chat"), {})
+      return Date.now() - t0
+    }
+    timed(10000) // warm up
+    const t20 = timed(20000)
+    const t40 = timed(40000)
+    check("item6 lite 40k 空格线性（20k→40k 不超过 3 倍）", t40 <= t20 * 3 + 50, `20k=${t20}ms 40k=${t40}ms`)
+    check("item6 lite 40k 空格在时间上限内", t40 < 400, `${t40}ms`)
+  }
 }

@@ -108,17 +108,29 @@ function canonical(value) {
   return value
 }
 
+function trimLineEnd(line) {
+  let e = line.length
+  while (e > 0) {
+    const c = line.charCodeAt(e - 1)
+    if (c !== 32 && c !== 9) break
+    e--
+  }
+  return e === line.length ? line : line.slice(0, e)
+}
+
 function normalizeMessageWhitespace(content) {
   if (!content) return ""
-  // Whitespace-only messages must collapse to "" — "\n\n\n" used to come out as
-  // "\n\n", leaving a block that looks empty but is not.
-  if (content.trim() === "") return ""
-  // Trim each line separately: the old /[ \t]+$/gm backtracked per line and was
-  // quadratic on long space runs (40k spaces took ~800ms). split/map is linear.
+  // A whitespace-only message is left exactly as it came: Anthropic rejects an
+  // empty text block just as it rejects a whitespace-only one, so turning it into
+  // "" is no better, and the caller never asked for a rewrite.
+  if (content.trim() === "") return content
+  // Trailing-whitespace trimming used to run as a regex over every line; on a
+  // long run of spaces it retried from each position and was quadratic (40k
+  // spaces ~700ms). Scan back from the end of each line instead: linear.
   return content
     .replace(/\n{3,}/g, "\n\n")
     .split("\n")
-    .map((line) => line.replace(/[ 	]+$/, ""))
+    .map(trimLineEnd)
     .join("\n")
 }
 

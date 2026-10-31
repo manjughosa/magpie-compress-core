@@ -706,6 +706,17 @@ export function compressText(textPart, role, config) {
   }
   if (typeof textPart !== "string" || textPart.length === 0) return result
   if (textPart.length < config.minMessageLength) return result
+  // Whitespace-dominated text (a long run of spaces) drives the rule regexes into
+  // quadratic backtracking: 40k spaces took ~1s. Condensing whitespace is not what
+  // this engine is for, so leave such a message alone.
+  if (textPart.length > 2000) {
+    let nonWs = 0
+    for (let i = 0; i < textPart.length; i++) {
+      const c = textPart.charCodeAt(i)
+      if (c !== 32 && c !== 9 && c !== 10 && c !== 13) nonWs++
+    }
+    if (nonWs * 10 < textPart.length) return result
+  }
 
   const customPreservation = compileUserPreservePatterns(config.preservePatterns)
   if (customPreservation.warnings.length > 0) result.warnings = result.warnings.concat(customPreservation.warnings)

@@ -37,6 +37,7 @@ export const suites = [
   "page-catalog.test.mjs",
   "page-save-flow.test.mjs",
   "config-contract.test.mjs",
+  "performance.test.mjs",
 ]
 
 /**

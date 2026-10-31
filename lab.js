@@ -1,4 +1,4 @@
-import { runPipeline, removeInternalMarker, clone } from "./pipeline.js"
+import { runPipeline, clone } from "./pipeline.js"
 import { conversationView } from "./adapter.js"
 import { ENGINES, engineById } from "./catalog.js"
 import { engineModule } from "./engines/index.js"
@@ -67,7 +67,6 @@ export async function runLab(request, options = {}) {
     const result = await runPipeline(body, ctx, bench)
     const report = result
     const record = report.strategies.find(item => item.id === strategy) || null
-    removeInternalMarker(body, options, strategy)
     const after = body
     return {
       id, ok: true, at: new Date().toISOString(), mode, protocol, strategy,

@@ -197,29 +197,38 @@ export async function flush(force = false) {
   inFlight = true
   const path = statsFile()
   const tmp = path + ".tmp"
+  let flushed = null
   try {
     let stored = null
+    let unreadable = false
     try {
       const text = await readFile(path, "utf8")
       if (text.length <= MAX_BYTES) stored = JSON.parse(text)
-    } catch {
-      // No file yet, or an unreadable one: start from this process's summary.
+      else unreadable = true
+    } catch (error) {
+      // A missing file is a fresh start. A file that exists but cannot be read or
+      // parsed (a half-written file, a lock) is not: starting over would silently
+      // reset the running totals. Leave it alone and retry on the next flush.
+      if (error && error.code !== "ENOENT") unreadable = true
     }
-    // The stored file is the base and this process's summary is the increment,
-    // because the Bun companion may not keep this module alive between requests.
+    if (unreadable) return
     const next = merge(stored, summary)
+    // Swap the in-memory summary out synchronously, before the write is awaited:
+    // records that arrive while the write is in flight land in the fresh summary,
+    // instead of being wiped when this one is cleared afterwards.
+    flushed = summary
+    summary = blank()
+    capturesCleared = false
     await mkdir(telemetryDir(), { recursive: true })
     await writeFile(tmp, JSON.stringify(next, null, 2) + "\n", "utf8")
     await rename(tmp, path)
     // The page cannot read this file, so the part it draws with goes beside it.
     await publishPageScript("compress-stats.js", "__COMPRESS_CORE_STATS__", pageSummary(next))
-    // Everything this process knows is now on disk; the next request must not
-    // count it twice.
-    summary = blank()
-    capturesCleared = false
     lastFlushAt = now
   } catch {
-    // A page that shows no numbers is better than a request that fails.
+    // The write failed, so what we took out of `summary` is still pending: put it
+    // back on top of anything recorded meanwhile.
+    if (flushed) summary = merge(flushed, summary)
     try { await unlink(tmp) } catch {}
   } finally {
     inFlight = false

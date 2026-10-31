@@ -11,7 +11,7 @@
 // （$COMPRESS_CORE_DATA_DIR/ccr-store.json 或 <magpie配置目录>/compress-core/ccr-store.json）。
 // 协议：MCP stdio = 换行分隔的 JSON-RPC 2.0。
 import { createInterface } from "node:readline"
-import { readFile, rename, writeFile, mkdir, stat } from "node:fs/promises"
+import { readFile, rename, writeFile, mkdir, stat, open, unlink } from "node:fs/promises"
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -50,8 +50,40 @@ async function loadStore(file) {
   return store
 }
 
+// Two MCP server processes can call persistCounts at once; an unlocked
+// read-modify-write loses whichever increment lands between the read and the
+// rename. A lock file serialises the window (same 0o600 sidecar idea as magpie's
+// plugin-auth.json.lock). Stale locks are broken after LOCK_STALE_MS.
+const LOCK_WAIT_MS = 2000
+const LOCK_STALE_MS = 15000
+
+async function acquireLock(file) {
+  const lock = file + ".lock"
+  const deadline = Date.now() + LOCK_WAIT_MS
+  for (;;) {
+    try {
+      const handle = await open(lock, "wx")
+      return { lock, handle }
+    } catch {
+      try {
+        const st = await stat(lock)
+        if (Date.now() - st.mtimeMs > LOCK_STALE_MS) { await unlink(lock); continue }
+      } catch { /* lock vanished between open and stat: retry */ }
+      if (Date.now() >= deadline) return null
+      await new Promise((r) => setTimeout(r, 15))
+    }
+  }
+}
+
+async function releaseLock(held) {
+  if (!held) return
+  try { await held.handle.close() } catch { /* already closed */ }
+  try { await unlink(held.lock) } catch { /* already gone */ }
+}
+
 /** 取回计数写回文件（ramp 靠它跨进程生效）。读-改-写，计数按 key 取 max。 */
 async function persistCounts(file, store) {
+  const held = await acquireLock(file)
   try {
     let base = serializeCcrStore(store)
     try {
@@ -70,6 +102,7 @@ async function persistCounts(file, store) {
     await rename(tmp, file)
     cache.mtimeMs = -1 // 自己写的也让下次读重新加载
   } catch { /* 计数丢失只影响 ramp 精度，不影响取回正确性 */ }
+  finally { await releaseLock(held) }
 }
 
 // ── 工具实现 ────────────────────────────────────────────────────────────────

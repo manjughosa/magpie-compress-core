@@ -3,7 +3,7 @@
 // The in-app page writes magpie options through the bridge; this hook reads the
 // same options on every request, so one control surface owns every toggle.
 import { createHash, randomUUID } from "node:crypto"
-import { runPipeline, clone, byteLength, INTERNAL_MARKER, removeInternalMarker } from "./pipeline.js"
+import { runPipeline, clone, byteLength } from "./pipeline.js"
 import { conversationView } from "./adapter.js"
 import { persist, redact, redactSecrets } from "./telemetry-store.js"
 import { record as recordCompression, flush as flushStats, snapshot as statsSnapshot } from "./stats-writer.js"
@@ -112,10 +112,7 @@ export async function onRequest(body, ctx) {
       await flushStats(true)
     }
     ctx.state.magpieCompressCoreRequestId = record.id
-    body[INTERNAL_MARKER] = { version: 1 }
     Object.assign(body, working)
-    removeInternalMarker(body)
-    body[INTERNAL_MARKER] = { version: 1 }
     ctx.report?.("ready", record.savedBytes)
     return body
   } catch (error) {

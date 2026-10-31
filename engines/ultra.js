@@ -550,6 +550,9 @@ export function apply(body, ctx, cfg) {
     let changed = false
     for (const seg of view.segments) {
       if (typeof seg.text !== "string" || seg.text.length === 0) continue
+      // Nothing to prune in a whitespace-only segment, and pruning it to "" would
+      // send an empty text block — providers reject that just like whitespace-only.
+      if (seg.text.trim() === "") continue
 
       // system 段默认不动（上游 preserveSystemPrompt !== false）
       if (conf.preserveSystemPrompt && seg.role === "system") continue

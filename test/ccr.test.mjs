@@ -19,6 +19,7 @@ import {
   queryBlock,
   utf8ByteLength,
   hashContent,
+  injectCcrProtocolInstruction,
   configSchema,
   id,
   lossy,
@@ -26,6 +27,7 @@ import {
   stackPriority,
 } from "../engines/ccr/index.js"
 import { check, ctxFor, bodyChars } from "./helpers.mjs"
+import * as middleware from "../compress-core.middleware.js"
 
 export const name = "ccr"
 
@@ -286,5 +288,42 @@ export async function run() {
     const pct = ((before - after) / before) * 100
     console.log(`  info  20000 字符单块：${before} → ${after} 字节（${pct.toFixed(2)}%），${r.replacedCount} 段`)
     check("大块压缩率 > 90%", pct > 90, `${pct.toFixed(2)}%`)
+  }
+
+  // ---- item 1: store through apply with a non-empty ctx.session, retrieve the way
+  // the MCP server does (no principal). Before the fix the entry was keyed by
+  // "<session> <hash>" and the server, which has no session, queried "__anon__".
+  {
+    const text = big(3000)
+    const body = {
+      model: "m",
+      tools: [{ type: "function", function: { name: "omniroute_ccr_retrieve" } }],
+      messages: [{ role: "user", content: text }],
+    }
+    const ctx = { protocol: "chat", state: {}, session: "sess-123" }
+    const changed = apply(body, ctx, { enabled: true })
+    const m = JSON.stringify(body).match(/\[CCR retrieve hash=([0-9a-f]{24})/)
+    check("item1 带 session 时仍写出 marker", changed === true && !!m)
+    const store = ctx.state.ccr && ctx.state.ccr.store
+    const back = m && store ? retrieveBlock(store, m[1]) : null
+    check("item1 不带 principal 也能取回原文（与 MCP server 一致）", back === text)
+  }
+
+  // ---- item 2: the CCR instruction must not become a system message in Anthropic
+  {
+    const body = { model: "m", system: "base system", messages: [{ role: "user", content: "hi" }], tools: [{ type: "function", function: { name: "omniroute_ccr_retrieve" } }] }
+    const changed = injectCcrProtocolInstruction(body, "anthropic")
+    check("item2 Anthropic 指令写入顶层 system", changed === true && typeof body.system === "string" && body.system.includes("[CCR protocol]"))
+    check("item2 Anthropic messages 里没有 system 消息", body.messages.length === 1 && !body.messages.some((x) => x.role === "system"))
+  }
+
+  // ---- item 4: the middleware-only path must never run ccr, even with options: {}
+  {
+    const text = big(3000)
+    const body = { model: "m", tools: [{ type: "function", function: { name: "omniroute_ccr_retrieve" } }], messages: [
+      { role: "user", content: text }, { role: "assistant", content: "ok" }, { role: "user", content: text },
+    ] }
+    middleware.onRequest(body, { protocol: "chat", origin: "magpie-key", options: {}, state: {} })
+    check("item4 middleware + options:{} 不产生 CCR marker", !JSON.stringify(body).includes("[CCR retrieve hash="))
   }
 }
