@@ -5,6 +5,18 @@
 //   stackPriority 升序即执行顺序；isSafeDefault(id) === !lossy
 //   label 用 OmniRoute 英文原名（用户要求「名字照搬」）
 //   why 是本插件加的中文一句话；description 是 OmniRoute 原文
+//
+// tier / tierPct / tierN 是本插件加的实测分级，不是估的：
+//   口径 = 只开这一个引擎、用默认参数，跑 50 份真实抓包（captures/*.json 还原成 chat 请求），
+//   取整包字节压缩率的中位数；语料里没有它认的形状时（headroom 要对象数组、ionizer 要
+//   >200 行数组、codex-responses 要 responses 协议、read-lifecycle 要 tool_calls 路径），
+//   用真实数据搭出那个形状再测，tierN 记实际条数。
+//   复现：node scripts/bench-ratios.mjs。测于 2026-11-01。
+//   tier 边界：1 = <5%，2 = 5–25%，3 = 25–55%，4 = ≥55%。
+//   无损引擎（lite / session-dedup / ccr / headroom）等级封顶 L2：它们省下的字节来自重排、
+//   引用或列式编码，一条信息都没删，不该和有损的排进同一档。headroom 实测 43.8% 落在 L3 区间，
+//   按这条规则归 L2——数字照实显示，等级说的是「信息有没有被丢」。
+//   语料本身已经过默认开着的 lite / ccr / headroom，所以这三个的实测值是残余值，偏低。
 
 export const ENGINES = [
   {
@@ -27,6 +39,9 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
+    tier: 1,
+    tierPct: 0.7,
+    tierN: 50,
   },
   {
     id: "ccr",
@@ -47,6 +62,9 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
+    tier: 2,
+    tierPct: 9.3,
+    tierN: 50,
   },
   {
     id: "lite",
@@ -68,6 +86,9 @@ export const ENGINES = [
     inputScope: "mixed",
     available: true,
     requires: null,
+    tier: 1,
+    tierPct: 0.0,
+    tierN: 50,
   },
   {
     id: "rtk",
@@ -78,6 +99,7 @@ export const ENGINES = [
     description:
       "Strips ANSI noise, progress bars, and repeated lines from command/tool output while preserving failures, warnings, and summaries (60-90% upstream savings)",
     why: "剥掉命令输出里的 ANSI 噪音、进度条、重复行，保留报错、警告和摘要（60–90%）。",
+    note: "不建议和 Magpie 官方的 RTK 压缩同时开启：两边都在压工具输出，同一段会被改两遍，省下的量不会翻倍，出了问题也分不清是谁改的。要开这个就把官方那个关掉。",
     stackPriority: 10,
     lossy: true,
     cacheImpact: "moderate",
@@ -87,6 +109,9 @@ export const ENGINES = [
     inputScope: "tool-results",
     available: true,
     requires: null,
+    tier: 2,
+    tierPct: 11.0,
+    tierN: 50,
   },
   {
     id: "codex-responses",
@@ -109,6 +134,9 @@ export const ENGINES = [
     inputScope: "tool-results",
     available: true,
     requires: null,
+    tier: 3,
+    tierPct: 41.0,
+    tierN: 47,
   },
   {
     id: "headroom",
@@ -128,6 +156,9 @@ export const ENGINES = [
     inputScope: "tool-results",
     available: true,
     requires: null,
+    tier: 2,
+    tierPct: 43.8,
+    tierN: 1,
   },
   {
     id: "relevance",
@@ -149,6 +180,9 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
+    tier: 2,
+    tierPct: 9.3,
+    tierN: 50,
   },
   {
     id: "caveman",
@@ -169,6 +203,9 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
+    tier: 1,
+    tierPct: 0.1,
+    tierN: 50,
   },
   {
     id: "read-lifecycle",
@@ -189,6 +226,9 @@ export const ENGINES = [
     inputScope: "tool-results",
     available: true,
     requires: null,
+    tier: 4,
+    tierPct: 72.5,
+    tierN: 1,
   },
   {
     id: "aggressive",
@@ -209,6 +249,9 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
+    tier: 4,
+    tierPct: 73.6,
+    tierN: 50,
   },
   {
     id: "llmlingua",
@@ -228,6 +271,7 @@ export const ENGINES = [
     inputScope: "messages",
     available: false,
     requires: "需要 @atjsh/llmlingua-2 + ONNX 模型文件，插件宿主里跑不了 worker",
+    tier: null,
   },
   {
     id: "ultra",
@@ -249,6 +293,9 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
+    tier: 2,
+    tierPct: 12.2,
+    tierN: 50,
   },
   {
     id: "ionizer",
@@ -268,6 +315,9 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
+    tier: 4,
+    tierPct: 61.0,
+    tierN: 1,
   },
   {
     id: "llm",
@@ -287,6 +337,7 @@ export const ENGINES = [
     inputScope: "messages",
     available: false,
     requires: "需要一个外部 chat-completion 后端，本插件内无法提供",
+    tier: null,
   },
   {
     id: "omniglyph",
@@ -306,6 +357,7 @@ export const ENGINES = [
     inputScope: "messages",
     available: false,
     requires: "需要 omniglyph npm 包与支持图片直传的供应商",
+    tier: null,
   },
 ]
 

@@ -129,6 +129,24 @@
     return d
   }
 
+  function tierChip(c, T) {
+    var d = el("span", "tier-chip lv" + c.tier)
+    d.append(el("span", "tier-lv", "L" + c.tier), el("span", "tier-name", c.tierLabel || ""))
+    d.title = (T.tier || "") + " " + (c.tierLabel || "")
+    return d
+  }
+
+  function tierLine(c, T) {
+    var line = el("div", "tier-line")
+    line.append(tierChip(c, T))
+    if (typeof c.tierPct === "number") {
+      line.append(el("span", "tier-pct", (T.tierMeasured || "")
+        .replace("{pct}", c.tierPct.toFixed(1))
+        .replace("{n}", String(c.tierN || 0))))
+    }
+    return line
+  }
+
   // 一行一个策略；详情只在这一行展开，不把 15 张卡片同时铺开。
   function rows(host, cards, ctx) {
     clear(host)
@@ -147,6 +165,7 @@
       var nameLine = el("div", "name-line")
       nameLine.append(el("span", "name", c.label))
       nameLine.append(tag(c.badge, c.tone))
+      if (c.tier) nameLine.append(tierChip(c, ctx.T))
       who.append(nameLine, el("div", "sub", c.why))
 
       var val = el("div", "val")
@@ -162,7 +181,9 @@
       detail.id = "d-" + c.id
       if (!open) detail.hidden = true
       var inner = el("div", "detail-in")
+      if (c.tier) inner.append(tierLine(c, ctx.T))
       inner.append(el("p", "desc", c.description))
+      if (c.note) inner.append(el("p", "note", (ctx.T.note || "Note: ") + c.note))
       var stats = el("div", "stats")
       stats.append(
         statCell(ctx.T.hits, String(c.runs || 0)),

@@ -466,6 +466,40 @@ body.panel { padding: 0 16px 20px; }
   font-size: 10.5px;
 }
 
+/* 压缩等级（实测分级） */
+.tier-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tier-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  font-size: 10.5px;
+  line-height: 1;
+  white-space: nowrap;
+  background: var(--pill);
+  color: var(--muted);
+}
+.tier-chip .tier-lv { font-weight: 600; font-variant-numeric: tabular-nums; }
+.tier-chip.lv1 { color: var(--muted); background: var(--pill); }
+.tier-chip.lv2 { color: #3d6fd4; background: rgba(79, 124, 255, 0.14); }
+.tier-chip.lv3 { color: #a05a00; background: rgba(255, 159, 10, 0.16); }
+.tier-chip.lv4 { color: var(--red); background: color-mix(in srgb, var(--red) 14%, transparent); }
+.tier-pct { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.note {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 2px solid #d9a33a;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: rgba(255, 159, 10, 0.10);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--fg);
+}
+
 .requires { margin: 0; font-size: 11.5px; color: var(--red); }
 .fold-h { margin-top: 4px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--muted); }
 

@@ -42,6 +42,10 @@ const slim = ENGINES.map((e) => ({
   inputScope: e.inputScope,
   available: e.available,
   requires: e.requires,
+  tier: e.tier,
+  tierPct: e.tierPct,
+  tierN: e.tierN,
+  note: e.note || null,
   fields: fieldsFor(e),
 }))
 

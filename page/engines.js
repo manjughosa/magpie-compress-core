@@ -15,6 +15,10 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
+      "tier": 1,
+      "tierPct": 0.7,
+      "tierN": 50,
+      "note": null,
       "fields": [
         {
           "key": "minBlockChars",
@@ -55,6 +59,10 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
+      "tier": 2,
+      "tierPct": 9.3,
+      "tierN": 50,
+      "note": null,
       "fields": [
         {
           "key": "minChars",
@@ -115,6 +123,10 @@ globalThis.CompressCatalog = {
       "inputScope": "mixed",
       "available": true,
       "requires": null,
+      "tier": 1,
+      "tierPct": 0,
+      "tierN": 50,
+      "note": null,
       "fields": [
         {
           "key": "compressToolResults",
@@ -173,6 +185,10 @@ globalThis.CompressCatalog = {
       "inputScope": "tool-results",
       "available": true,
       "requires": null,
+      "tier": 2,
+      "tierPct": 11,
+      "tierN": 50,
+      "note": "不建议和 Magpie 官方的 RTK 压缩同时开启：两边都在压工具输出，同一段会被改两遍，省下的量不会翻倍，出了问题也分不清是谁改的。要开这个就把官方那个关掉。",
       "fields": [
         {
           "key": "intensity",
@@ -309,6 +325,10 @@ globalThis.CompressCatalog = {
       "inputScope": "tool-results",
       "available": true,
       "requires": null,
+      "tier": 3,
+      "tierPct": 41,
+      "tierN": 47,
+      "note": null,
       "fields": [
         {
           "key": "minBytes",
@@ -380,6 +400,10 @@ globalThis.CompressCatalog = {
       "inputScope": "tool-results",
       "available": true,
       "requires": null,
+      "tier": 2,
+      "tierPct": 43.8,
+      "tierN": 1,
+      "note": null,
       "fields": [
         {
           "key": "minRows",
@@ -406,6 +430,10 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
+      "tier": 2,
+      "tierPct": 9.3,
+      "tierN": 50,
+      "note": null,
       "fields": [
         {
           "key": "overlapThreshold",
@@ -450,6 +478,10 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
+      "tier": 1,
+      "tierPct": 0.1,
+      "tierN": 50,
+      "note": null,
       "fields": [
         {
           "key": "lang",
@@ -619,6 +651,10 @@ globalThis.CompressCatalog = {
       "inputScope": "tool-results",
       "available": true,
       "requires": null,
+      "tier": 4,
+      "tierPct": 72.5,
+      "tierN": 1,
+      "note": null,
       "fields": [
         {
           "key": "keepStub",
@@ -749,6 +785,10 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
+      "tier": 4,
+      "tierPct": 73.6,
+      "tierN": 50,
+      "note": null,
       "fields": [
         {
           "key": "keepTurns",
@@ -784,6 +824,8 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": false,
       "requires": "需要 @atjsh/llmlingua-2 + ONNX 模型文件，插件宿主里跑不了 worker",
+      "tier": null,
+      "note": null,
       "fields": [
         {
           "key": "rate",
@@ -810,6 +852,10 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
+      "tier": 2,
+      "tierPct": 12.2,
+      "tierN": 50,
+      "note": null,
       "fields": [
         {
           "key": "compressionRate",
@@ -854,6 +900,10 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
+      "tier": 4,
+      "tierPct": 61,
+      "tierN": 1,
+      "note": null,
       "fields": [
         {
           "key": "sampleRate",
@@ -880,6 +930,8 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": false,
       "requires": "需要一个外部 chat-completion 后端，本插件内无法提供",
+      "tier": null,
+      "note": null,
       "fields": [
         {
           "key": "maxChars",
@@ -906,6 +958,8 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": false,
       "requires": "需要 omniglyph npm 包与支持图片直传的供应商",
+      "tier": null,
+      "note": null,
       "fields": [
         {
           "key": "dpi",
