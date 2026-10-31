@@ -59,7 +59,7 @@ import {
 export const id = "caveman"
 export const label = "Caveman"
 export const why =
-  "按语言规则表删掉啰嗦措辞、客套话、冗余从句，保留代码与事实（约 30% 压缩）。"
+  "按语言规则包压缩用户散文；实测约 10–20%（上游标称 30%），保留代码与事实。"
 export const lossy = true
 export const cacheImpact = "moderate"
 export const defaultOn = false

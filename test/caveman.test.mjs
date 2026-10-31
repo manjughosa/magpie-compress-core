@@ -73,7 +73,7 @@ export async function run() {
   check("7 isSingleMode=false", isSingleMode === false)
   check("8 levels=undefined", levels === undefined)
   check("9 available=true", available === true)
-  check("10 why 含 30%", typeof why === "string" && why.indexOf("30%") !== -1, why)
+  check("10 why 写明实测口径（10–20%）", typeof why === "string" && why.indexOf("10–20%") !== -1, why)
 
   // ---- configSchema ----
   const langField = configSchema.find((f) => f.key === "lang")

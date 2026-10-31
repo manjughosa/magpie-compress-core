@@ -40,7 +40,7 @@ import { conversationView } from "../../adapter.js"
 
 export const id = "ccr"
 export const label = "CCR"
-export const why = "把大的重复/连续块换成内容寻址引用，原文仍可取回（无损）。"
+export const why = "把大的重复/连续块换成可取回的引用；装了 retrieve 工具才启用。"
 export const description =
   "Lossless — replaces large repeated/contiguous blocks with content-addressed references instead of deleting them; the original content stays retrievable."
 export const lossy = false

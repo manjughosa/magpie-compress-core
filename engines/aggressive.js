@@ -41,9 +41,10 @@ import { applyLiteCompression } from "./lite.js"
 // ─── 元数据（catalog.js 是面板真源，这里保持同值；stackPriority 与上游一致）──────
 export const id = "aggressive"
 export const label = "Aggressive"
-export const why = "把较早的对话轮次摘要化并逐步老化，只保留最近的细节（约 50%）。"
+export const why = "摘要较早轮次并逐步老化；实测约 25–35%（上游标称 50%），会改写历史、影响缓存。"
 export const lossy = true
-export const cacheImpact = "high"
+export const cacheImpact = "high"
+
 export const defaultOn = false
 export const stackPriority = 30
 export const isSingleMode = false
