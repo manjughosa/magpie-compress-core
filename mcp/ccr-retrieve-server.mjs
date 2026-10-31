@@ -19,6 +19,7 @@ import {
   queryBlock, retrieveBlock, recordRetrieval, utf8ByteLength,
 } from "../engines/ccr/index.js"
 import { hydrateCcrStore, serializeCcrStore } from "../ccr-store-file.js"
+import { acquireLock, releaseLock } from "../lock-file.js"
 
 const TOOL_NAME = "omniroute_ccr_retrieve"
 const MAX_FULL_BYTES = 256 * 1024 // 与上游 MAX_CCR_MCP_FULL_BYTES 一致
@@ -50,40 +51,13 @@ async function loadStore(file) {
   return store
 }
 
-// Two MCP server processes can call persistCounts at once; an unlocked
-// read-modify-write loses whichever increment lands between the read and the
-// rename. A lock file serialises the window (same 0o600 sidecar idea as magpie's
-// plugin-auth.json.lock). Stale locks are broken after LOCK_STALE_MS.
-const LOCK_WAIT_MS = 2000
-const LOCK_STALE_MS = 15000
-
-async function acquireLock(file) {
-  const lock = file + ".lock"
-  const deadline = Date.now() + LOCK_WAIT_MS
-  for (;;) {
-    try {
-      const handle = await open(lock, "wx")
-      return { lock, handle }
-    } catch {
-      try {
-        const st = await stat(lock)
-        if (Date.now() - st.mtimeMs > LOCK_STALE_MS) { await unlink(lock); continue }
-      } catch { /* lock vanished between open and stat: retry */ }
-      if (Date.now() >= deadline) return null
-      await new Promise((r) => setTimeout(r, 15))
-    }
-  }
-}
-
-async function releaseLock(held) {
-  if (!held) return
-  try { await held.handle.close() } catch { /* already closed */ }
-  try { await unlink(held.lock) } catch { /* already gone */ }
-}
 
 /** 取回计数写回文件（ramp 靠它跨进程生效）。读-改-写，计数按 key 取 max。 */
 async function persistCounts(file, store) {
   const held = await acquireLock(file)
+  // Could not take the lock: skip rather than write unlocked (that is the race the
+  // lock exists to prevent). The counts are only ramp hints; the next call retries.
+  if (!held) return
   try {
     let base = serializeCcrStore(store)
     try {

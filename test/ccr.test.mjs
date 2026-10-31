@@ -317,6 +317,27 @@ export async function run() {
     check("item2 Anthropic messages 里没有 system 消息", body.messages.length === 1 && !body.messages.some((x) => x.role === "system"))
   }
 
+  // ---- item 2 end-to-end: through apply with protocol "anthropic". The direct
+  // call above would still pass if apply forgot to pass the protocol, which is the
+  // exact regression the review found (a role:"system" message back in messages[]).
+  {
+    const text = big(3000)
+    const body = {
+      model: "m",
+      system: "base system",
+      tools: [{ name: "omniroute_ccr_retrieve", input_schema: { type: "object" } }],
+      messages: [
+        { role: "user", content: text },
+        { role: "assistant", content: "ok" },
+        { role: "user", content: text },
+      ],
+    }
+    const changed = apply(body, { protocol: "anthropic", state: {} }, { enabled: true })
+    check("item2e anthropic apply 产出 marker", changed === true && JSON.stringify(body).includes("[CCR retrieve hash="))
+    check("item2e 指令进顶层 system", typeof body.system === "string" && body.system.includes("[CCR protocol]"))
+    check("item2e messages 里没有 system role", !body.messages.some((m) => m.role === "system"))
+  }
+
   // ---- item 4: the middleware-only path must never run ccr, even with options: {}
   {
     const text = big(3000)

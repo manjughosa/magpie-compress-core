@@ -45,7 +45,8 @@ export const id = "llm"
 export const label = "LLM Compressor"
 export const why = "用一个 LLM 压缩散文（需要外部模型后端，本插件内无法提供，因此默认不可用）。"
 export const lossy = true
-export const cacheImpact = "high"
+export const cacheImpact = "high"
+
 export const defaultOn = false
 export const stackPriority = 38
 export const isSingleMode = false
@@ -213,8 +214,8 @@ const BUILTIN_PATTERNS = [
   { pattern: /\\begin\{[A-Za-z*]+\}[\s\S]*?\\end\{[A-Za-z*]+\}/g, kind: "latex_block" },
   { pattern: /^#{1,6}\s+.+$/gm, kind: "markdown_heading" },
   { pattern: /^\s*\|.*\|\s*$/gm, kind: "markdown_table" },
-  { pattern: /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/gm, kind: "markdown_table" },
-  { pattern: /^\s*#(?:set|show|let|import|include)\b.+$/gm, kind: "typst_directive" },
+  { pattern: /^[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(?:\|[ \t]*:?-{3,}:?[ \t]*)+\|?[ \t]*$/gm, kind: "markdown_table" },
+  { pattern: /^[ \t]*#(?:set|show|let|import|include)\b[^\n]*$/gm, kind: "typst_directive" },
   { pattern: /`[^`\n]+`/g, kind: "inline_code" },
   { pattern: /\[[^\]\n]+\]\([^) \n]+(?:\s+"[^"]*")?\)/g, kind: "markdown_link" },
   { pattern: /\bhttps?:\/\/[^\s)\]"'>]+/gi, kind: "url" },
@@ -222,7 +223,7 @@ const BUILTIN_PATTERNS = [
   { pattern: /\bprocess\.env\.[A-Za-z_][A-Za-z0-9_]*\b/g, kind: "env_var" },
   { pattern: /\$[A-Z_][A-Z0-9_]*\b/g, kind: "env_var" },
   { pattern: /\b\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?\b/g, kind: "version" },
-  { pattern: /\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)+\(\)?/g, kind: "dotted_identifier" },
+  { pattern: /\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*){1,8}(?:\(\))?/g, kind: "dotted_identifier" },
   { pattern: /\b[A-Za-z_$][\w$]*\s*\([^()\n]*\)/g, kind: "function_call" },
   {
     pattern: /(?:^|\s)(?:\.{0,2}\/[A-Za-z0-9_@./-]+|[A-Za-z]:\\[A-Za-z0-9_.\\/-]+)/g,

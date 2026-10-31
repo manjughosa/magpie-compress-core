@@ -9,6 +9,7 @@
 //   - 上游用 better-sqlite3，这里不允许新增 npm 依赖，用 JSON + tmp/rename 原子写；
 //   - >512KB 的块不落盘（与上游 persistEntry 的口径一致：大块只活内存层）。
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
+import { acquireLock, releaseLock } from "./lock-file.js"
 import { join } from "node:path"
 import { makeStore } from "./engines/ccr/index.js"
 import { telemetryDir } from "./telemetry-store.js"
@@ -95,10 +96,19 @@ async function writeStoreFile(file, store) {
   } catch {
     // 没有旧文件可合并，直接写
   }
-  await mkdir(join(file, ".."), { recursive: true })
-  const tmp = file + ".tmp"
-  await writeFile(tmp, JSON.stringify(doc))
-  await rename(tmp, file)
+  // Same lock the MCP server's persistCounts takes: both writers are
+  // read-modify-write on the same file, so an unlocked write here would drop the
+  // other side's retrieval counts.
+  const held = await acquireLock(file)
+  if (!held) return
+  try {
+    await mkdir(join(file, ".."), { recursive: true })
+    const tmp = file + ".tmp"
+    await writeFile(tmp, JSON.stringify(doc))
+    await rename(tmp, file)
+  } finally {
+    await releaseLock(held)
+  }
 }
 
 /**

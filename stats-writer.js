@@ -198,6 +198,9 @@ export async function flush(force = false) {
   const path = statsFile()
   const tmp = path + ".tmp"
   let flushed = null
+  let clearedBefore = capturesCleared
+  let committed = false
+  let next = null
   try {
     let stored = null
     let unreadable = false
@@ -212,7 +215,7 @@ export async function flush(force = false) {
       if (error && error.code !== "ENOENT") unreadable = true
     }
     if (unreadable) return
-    const next = merge(stored, summary)
+    next = merge(stored, summary)
     // Swap the in-memory summary out synchronously, before the write is awaited:
     // records that arrive while the write is in flight land in the fresh summary,
     // instead of being wiped when this one is cleared afterwards.
@@ -222,16 +225,23 @@ export async function flush(force = false) {
     await mkdir(telemetryDir(), { recursive: true })
     await writeFile(tmp, JSON.stringify(next, null, 2) + "\n", "utf8")
     await rename(tmp, path)
-    // The page cannot read this file, so the part it draws with goes beside it.
-    await publishPageScript("compress-stats.js", "__COMPRESS_CORE_STATS__", pageSummary(next))
+    // On disk from here on. A failure after this point (the page publish) must not
+    // put the increment back, or the next flush would count it twice.
+    committed = true
     lastFlushAt = now
   } catch {
-    // The write failed, so what we took out of `summary` is still pending: put it
-    // back on top of anything recorded meanwhile.
-    if (flushed) summary = merge(flushed, summary)
-    try { await unlink(tmp) } catch {}
+    if (!committed) {
+      if (flushed) summary = merge(flushed, summary)
+      capturesCleared = clearedBefore
+      try { await unlink(tmp) } catch {}
+    }
   } finally {
     inFlight = false
+  }
+  if (committed && next) {
+    // Best effort: the page cannot read the file, so the part it draws with goes
+    // beside it. A publish failure is not a stats failure.
+    try { await publishPageScript("compress-stats.js", "__COMPRESS_CORE_STATS__", pageSummary(next)) } catch {}
   }
 }
 

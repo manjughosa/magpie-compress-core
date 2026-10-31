@@ -83,7 +83,7 @@ ccr 越倾向不再压它（防乒乓）。模型读到的标签行前面会保�
 | 档 | 含义 |
 | --- | --- |
 | 关闭 | 全关。 |
-| 稳妥 | OmniRoute 的"安全默认"：**不删原文**的策略全开，其余不开。也就是 `session-dedup`、`ccr`、`lite`、`headroom`。前两个会把文本换成引用标记（dedup 指向本会话里已有的副本，ccr 可经 retrieve 取回），所以这里说的是"原文仍在"，不是"一个字节都不动"。 |
+| 稳妥 | OmniRoute 的"安全默认"：**不删原文**的策略全开，其余不开。也就是 `ccr`、`lite`、`headroom`。`session-dedup` 同样不删原文（换成指向会话内已有副本的引用），但**默认关**，需要时手动开。ccr 可经 retrieve 工具取回，所以这里说的是"原文仍在"，不是"一个字节都不动"。 |
 | 自定义 | 你自己逐个点出来的结果。手动改任何开关，档位自动落到这一档。 |
 | 全开 | 所有可用策略全开（不可用的仍然开不了）。 |
 
@@ -152,7 +152,7 @@ magpie 给页面和面板的沙箱是 `connect-src 'none'`，也没有文件系�
 
 钩子能在**每一次**经过网关的请求上留一条快照，`capture` 默认**关**（显式设 `true` 才开）。快照落在插件配置目录的 `captures/`，索引另存 `captures-index.json`，最多保留最近 50 条，每条上限 2MB。
 
-页面的 CSP 是 `connect-src 'none'`，只放行插件自己的 `page/` 目录。所以数字和列表都由钩子发布成同目录的两个脚本，页面用 `<script src>` 载入：`captures-index.js`（会话列表：id、时间、`agent`、模型、字节数）和 `compress-stats.js`（顶部统计与每个策略的 saving）。对话原文只在 `captures/`，不进安装包。行上的 `agent`（`dsh`、`pi` 等）标的是这条请求由哪一路 harness 发出。
+页面的 CSP 是 `connect-src 'none'`，只放行插件自己的 `page/` 目录。所以数字和列表都由钩子发布成**包内 `page/` 目录**（`page-publish.js` 的落点，不是插件数据目录）下的两个脚本，页面用 `<script src>` 载入：`captures-index.js`（会话列表：id、时间、`agent`、模型、字节数）和 `compress-stats.js`（顶部统计与每个策略的 saving）。对话原文只在 `captures/`，不进安装包。行上的 `agent`（`dsh`、`pi` 等）标的是这条请求由哪一路 harness 发出。
 
 页面每 5 秒重新取一次两个已发布脚本和 `magpie.options`，有变化就重绘，不需要手动刷新。
 
