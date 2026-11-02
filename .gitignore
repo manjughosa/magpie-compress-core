@@ -14,6 +14,7 @@ page/compress-ccr-status.js
 # Local safety nets: timestamped .bak copies and dated backup snapshots.
 *.bak
 *.bak.*
+*.bak-*
 backup/
 *.tmp
 *.log

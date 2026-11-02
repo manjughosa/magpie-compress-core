@@ -3,14 +3,13 @@
 // 页面跑在 magpie 的沙箱里，加载的是普通脚本（不是 module），所以试压台要用的
 // 那几个源模块必须打成一个 IIFE。
 //
-// 这份产物**不进仓库**：900 KB 的生成代码没法 review，也没法保证和源码对齐。
-// 它由 CI 在测试 job（没有写权限）里构建，再交给发布 job 打包
-// （scripts/build-pages.mjs 与 scripts/dist.mjs）。page/engines.js 不一样：它小、
-// 可逐字节重建、有测试盯着，所以那份是提交进仓库的。
+// 这份产物**提交进仓库**（历史提交里一直如此）：装插件的人没有构建环境，页面加载的
+// 就是仓库里这一份。改完 lab.js / catalog.js / engines/* 之后必须重建并一起提交，
+// 否则实验室跑的是旧代码。page/engines.js 也一样是产物，由 gen-page-catalog.mjs 生成。
 //
-// esbuild 必须按 package.json 里 pin 的确切版本装好。不同版本打出来的字节不一
-// 样，而「这份产物可以从源码重建」正是允许它不进仓库的前提。没有本地 esbuild
-// 就直接失败：不去 npx 现下，那会拿到一个谁也不知道的版本。命令：`npm run build:page`。
+// esbuild 必须按 package.json 里 pin 的确切版本装好：不同版本打出来的字节不一样，
+// diff 会变成噪声。没有本地 esbuild 就直接失败——不去 npx 现下，那会拿到一个谁也
+// 不知道的版本。命令：`npm run build:page`。
 import { spawnSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"

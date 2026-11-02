@@ -30,7 +30,7 @@
 - `page/view.js:293` `cards(strategies, stats, lang)` → 返回卡片数组，每项 `{id, label, why, description, badge, tone, available, requires, on, rule}`。
 - `page/ui.js:6` `el(tag, cls, text)`、`page/ui.js:13` `clear(host)`、`page/ui.js:21` `switchButton(on, disabled, onChange, label)`、`page/ui.js:37` `meter(host, m, T)`、`rows(host, cards, ctx)`，其中 `ctx = {T, open, config, onToggle, onSwitch, onField}`。
 - 会话索引**不在** `options.stats.captures[]` 里：`stats-writer.js` 已经不再写 `plugins.json`，那个字段是冻死的旧值。索引由钩子发布成页面同目录的 `page/captures-index.js`，页面用 `<script src="captures-index.js?t=…">` 载入后读 `globalThis.__COMPRESS_CAPTURES_INDEX__`，字段是 `{id, at, agent, protocol, model, before, after, saved, summary}`。**旧的 `cap.ts` / `cap.strategy` / `rate` / `beforeText` 都不存在**，照着写只会渲染出 `Invalid Date … NaN MB → NaN MB NaN%`。
-- `capture` 默认**开**（`!== false` 就算开），所以每一次经过网关的请求都会留一条，最新 50 条封顶。它一旦默认关，会话列表就只有开关被手动打开的那段时间有内容，看上去就是「永远停在旧的、只有本机 harness 的会话」。
+- `capture` 在装好的插件里默认**开**：出厂值写在 `package.json` 的 `magpie.options.capture`（`true`）。代码层只认 `options.capture === true`，所以自己构造 options 时不给这个键就是不记录。开着时每一次经过网关的请求都留一条，最新 50 条封顶。它一旦默认关，会话列表就只有开关被手动打开的那段时间有内容，看上去就是「永远停在旧的、只有本机 harness 的会话」。
 - `page/captures-index.js` 只装索引元数据，对话原文一条都不进去（那是审查否掉上一版的原因）。原文只在 `<config>/magpie/compress-core/captures/<id>.json`，页面读不到，弹窗只显示摘要与文件位置。
 - 那个脚本是生成物，不随包发布（`.gitignore` 里有），plugin 更新后由宿主下一次请求重发（`refreshCapturesIndex()`，每进程一次）。
 - `report.strategies[]` 每项 `{id, label, available, enabled, status, reason, beforeBytes, afterBytes, ms, savedBytes}`。

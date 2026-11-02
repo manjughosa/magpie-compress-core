@@ -187,7 +187,7 @@ MIT（`LICENSE`，保留 OmniRoute 的版权行）。每个引擎都是 OmniRout
 ## 开发
 
 ```bash
-node test/run.mjs                 # 全部测试（24 套）
+node test/run.mjs                 # 全部测试（30 套，清单在 test/suites.mjs）
 node test/run.mjs lite            # 只跑一套：参数是套件名（每个套件文件里的 name；例：`lite`、`gateway cases (cases.json)`）
 bun test                          # 同一个入口的 bun 版：CI 就是它
 node scripts/gen-page-catalog.mjs # 改完 catalog.js 后重新生成 page/engines.js
