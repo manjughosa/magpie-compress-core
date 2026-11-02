@@ -559,6 +559,13 @@
     no_eligible_json_array_or_not_smaller: "没有可压缩的 JSON，或压缩后不更小",
     budget_exceeded: "超出时间预算",
     failed_open: "出错后放行",
+    no_retrieve_tool: "调用方没声明 retrieve 工具（ccr 门控，不是故障）",
+    no_matching_tool_output_filter: "没有匹配上的工具输出",
+    protocol_not_responses: "不是 responses 协议",
+    no_eligible_response_item: "没有可压缩的响应项",
+    round_trip_mismatch: "还原校验没过，已整包回退",
+    body_too_large: "body 超过尺寸上限，原样放行",
+    engine_error: "引擎出错，已回退",
   }
 
   function renderStrategyReport(report) {
