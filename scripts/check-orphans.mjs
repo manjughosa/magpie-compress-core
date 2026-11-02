@@ -36,9 +36,16 @@ for (const [file] of text) {
 }
 
 // B: a test file the runner never loads proves nothing.
+// 清单在 test/suites.mjs（run.mjs 与 ci.test.mjs 共用同一份）；读错文件曾让这里
+// 对每一个套件都报 UNRUN_TEST，31 条误报把真正的孤儿淹了。
 const runner = text.get("test/run.mjs") || ""
+const suiteList = text.get("test/suites.mjs") || ""
+const listed = new Set([...suiteList.matchAll(/"([^"]+\.test\.mjs)"/g)].map((m) => m[1]))
+if (listed.size === 0) note("UNRUN_TEST", "test/suites.mjs", "读不到套件清单（文件缺失或格式变了）")
 for (const file of [...text.keys()].filter(name => /^test\/.*\.test\.mjs$/.test(name))) {
-  if (!runner.includes(`"${file.slice("test/".length)}"`)) note("UNRUN_TEST", file, "未列入 test/run.mjs 的 suites")
+  const name = file.slice("test/".length)
+  if (name === "ci.test.mjs") continue
+  if (!listed.has(name)) note("UNRUN_TEST", file, `未列入 test/suites.mjs 的 suites（run.mjs ${runner.includes(name) ? "仍会跑" : "也不会跑"}）`)
 }
 
 // C: a page that references a missing script fails only in the browser.
