@@ -8095,7 +8095,7 @@ ${GCF_FENCE_CLOSE}`;
     return queryBlock(block, args);
   }
   var CCR_RETRIEVE_TOOL_NAME2 = "omniroute_ccr_retrieve";
-  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS2 = ["__", ".", "/", ":"];
+  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS2 = ["__", "_", ".", "/", ":"];
   function matchesCcrRetrieveToolName2(name) {
     if (typeof name !== "string") return false;
     if (name === CCR_RETRIEVE_TOOL_NAME2) return true;
@@ -8682,7 +8682,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "messages",
       available: true,
-      requires: null
+      requires: null,
+      tier: 1,
+      tierPct: 0.7,
+      tierN: 50
     },
     {
       id: "ccr",
@@ -8701,7 +8704,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "messages",
       available: true,
-      requires: null
+      requires: null,
+      tier: 2,
+      tierPct: 9.3,
+      tierN: 50
     },
     {
       id: "lite",
@@ -8721,7 +8727,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "mixed",
       available: true,
-      requires: null
+      requires: null,
+      tier: 1,
+      tierPct: 0,
+      tierN: 50
     },
     {
       id: "rtk",
@@ -8731,6 +8740,7 @@ ${GCF_FENCE_CLOSE}`;
       label: "RTK Tool Output",
       description: "Strips ANSI noise, progress bars, and repeated lines from command/tool output while preserving failures, warnings, and summaries (60-90% upstream savings)",
       why: "\u5265\u6389\u547D\u4EE4\u8F93\u51FA\u91CC\u7684 ANSI \u566A\u97F3\u3001\u8FDB\u5EA6\u6761\u3001\u91CD\u590D\u884C\uFF0C\u4FDD\u7559\u62A5\u9519\u3001\u8B66\u544A\u548C\u6458\u8981\uFF0860\u201390%\uFF09\u3002",
+      note: "\u4E0D\u5EFA\u8BAE\u548C Magpie \u5B98\u65B9\u7684 RTK \u538B\u7F29\u540C\u65F6\u5F00\u542F\uFF1A\u4E24\u8FB9\u90FD\u5728\u538B\u5DE5\u5177\u8F93\u51FA\uFF0C\u540C\u4E00\u6BB5\u4F1A\u88AB\u6539\u4E24\u904D\uFF0C\u7701\u4E0B\u7684\u91CF\u4E0D\u4F1A\u7FFB\u500D\uFF0C\u51FA\u4E86\u95EE\u9898\u4E5F\u5206\u4E0D\u6E05\u662F\u8C01\u6539\u7684\u3002\u8981\u5F00\u8FD9\u4E2A\u5C31\u628A\u5B98\u65B9\u90A3\u4E2A\u5173\u6389\u3002",
       stackPriority: 10,
       lossy: true,
       cacheImpact: "moderate",
@@ -8739,7 +8749,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "tool-results",
       available: true,
-      requires: null
+      requires: null,
+      tier: 2,
+      tierPct: 11,
+      tierN: 50
     },
     {
       id: "codex-responses",
@@ -8760,7 +8773,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "tool-results",
       available: true,
-      requires: null
+      requires: null,
+      tier: 3,
+      tierPct: 41,
+      tierN: 47
     },
     {
       id: "headroom",
@@ -8778,7 +8794,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "tool-results",
       available: true,
-      requires: null
+      requires: null,
+      tier: 2,
+      tierPct: 43.8,
+      tierN: 1
     },
     {
       id: "relevance",
@@ -8798,7 +8817,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "messages",
       available: true,
-      requires: null
+      requires: null,
+      tier: 2,
+      tierPct: 9.3,
+      tierN: 50
     },
     {
       id: "caveman",
@@ -8817,7 +8839,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "messages",
       available: true,
-      requires: null
+      requires: null,
+      tier: 1,
+      tierPct: 0.1,
+      tierN: 50
     },
     {
       id: "read-lifecycle",
@@ -8836,7 +8861,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "tool-results",
       available: true,
-      requires: null
+      requires: null,
+      tier: 4,
+      tierPct: 72.5,
+      tierN: 1
     },
     {
       id: "aggressive",
@@ -8855,7 +8883,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "messages",
       available: true,
-      requires: null
+      requires: null,
+      tier: 4,
+      tierPct: 73.6,
+      tierN: 50
     },
     {
       id: "llmlingua",
@@ -8873,7 +8904,8 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "messages",
       available: false,
-      requires: "\u9700\u8981 @atjsh/llmlingua-2 + ONNX \u6A21\u578B\u6587\u4EF6\uFF0C\u63D2\u4EF6\u5BBF\u4E3B\u91CC\u8DD1\u4E0D\u4E86 worker"
+      requires: "\u9700\u8981 @atjsh/llmlingua-2 + ONNX \u6A21\u578B\u6587\u4EF6\uFF0C\u63D2\u4EF6\u5BBF\u4E3B\u91CC\u8DD1\u4E0D\u4E86 worker",
+      tier: null
     },
     {
       id: "ultra",
@@ -8893,7 +8925,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "messages",
       available: true,
-      requires: null
+      requires: null,
+      tier: 2,
+      tierPct: 12.2,
+      tierN: 50
     },
     {
       id: "ionizer",
@@ -8911,7 +8946,10 @@ ${GCF_FENCE_CLOSE}`;
       sampling: true,
       inputScope: "messages",
       available: true,
-      requires: null
+      requires: null,
+      tier: 4,
+      tierPct: 61,
+      tierN: 1
     },
     {
       id: "llm",
@@ -8929,7 +8967,8 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "messages",
       available: false,
-      requires: "\u9700\u8981\u4E00\u4E2A\u5916\u90E8 chat-completion \u540E\u7AEF\uFF0C\u672C\u63D2\u4EF6\u5185\u65E0\u6CD5\u63D0\u4F9B"
+      requires: "\u9700\u8981\u4E00\u4E2A\u5916\u90E8 chat-completion \u540E\u7AEF\uFF0C\u672C\u63D2\u4EF6\u5185\u65E0\u6CD5\u63D0\u4F9B",
+      tier: null
     },
     {
       id: "omniglyph",
@@ -8947,7 +8986,8 @@ ${GCF_FENCE_CLOSE}`;
       sampling: false,
       inputScope: "messages",
       available: false,
-      requires: "\u9700\u8981 omniglyph npm \u5305\u4E0E\u652F\u6301\u56FE\u7247\u76F4\u4F20\u7684\u4F9B\u5E94\u5546"
+      requires: "\u9700\u8981 omniglyph npm \u5305\u4E0E\u652F\u6301\u56FE\u7247\u76F4\u4F20\u7684\u4F9B\u5E94\u5546",
+      tier: null
     }
   ];
   var ORDER = ENGINES.slice().sort((a, b) => a.stackPriority - b.stackPriority).map((e) => e.id);
