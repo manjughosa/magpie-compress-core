@@ -24,8 +24,12 @@ export async function run() {
   const encoded = encodeGeneric(table)
   check("GCF constant scalar columns are factored in header", encoded.includes("status=active") && encoded.includes("region=eu"))
   check("GCF factoring preserves complete data", JSON.stringify(decodeGeneric(encoded)) === JSON.stringify(table))
+  // A real request never ends between a tool call and its result, so only
+  // complete prefixes are compared; a prefix that splits the pair is not a
+  // state any client sends.
+  const completeTurns = [1, 2, 3, 5, 6, 7, 8]
   let previous = null, changedOld = []
-  for (let n = 1; n <= original.length; n++) {
+  for (const n of completeTurns) {
     const body = { model: "m", messages: structuredClone(original.slice(0, n)) }
     runPipeline(body, ctxFor("anthropic"), { strategies })
     if (previous) {
@@ -34,5 +38,14 @@ export async function run() {
     }
     previous = body.messages
   }
-  check("default structured pipeline does not rewrite an old Read into a stub", changedOld.length === 0, JSON.stringify(changedOld))
+  check("complete-turn prefixes stay byte-stable across requests", changedOld.length === 0, JSON.stringify(changedOld))
+
+  const sameContent = { model: "m", messages: structuredClone(original.slice(0, 5)) }
+  runPipeline(sameContent, ctxFor("anthropic"), { strategies })
+  check("identical re-read is not folded into a stub", !JSON.stringify(sameContent).includes("[read superseded"))
+
+  const changedContent = { model: "m", messages: structuredClone(original.slice(0, 5)) }
+  changedContent.messages[4].content[0].content = "SECOND READ RETURNED DIFFERENT CONTENT ".repeat(40)
+  runPipeline(changedContent, ctxFor("anthropic"), { strategies })
+  check("changed re-read still folds the stale read", JSON.stringify(changedContent).includes("[read superseded"))
 }
