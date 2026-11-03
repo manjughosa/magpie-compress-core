@@ -972,7 +972,7 @@
   }
   var MAX_FUZZY_BLOCKS = 200;
   var CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve";
-  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":"];
+  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":", "-"];
   function fnv1a(s) {
     let h = 2166136261;
     for (let i = 0; i < s.length; i++) {
@@ -5330,7 +5330,7 @@ ${GCF_FENCE_CLOSE}`;
   }
   var id7 = "ultra";
   var label2 = "Ultra";
-  var why2 = "\u542F\u53D1\u5F0F token \u7EA7\u526A\u679D\uFF0C\u6700\u6FC0\u8FDB\u7684\u7EAF\u672C\u5730\u538B\u7F29\uFF08\u7EA6 75%\uFF09\u3002";
+  var why2 = "\u542F\u53D1\u5F0F token \u7EA7\u526A\u679D\uFF0C\u53EA\u526A\u4F4E\u5206\u6563\u6587 token\uFF1A\u542B\u6570\u5B57\u3001\u8DEF\u5F84\u3001URL\u3001\u4EE3\u7801\u7684\u5185\u5BB9\u53D7\u4FDD\u62A4\u3002\u771F\u5B9E\u6D41\u91CF\u6574\u5305\u4E2D\u4F4D 6.2%\uFF0C\u4E0A\u6E38\u5BA3\u79F0\u7684\u7EA6 75% \u5728 agent \u8BED\u6599\u4E0A\u4E0D\u6210\u7ACB\u3002";
   var description2 = "Heuristic token pruning (+ optional SLM).";
   var lossy2 = true;
   var cacheImpact2 = "high";
@@ -8201,7 +8201,7 @@ ${GCF_FENCE_CLOSE}`;
     return queryBlock(block, args);
   }
   var CCR_RETRIEVE_TOOL_NAME2 = "omniroute_ccr_retrieve";
-  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS2 = ["__", "_", ".", "/", ":"];
+  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS2 = ["__", "_", ".", "/", ":", "-"];
   function matchesCcrRetrieveToolName2(name) {
     if (typeof name !== "string") return false;
     if (name === CCR_RETRIEVE_TOOL_NAME2) return true;
@@ -9176,8 +9176,8 @@ ${GCF_FENCE_CLOSE}`;
       inputScope: "messages",
       available: true,
       requires: null,
-      tier: 1,
-      tierPct: 0.7,
+      tier: 2,
+      tierPct: 9.9,
       tierN: 50
     },
     {
@@ -9198,8 +9198,8 @@ ${GCF_FENCE_CLOSE}`;
       inputScope: "messages",
       available: true,
       requires: null,
-      tier: 2,
-      tierPct: 9.3,
+      tier: 3,
+      tierPct: 22.1,
       tierN: 50
     },
     {
@@ -9244,7 +9244,7 @@ ${GCF_FENCE_CLOSE}`;
       available: true,
       requires: null,
       tier: 2,
-      tierPct: 11,
+      tierPct: 8.3,
       tierN: 50
     },
     {
@@ -9268,7 +9268,7 @@ ${GCF_FENCE_CLOSE}`;
       available: true,
       requires: null,
       tier: 3,
-      tierPct: 41,
+      tierPct: 43.8,
       tierN: 47
     },
     {
@@ -9289,7 +9289,7 @@ ${GCF_FENCE_CLOSE}`;
       available: true,
       requires: null,
       tier: 2,
-      tierPct: 43.8,
+      tierPct: 49.1,
       tierN: 1
     },
     {
@@ -9307,7 +9307,7 @@ ${GCF_FENCE_CLOSE}`;
       inputScope: "tool-results",
       available: true,
       requires: null,
-      tier: null
+      tier: 3
     },
     {
       id: "relevance",
@@ -9328,8 +9328,8 @@ ${GCF_FENCE_CLOSE}`;
       inputScope: "messages",
       available: true,
       requires: null,
-      tier: 2,
-      tierPct: 9.3,
+      tier: 1,
+      tierPct: 3.1,
       tierN: 50
     },
     {
@@ -9373,7 +9373,7 @@ ${GCF_FENCE_CLOSE}`;
       available: true,
       requires: null,
       tier: 4,
-      tierPct: 72.5,
+      tierPct: 72.8,
       tierN: 1
     },
     {
@@ -9394,8 +9394,8 @@ ${GCF_FENCE_CLOSE}`;
       inputScope: "messages",
       available: true,
       requires: null,
-      tier: 4,
-      tierPct: 73.6,
+      tier: 3,
+      tierPct: 37.9,
       tierN: 50
     },
     {
@@ -9426,7 +9426,7 @@ ${GCF_FENCE_CLOSE}`;
       ],
       label: "Ultra",
       description: "Heuristic token-level pruning (~75%) \u2014 the most aggressive fully-local option.",
-      why: "\u542F\u53D1\u5F0F token \u7EA7\u526A\u679D\uFF0C\u6700\u6FC0\u8FDB\u7684\u7EAF\u672C\u5730\u538B\u7F29\uFF08\u7EA6 75%\uFF09\u3002",
+      why: "\u542F\u53D1\u5F0F token \u7EA7\u526A\u679D\uFF0C\u53EA\u526A\u4F4E\u5206\u6563\u6587 token\uFF1A\u542B\u6570\u5B57\u3001\u8DEF\u5F84\u3001URL\u3001\u4EE3\u7801\u7684\u5185\u5BB9\u53D7\u4FDD\u62A4\u3002\u771F\u5B9E\u6D41\u91CF\u6574\u5305\u4E2D\u4F4D 6.2%\uFF0C\u4E0A\u6E38\u5BA3\u79F0\u7684\u7EA6 75% \u5728 agent \u8BED\u6599\u4E0A\u4E0D\u6210\u7ACB\u3002",
       stackPriority: 40,
       lossy: true,
       cacheImpact: "high",
@@ -9437,7 +9437,7 @@ ${GCF_FENCE_CLOSE}`;
       available: true,
       requires: null,
       tier: 2,
-      tierPct: 12.2,
+      tierPct: 6.2,
       tierN: 50
     },
     {
@@ -9458,7 +9458,7 @@ ${GCF_FENCE_CLOSE}`;
       available: true,
       requires: null,
       tier: 4,
-      tierPct: 61,
+      tierPct: 54.6,
       tierN: 1
     },
     {

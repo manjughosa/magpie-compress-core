@@ -15,8 +15,8 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
-      "tier": 1,
-      "tierPct": 0.7,
+      "tier": 2,
+      "tierPct": 9.9,
       "tierN": 50,
       "note": null,
       "fields": [
@@ -59,8 +59,8 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
-      "tier": 2,
-      "tierPct": 9.3,
+      "tier": 3,
+      "tierPct": 22.1,
       "tierN": 50,
       "note": null,
       "fields": [
@@ -186,7 +186,7 @@ globalThis.CompressCatalog = {
       "available": true,
       "requires": null,
       "tier": 2,
-      "tierPct": 11,
+      "tierPct": 8.3,
       "tierN": 50,
       "note": "不建议和 Magpie 官方的 RTK 压缩同时开启：两边都在压工具输出，同一段会被改两遍，省下的量不会翻倍，出了问题也分不清是谁改的。要开这个就把官方那个关掉。",
       "fields": [
@@ -326,7 +326,7 @@ globalThis.CompressCatalog = {
       "available": true,
       "requires": null,
       "tier": 3,
-      "tierPct": 41,
+      "tierPct": 43.8,
       "tierN": 47,
       "note": null,
       "fields": [
@@ -401,7 +401,7 @@ globalThis.CompressCatalog = {
       "available": true,
       "requires": null,
       "tier": 2,
-      "tierPct": 43.8,
+      "tierPct": 49.1,
       "tierN": 1,
       "note": null,
       "fields": [
@@ -430,7 +430,7 @@ globalThis.CompressCatalog = {
       "inputScope": "tool-results",
       "available": true,
       "requires": null,
-      "tier": null,
+      "tier": 3,
       "note": null,
       "fields": [
         {
@@ -478,8 +478,8 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
-      "tier": 2,
-      "tierPct": 9.3,
+      "tier": 1,
+      "tierPct": 3.1,
       "tierN": 50,
       "note": null,
       "fields": [
@@ -700,7 +700,7 @@ globalThis.CompressCatalog = {
       "available": true,
       "requires": null,
       "tier": 4,
-      "tierPct": 72.5,
+      "tierPct": 72.8,
       "tierN": 1,
       "note": null,
       "fields": [
@@ -837,8 +837,8 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
-      "tier": 4,
-      "tierPct": 73.6,
+      "tier": 3,
+      "tierPct": 37.9,
       "tierN": 50,
       "note": null,
       "fields": [
@@ -894,7 +894,7 @@ globalThis.CompressCatalog = {
       "id": "ultra",
       "label": "Ultra",
       "description": "Heuristic token-level pruning (~75%) — the most aggressive fully-local option.",
-      "why": "启发式 token 级剪枝，最激进的纯本地压缩（约 75%）。",
+      "why": "启发式 token 级剪枝，只剪低分散文 token：含数字、路径、URL、代码的内容受保护。真实流量整包中位 6.2%，上游宣称的约 75% 在 agent 语料上不成立。",
       "stackPriority": 40,
       "lossy": true,
       "cacheImpact": "high",
@@ -905,7 +905,7 @@ globalThis.CompressCatalog = {
       "available": true,
       "requires": null,
       "tier": 2,
-      "tierPct": 12.2,
+      "tierPct": 6.2,
       "tierN": 50,
       "note": null,
       "fields": [
@@ -953,7 +953,7 @@ globalThis.CompressCatalog = {
       "available": true,
       "requires": null,
       "tier": 4,
-      "tierPct": 61,
+      "tierPct": 54.6,
       "tierN": 1,
       "note": null,
       "fields": [

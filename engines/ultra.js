@@ -526,7 +526,7 @@ export function resolveUltraConfig(config) {
 
 export const id = "ultra"
 export const label = "Ultra"
-export const why = "启发式 token 级剪枝，最激进的纯本地压缩（约 75%）。"
+export const why = "启发式 token 级剪枝，只剪低分散文 token：含数字、路径、URL、代码的内容受保护。真实流量整包中位 6.2%，上游宣称的约 75% 在 agent 语料上不成立。"
 export const description = "Heuristic token pruning (+ optional SLM)."
 export const lossy = true
 export const cacheImpact = "high"

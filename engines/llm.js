@@ -10,7 +10,8 @@
 // async (text) => text`），开箱即用**绝不改动 payload**，永远返回 `compressed:false`；
 // 真正的模型要由运维通过 `setLlmCompressorBackend()` 注入。本插件（moejs 运行时）没有
 // fetch、没有外部网络、也没有 chat-completion 后端，因此这里把「无 backend = no-op」这条
-// 上游语义原样保留，并把 `available` 标成 false：面板上会显示「需要外部模型后端」并置灰。
+// 上游语义原样保留。`available` 后来改成 true（可选后端由可信 Bun 宿主注入），但**没注入
+// 后端时仍是 no-op**：面板能打开，不代表它真的会压。
 // 契约面（backend 类型、注入缝、配置校验、墓碑化、fail-open）全部照搬，将来有人接后端
 // 只需要调一次 setLlmCompressorBackend，不必重写本文件。
 //

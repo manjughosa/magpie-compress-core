@@ -205,6 +205,9 @@ export function ionizerCorpus() {
 }
 
 // read-lifecycle 要 tool_calls 里的路径：用仓库里真实文件的全文，同一批文件读 4 轮。
+// 每轮之间内容必须有变化：引擎的 filterSupersededReads 会保留「结果相同的重读」
+// （相同的交给 session-dedup），4 轮读同一版本会被整包判成 nothing_to_remove。
+// 所以第 1 轮之后给真实文件追加一段 round 标记，模拟「读过又改过再读」。
 export function readLifecycleCorpus() {
   const files = ["catalog.js", "pipeline.js", "adapter.js", "lab.js"]
   const contents = files.map((name) => readFileSync(join(root, name), "utf8"))
@@ -218,7 +221,7 @@ export function readLifecycleCorpus() {
         content: `Reading ${name}.`,
         tool_calls: [{ id: callId, type: "function", function: { name: "read", arguments: JSON.stringify({ file_path: name }) } }],
       })
-      messages.push({ role: "tool", tool_call_id: callId, name: "read", content: contents[i] })
+      messages.push({ role: "tool", tool_call_id: callId, name: "read", content: round === 0 ? contents[i] : `${contents[i]}\n// round ${round}: edited since previous read\n` })
     })
     messages.push({ role: "user", content: `Round ${round + 1} done, keep going.` })
   }

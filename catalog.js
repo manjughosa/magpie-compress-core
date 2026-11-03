@@ -11,12 +11,24 @@
 //   取整包字节压缩率的中位数；语料里没有它认的形状时（headroom 要对象数组、ionizer 要
 //   >200 行数组、codex-responses 要 responses 协议、read-lifecycle 要 tool_calls 路径），
 //   用真实数据搭出那个形状再测，tierN 记实际条数。
-//   复现：node scripts/bench-ratios.mjs。测于 2026-11-01。
+//   复现：node scripts/bench-ratios.mjs。测于 2026-11-03（50 份抓包冻结快照，
+//   同命令两次运行输出逐字节一致）。
 //   tier 边界：1 = <5%，2 = 5–25%，3 = 25–55%，4 = ≥55%。
-//   无损引擎（lite / session-dedup / ccr / headroom）等级封顶 L2：它们省下的字节来自重排、
-//   引用或列式编码，一条信息都没删，不该和有损的排进同一档。headroom 实测 43.8% 落在 L3 区间，
+//   边界值：ultra 6.2% 贴 L1/L2 的 5% 线；ionizer 54.6% 贴 L4 的 55% 线，
+//   2026-11-03 经操作员裁定保 L4 并在此标注。这两条换个时间窗就可能翻档。
+//   read-lifecycle 的 targeted 语料必须让同一文件各轮内容不同：引擎保留「结果相同的
+//   重读」（交给 session-dedup），4 轮读同一版本会测出 0%。
+//   无损引擎（lite / session-dedup / headroom）等级封顶 L2：它们省下的字节来自重排、
+//   引用或列式编码，一条信息都没删，不该和有损的排进同一档。headroom 实测 49.1% 落在 L3 区间，
 //   按这条规则归 L2——数字照实显示，等级说的是「信息有没有被丢」。
+//   ccr 是这条封顶规则的唯一例外，2026-11-03 经操作员裁定升 L3：它是内容寻址引用，原文仍可取回，
+//   但引用 token 远小于原块，是真实字节减少而非单纯重排；且它的 22.1% 是残余值（语料已被 ccr 压过），
+//   真实能力被系统性低估。若日后重估 headroom，需一并裁断两者是否应当同档。
 //   语料本身已经过默认开着的 lite / ccr / headroom，所以这三个的实测值是残余值，偏低。
+//   leanctx-structured 是唯一按算法推算而非 bench 定级的条目（默认关、历史 566 次请求全 disabled，
+//   没有可用数据）。tier 3 的硬依据：MIN_SAVE_RATIO = 0.25，只有能压到原文 75% 以下才输出，
+//   命中包压缩率结构上必然 ≥25%，排除 L1/L2；厂家标准用例（20 行 × 4 列含 2 个常量列）精算 30.8%；
+//   16 个 Pod 的扁平 YAML 清单形状精算 68%（接近 L4）。待开启后跑一次 bench 回填 tierPct / tierN。
 
 export const ENGINES = [
   {
@@ -39,8 +51,8 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
-    tier: 1,
-    tierPct: 0.7,
+    tier: 2,
+    tierPct: 9.9,
     tierN: 50,
   },
   {
@@ -62,8 +74,8 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
-    tier: 2,
-    tierPct: 9.3,
+    tier: 3,
+    tierPct: 22.1,
     tierN: 50,
   },
   {
@@ -110,7 +122,7 @@ export const ENGINES = [
     available: true,
     requires: null,
     tier: 2,
-    tierPct: 11.0,
+    tierPct: 8.3,
     tierN: 50,
   },
   {
@@ -135,7 +147,7 @@ export const ENGINES = [
     available: true,
     requires: null,
     tier: 3,
-    tierPct: 41.0,
+    tierPct: 43.8,
     tierN: 47,
   },
   {
@@ -157,7 +169,7 @@ export const ENGINES = [
     available: true,
     requires: null,
     tier: 2,
-    tierPct: 43.8,
+    tierPct: 49.1,
     tierN: 1,
   },
   {
@@ -175,7 +187,7 @@ export const ENGINES = [
     inputScope: "tool-results",
     available: true,
     requires: null,
-    tier: null,
+    tier: 3,
   },
   {
     id: "relevance",
@@ -197,8 +209,8 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
-    tier: 2,
-    tierPct: 9.3,
+    tier: 1,
+    tierPct: 3.1,
     tierN: 50,
   },
   {
@@ -244,7 +256,7 @@ export const ENGINES = [
     available: true,
     requires: null,
     tier: 4,
-    tierPct: 72.5,
+    tierPct: 72.8,
     tierN: 1,
   },
   {
@@ -266,8 +278,8 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
-    tier: 4,
-    tierPct: 73.6,
+    tier: 3,
+    tierPct: 37.9,
     tierN: 50,
   },
   {
@@ -300,7 +312,7 @@ export const ENGINES = [
     label: "Ultra",
     description:
       "Heuristic token-level pruning (~75%) — the most aggressive fully-local option.",
-    why: "启发式 token 级剪枝，最激进的纯本地压缩（约 75%）。",
+    why: "启发式 token 级剪枝，只剪低分散文 token：含数字、路径、URL、代码的内容受保护。真实流量整包中位 6.2%，上游宣称的约 75% 在 agent 语料上不成立。",
     stackPriority: 40,
     lossy: true,
     cacheImpact: "high",
@@ -311,7 +323,7 @@ export const ENGINES = [
     available: true,
     requires: null,
     tier: 2,
-    tierPct: 12.2,
+    tierPct: 6.2,
     tierN: 50,
   },
   {
@@ -333,7 +345,7 @@ export const ENGINES = [
     available: true,
     requires: null,
     tier: 4,
-    tierPct: 61.0,
+    tierPct: 54.6,
     tierN: 1,
   },
   {
