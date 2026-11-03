@@ -485,7 +485,7 @@ export function handleCcrRetrieve(store, args, callerId) {
 // ─── protocolInstruction 移植（#8033 / #7746 follow-up 门控） ────────────────
 
 const CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve"
-const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":"]
+const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":", "-"]
 
 /** 精确名或分隔符边界上的尾段匹配（MCP 网关会加命名空间前缀）。 */
 export function matchesCcrRetrieveToolName(name) {
@@ -496,6 +496,11 @@ export function matchesCcrRetrieveToolName(name) {
 
 export const CCR_PROTOCOL_MARKER_SENTINEL = "[CCR protocol]"
 export const CCR_PROTOCOL_INSTRUCTION = `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space — call the \`${CCR_RETRIEVE_TOOL_NAME}\` tool with that hash to get the original text back verbatim. Copy the hash EXACTLY as written — all 24 hexadecimal characters, never truncated, abbreviated, or reformatted — a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation — look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME} for a dedup reference.`
+
+/** 间接可达时的协议说明变体：模型在 code tool 里调 retrieve。 */
+export function buildCcrProtocolInstructionIndirect(callHint) {
+  return `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space — ${callHint} to get the original text back verbatim. Copy the hash EXACTLY as written — all 24 hexadecimal characters, never truncated, abbreviated, or reformatted — a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation — look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME} for a dedup reference.`
+}
 
 /** 调用方 tools[] 里是否声明了 CCR retrieve。 */
 export function callerSupportsCcrRetrieve(body) {
@@ -508,6 +513,37 @@ export function callerSupportsCcrRetrieve(body) {
     const responsesName = tool && tool.type === "mcp" && typeof tool.server_label === "string" ? tool.server_label : undefined
     return matchesCcrRetrieveToolName(flatName) || matchesCcrRetrieveToolName(nestedName) || (responsesName && matchesCcrRetrieveToolName(`mcp__${responsesName}__omniroute_ccr_retrieve`))
   })
+}
+
+/** 各 agent 的 code tool 调用提示词。 */
+const INDIRECT_CALL_HINTS = {
+  omp: 'from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`',
+  opencode: 'from your code tool (e.g. `execute`), call `mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`',
+  codex: 'use `tool_search` to find the `omniroute_ccr_retrieve` tool, then call it with the hash',
+  pi: 'from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`',
+}
+
+/** 有 code tool 的 agent 白名单。 */
+const INDIRECT_CAPABLE_AGENTS = new Set(Object.keys(INDIRECT_CALL_HINTS))
+
+/** 代码执行工具名（出现即认为调用方能间接调 retrieve）。 */
+const CODE_TOOL_NAMES = new Set(['eval', 'execute', 'exec', 'exec_command', 'run_code', 'run_command', 'bash'])
+
+/**
+ * 调用方没有直接声明 retrieve 工具，但有代码执行工具且 agent 在白名单里 → 间接可达。
+ * 返回 null（不可达）或 { callHint }（可达，附调用提示）。
+ */
+export function callerReachesRetrieveIndirectly(body, agent) {
+  const agentName = (agent || '').toLowerCase().trim()
+  if (!INDIRECT_CAPABLE_AGENTS.has(agentName)) return null
+  const tools = body && body["tools"]
+  if (!Array.isArray(tools)) return null
+  const hasCodeTool = tools.some((tool) => {
+    const name = (tool && typeof tool.name === "string" ? tool.name : undefined) || (tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : undefined)
+    return name && CODE_TOOL_NAMES.has(name.toLowerCase())
+  })
+  if (!hasCodeTool) return null
+  return { callHint: INDIRECT_CALL_HINTS[agentName] }
 }
 
 function messageContainsSentinel(message) {
@@ -528,22 +564,23 @@ function messageContainsSentinel(message) {
 /**
  * 对当前协议注入一条取回说明（幂等：历史里已有 sentinel 就不插）。
  */
-export function injectCcrProtocolInstruction(body, protocol) {
+export function injectCcrProtocolInstruction(body, protocol, indirectHint) {
   if (!body || typeof body !== "object") return false
-  if (!callerSupportsCcrRetrieve(body)) return false
+  if (!callerSupportsCcrRetrieve(body) && !indirectHint) return false
   if (Array.isArray(body.messages) && body.messages.some(messageContainsSentinel)) return false
   if (Array.isArray(body.input) && body.input.some(messageContainsSentinel)) return false
   if (typeof body.instructions === "string" && body.instructions.includes(CCR_PROTOCOL_MARKER_SENTINEL)) return false
   if (typeof body.system === "string" && body.system.includes(CCR_PROTOCOL_MARKER_SENTINEL)) return false
   if (Array.isArray(body.system) && body.system.some(messageContainsSentinel)) return false
+  const instruction = indirectHint ? buildCcrProtocolInstructionIndirect(indirectHint) : CCR_PROTOCOL_INSTRUCTION
   if (protocol === "responses") {
     body.instructions = typeof body.instructions === "string" && body.instructions
-      ? body.instructions + "\n\n" + CCR_PROTOCOL_INSTRUCTION
-      : CCR_PROTOCOL_INSTRUCTION
+      ? body.instructions + "\n\n" + instruction
+      : instruction
     return true
   }
   if (protocol === "gemini") {
-    const part = { text: CCR_PROTOCOL_INSTRUCTION }
+    const part = { text: instruction }
     if (body.systemInstruction && Array.isArray(body.systemInstruction.parts)) body.systemInstruction.parts.push(part)
     else body.systemInstruction = { parts: [part] }
     return true
@@ -551,13 +588,13 @@ export function injectCcrProtocolInstruction(body, protocol) {
   // Anthropic 的 messages 里不允许 role:"system"（顶层的 system 字段才是它），
   // 放进去上游直接 400。chat 才用 messages 里的 system 消息。
   if (protocol === "anthropic") {
-    if (typeof body.system === "string") body.system = body.system + "\n\n" + CCR_PROTOCOL_INSTRUCTION
-    else if (Array.isArray(body.system)) body.system.push({ type: "text", text: CCR_PROTOCOL_INSTRUCTION })
-    else body.system = CCR_PROTOCOL_INSTRUCTION
+    if (typeof body.system === "string") body.system = body.system + "\n\n" + instruction
+    else if (Array.isArray(body.system)) body.system.push({ type: "text", text: instruction })
+    else body.system = instruction
     return true
   }
   if (!Array.isArray(body.messages)) return false
-  body.messages.unshift({ role: "system", content: CCR_PROTOCOL_INSTRUCTION })
+  body.messages.unshift({ role: "system", content: instruction })
   return true
 }
 
@@ -632,6 +669,8 @@ export function applyCcr(body, cfg, opts) {
   if (!body || typeof body !== "object") return empty
 
   // 上游 #7746 follow-up 门控：调用方无法取回就不压（默认开，见文件头第 5 条）。
+  // 先查直接声明，再查间接可达（code tool + 白名单 agent）。
+  let indirectHint = null
   if (cfg["requireRetrieveTool"] !== false) {
     let callerCanRetrieve = false
     try {
@@ -639,7 +678,11 @@ export function applyCcr(body, cfg, opts) {
     } catch {
       callerCanRetrieve = false
     }
-    if (!callerCanRetrieve) return { ...empty, gateReason: "no_retrieve_tool" }
+    if (!callerCanRetrieve) {
+      const indirect = callerReachesRetrieveIndirectly(body, opts.agent)
+      if (!indirect) return { ...empty, gateReason: "no_retrieve_tool" }
+      indirectHint = indirect.callHint
+    }
   }
 
   const view = conversationView(body, opts.protocol)
@@ -697,9 +740,10 @@ export function applyCcr(body, cfg, opts) {
   }
 
   // #8033：教能取回的调用方 marker → 工具契约（幂等，一次会话只插一条）。
+  // 间接可达时注入变体（教模型从 code tool 调 retrieve）。
   if (cfg["requireRetrieveTool"] !== false) {
     try {
-      injectCcrProtocolInstruction(body, opts.protocol)
+      injectCcrProtocolInstruction(body, opts.protocol, indirectHint)
     } catch {
       // 注入失败不影响已完成的替换
     }
@@ -717,6 +761,7 @@ export function apply(body, ctx, cfg) {
     const ctxObj = ctx || {}
     const r = applyCcr(body, cfg, {
       protocol: ctxObj.protocol,
+      agent: ctxObj.agent,
       principalId: (cfg && cfg.principalId) || undefined, // 不能用 session：retrieve server 看不到会话，查的是 anon 区
       store: ctxObj.ccrStore,
       persistStore: ctxObj.persistCcrStore,

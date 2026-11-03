@@ -13,10 +13,17 @@
 //   用真实数据搭出那个形状再测，tierN 记实际条数。
 //   复现：node scripts/bench-ratios.mjs。测于 2026-11-01。
 //   tier 边界：1 = <5%，2 = 5–25%，3 = 25–55%，4 = ≥55%。
-//   无损引擎（lite / session-dedup / ccr / headroom）等级封顶 L2：它们省下的字节来自重排、
+//   无损引擎（lite / session-dedup / headroom）等级封顶 L2：它们省下的字节来自重排、
 //   引用或列式编码，一条信息都没删，不该和有损的排进同一档。headroom 实测 43.8% 落在 L3 区间，
 //   按这条规则归 L2——数字照实显示，等级说的是「信息有没有被丢」。
+//   ccr 是这条封顶规则的唯一例外，2026-11-03 经操作员裁定升 L3：它是内容寻址引用，原文仍可取回，
+//   但引用 token 远小于原块，是真实字节减少而非单纯重排；且它的 9.3% 是残余值（语料已被 ccr 压过），
+//   真实能力被系统性低估。若日后重估 headroom，需一并裁断两者是否应当同档。
 //   语料本身已经过默认开着的 lite / ccr / headroom，所以这三个的实测值是残余值，偏低。
+//   leanctx-structured 是唯一按算法推算而非 bench 定级的条目（默认关、历史 566 次请求全 disabled，
+//   没有可用数据）。tier 3 的硬依据：MIN_SAVE_RATIO = 0.25，只有能压到原文 75% 以下才输出，
+//   命中包压缩率结构上必然 ≥25%，排除 L1/L2；厂家标准用例（20 行 × 4 列含 2 个常量列）精算 30.8%；
+//   16 个 Pod 的扁平 YAML 清单形状精算 68%（接近 L4）。待开启后跑一次 bench 回填 tierPct / tierN。
 
 export const ENGINES = [
   {
@@ -62,7 +69,7 @@ export const ENGINES = [
     inputScope: "messages",
     available: true,
     requires: null,
-    tier: 2,
+    tier: 3,
     tierPct: 9.3,
     tierN: 50,
   },
@@ -175,7 +182,7 @@ export const ENGINES = [
     inputScope: "tool-results",
     available: true,
     requires: null,
-    tier: null,
+    tier: 3,
   },
   {
     id: "relevance",
