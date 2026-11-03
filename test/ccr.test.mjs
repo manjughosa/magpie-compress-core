@@ -95,6 +95,100 @@ export async function run() {
     check("解除门控时不插 instruction", forced.messages.every((m) => m.role !== "system"))
   }
 
+  // ---- 间接可达（omp/opencode/codex 的 code tool 场景）----
+  {
+    const { callerReachesRetrieveIndirectly, buildCcrProtocolInstructionIndirect } = await import("../engines/ccr/index.js")
+    // 正例：omp + eval 工具
+    const ompBody = {
+      model: "m",
+      tools: [{ type: "function", function: { name: "eval" } }],
+      messages: [{ role: "user", content: big(4000) }],
+    }
+    check("omp + eval → 间接可达", callerReachesRetrieveIndirectly(ompBody, "omp") !== null)
+    // 正例：opencode + execute 工具
+    const opencodeBody = {
+      model: "m",
+      tools: [{ type: "function", function: { name: "execute" } }],
+      messages: [{ role: "user", content: big(4000) }],
+    }
+    check("opencode + execute → 间接可达", callerReachesRetrieveIndirectly(opencodeBody, "opencode") !== null)
+    // 正例：codex + exec 工具
+    const codexBody = {
+      model: "m",
+      tools: [{ type: "function", function: { name: "exec" } }],
+      messages: [{ role: "user", content: big(4000) }],
+    }
+    check("codex + exec → 间接可达", callerReachesRetrieveIndirectly(codexBody, "codex") !== null)
+    // 正例：codex + exec_command 工具（真实 codex 请求里的名字）
+    const codexExecCmdBody = {
+      model: "m",
+      tools: [{ type: "function", function: { name: "exec_command" } }],
+      messages: [{ role: "user", content: big(4000) }],
+    }
+    check("codex + exec_command → 间接可达", callerReachesRetrieveIndirectly(codexExecCmdBody, "codex") !== null)
+    // 负例：白名单 agent 但没有 code tool
+    const noCodeTool = {
+      model: "m",
+      tools: [{ type: "function", function: { name: "read_file" } }],
+      messages: [{ role: "user", content: big(4000) }],
+    }
+    check("omp 无 code tool → 不可达", callerReachesRetrieveIndirectly(noCodeTool, "omp") === null)
+    // 负例：非白名单 agent 有 code tool
+    check("claude 有 eval → 不可达（不走间接）", callerReachesRetrieveIndirectly(ompBody, "claude") === null)
+    check("未知 agent 有 eval → 不可达", callerReachesRetrieveIndirectly(ompBody, "unknown") === null)
+    check("无 agent → 不可达", callerReachesRetrieveIndirectly(ompBody, undefined) === null)
+    // 负例：没有 tools
+    check("无 tools → 不可达", callerReachesRetrieveIndirectly({ messages: [] }, "omp") === null)
+    // 集成：omp + eval 能压
+    const text = big(4000)
+    const ompChat = {
+      model: "m",
+      tools: [{ type: "function", function: { name: "eval" } }],
+      messages: [{ role: "user", content: text }],
+    }
+    const changed = apply(ompChat, { ...ctxFor("chat"), agent: "omp" }, {})
+    check("omp + eval 集成：能压", changed === true)
+    check("omp + eval 集成：marker 写入", ompChat.messages.find((m) => m.role === "user").content.includes("[CCR retrieve hash="))
+    check("omp + eval 集成：注入变体 instruction", ompChat.messages[0].role === "system" && ompChat.messages[0].content.includes("from your code tool"))
+    // 集成：opencode + execute 能压
+    const ocChat = {
+      model: "m",
+      tools: [{ type: "function", function: { name: "execute" } }],
+      messages: [{ role: "user", content: text }],
+    }
+    const ocChanged = apply(ocChat, { ...ctxFor("chat"), agent: "opencode" }, {})
+    check("opencode + execute 集成：能压", ocChanged === true)
+    check("opencode + execute 集成：注入变体 instruction", ocChat.messages[0].role === "system" && ocChat.messages[0].content.includes("from your code tool"))
+    // 集成：codex + exec_command 能压（responses 协议）
+    const codexRespBody = {
+      model: "m",
+      input: [{ role: "user", content: [{ type: "input_text", text }] }],
+      tools: [{ type: "function", name: "exec_command" }, { type: "function", name: "tool_search" }],
+    }
+    const codexChanged = apply(codexRespBody, { ...ctxFor("responses"), agent: "codex" }, {})
+    check("codex + exec_command 集成：能压", codexChanged === true)
+    check("codex + exec_command 集成：instructions 注入 tool_search 提示", typeof codexRespBody.instructions === "string" && codexRespBody.instructions.includes("tool_search"))
+    // 集成：codex 扁平 name 的 tools 形状
+    const codexFlatBody = {
+      model: "m",
+      input: [{ role: "user", content: [{ type: "input_text", text }] }],
+      tools: [{ type: "function", name: "exec_command" }],
+    }
+    check("codex 扁平 name tools：能压", apply(codexFlatBody, { ...ctxFor("responses"), agent: "codex" }, {}) === true)
+    // 负例集成：claude + eval（claude 不在白名单，走原门控逻辑）
+    const claudeChat = {
+      model: "m",
+      tools: [{ type: "function", function: { name: "eval" } }],
+      messages: [{ role: "user", content: text }],
+    }
+    check("claude + eval 集成：不压（claude 不走间接）", apply(claudeChat, { ...ctxFor("chat"), agent: "claude" }, {}) === false)
+    // 变体文本含 callHint
+    const variant = buildCcrProtocolInstructionIndirect("from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`")
+    check("变体文本含 sentinel", variant.includes("[CCR protocol]"))
+    check("变体文本含 callHint", variant.includes("from your code tool"))
+    check("变体文本含 dedup 排除说明", variant.includes("do NOT call omniroute_ccr_retrieve for a dedup reference"))
+  }
+
   // ---- 没东西压 ----
   {
     const body = chatWithTool("短文本")
@@ -208,6 +302,10 @@ export async function run() {
     // omp 的 MCP 命名是 mcp__<server>_<tool>：server 与 tool 之间只有一个下划线。
     // 少了这一条，omp 的请求全被判成 no_retrieve_tool（2026-11-02 实测 2798 次）。
     check("omp 单下划线前缀名", matchesCcrRetrieveToolName("mcp__ccr_retrieve_omniroute_ccr_retrieve") === true)
+    // Copilot 的 MCP 命名是 <server>-<tool>（连字符）。少了这一条，Copilot（agent 上报名 OpenAI）
+    // 的请求全被判成 no_retrieve_tool（2026-11-03 实测 71 次）。
+    check("连字符前缀名", matchesCcrRetrieveToolName("ccr-retrieve-omniroute_ccr_retrieve") === true)
+    check("连字符但非边界不认", matchesCcrRetrieveToolName("xomniroute-ccr_retrieve") === false)
     check("非边界前缀不认", matchesCcrRetrieveToolName("xomniroute_ccr_retrieve") === false)
     check("扁平 tool.name", callerSupportsCcrRetrieve({ tools: [{ name: "omniroute_ccr_retrieve" }] }) === true)
     check("嵌套 function.name", callerSupportsCcrRetrieve({ tools: [retrieveTool] }) === true)

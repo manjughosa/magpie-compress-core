@@ -59,7 +59,7 @@ globalThis.CompressCatalog = {
       "inputScope": "messages",
       "available": true,
       "requires": null,
-      "tier": 2,
+      "tier": 3,
       "tierPct": 9.3,
       "tierN": 50,
       "note": null,
@@ -430,7 +430,7 @@ globalThis.CompressCatalog = {
       "inputScope": "tool-results",
       "available": true,
       "requires": null,
-      "tier": null,
+      "tier": 3,
       "note": null,
       "fields": [
         {
