@@ -264,9 +264,9 @@ export function run() {
   }
 
   {
-    // F-02 middleware 默认 codexResponses off（defaultOn=false）
+    // F-02 显式关闭仍保持原文（新默认由 DEFAULT_STRATEGIES 开启）
     const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", JSON_OBJ)])
-    middleware.onRequest(body, ctxFor("responses", {}))
-    check("F-02 默认关闭", body.input[1].output === JSON_OBJ)
+    middleware.onRequest(body, ctxFor("responses", { strategies: { "codex-responses": false } }))
+    check("F-02 显式关闭", body.input[1].output === JSON_OBJ)
   }
 }

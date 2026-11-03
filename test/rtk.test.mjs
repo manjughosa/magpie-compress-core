@@ -284,10 +284,10 @@ export function run() {
   }
 
   {
-    // I-02 默认关闭（defaultOn=false）
+    // I-02 显式关闭仍保持原文（新默认由 DEFAULT_STRATEGIES 开启）
     const body = toolBody("bash", "git status", GIT_STATUS)
-    middleware.onRequest(body, ctxFor("chat", {}))
-    check("I-02 默认关闭", body.messages[2].content[0].content === GIT_STATUS)
+    middleware.onRequest(body, ctxFor("chat", { strategies: { rtk: false } }))
+    check("I-02 显式关闭", body.messages[2].content[0].content === GIT_STATUS)
   }
 
   // —— J 组：build-typescript ——

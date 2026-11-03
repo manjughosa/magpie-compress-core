@@ -972,7 +972,7 @@
   }
   var MAX_FUZZY_BLOCKS = 200;
   var CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve";
-  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", ".", "/", ":"];
+  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":"];
   function fnv1a(s) {
     let h = 2166136261;
     for (let i = 0; i < s.length; i++) {
@@ -1036,7 +1036,8 @@
     return tools.some((tool) => {
       const flatName = tool && typeof tool.name === "string" ? tool.name : void 0;
       const fn = tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : void 0;
-      return matchesCcrRetrieveToolName(flatName) || matchesCcrRetrieveToolName(fn);
+      const mcpName = tool && tool.type === "mcp" && typeof tool.server_label === "string" ? tool.server_label : void 0;
+      return matchesCcrRetrieveToolName(flatName) || matchesCcrRetrieveToolName(fn) || mcpName && matchesCcrRetrieveToolName(`mcp__${mcpName}__omniroute_ccr_retrieve`);
     });
   }
   function applyFuzzyPass(messages, opts, store) {
@@ -2650,6 +2651,7 @@ ${stripped.text}
   var id3 = "rtk";
   function apply3(body, ctx, cfg) {
     if (!body || typeof body !== "object") return false;
+    if (ctx && ctx.protocol && !["chat", "anthropic"].includes(ctx.protocol)) return false;
     const messages = body.messages;
     if (!Array.isArray(messages) || messages.length === 0) return false;
     const config = mergeRtkConfig(cfg);
@@ -7393,8 +7395,33 @@ ${GCF_FENCE_CLOSE}`;
   var stackPriority6 = 38;
   var isSingleMode6 = false;
   var levels6 = void 0;
-  var available6 = false;
+  var available6 = true;
   var configSchema11 = [
+    {
+      key: "model",
+      type: "select",
+      label: "\u540E\u7AEF\u6A21\u578B",
+      description: "\u4EC5\u5728\u53EF\u4FE1 Bun \u5BBF\u4E3B\u4E2D\u4F7F\u7528\uFF1B\u9009\u62E9\u73B0\u6709\u7F51\u5173\u7684 provider/model\u3002\u672A\u914D\u7F6E\u65F6 no-op\u3002",
+      defaultValue: "",
+      options: []
+    },
+    {
+      key: "baseUrl",
+      type: "select",
+      label: "\u540E\u7AEF\u5730\u5740",
+      description: "OpenAI \u517C\u5BB9 /v1 \u5730\u5740\uFF0C\u9ED8\u8BA4\u672C\u673A Magpie\uFF1B\u4E0D\u8981\u5728\u8FD9\u91CC\u7C98\u8D34\u5BC6\u94A5\u3002",
+      defaultValue: "http://127.0.0.1:3425/v1",
+      options: [{ value: "http://127.0.0.1:3425/v1", label: "\u672C\u673A Magpie" }]
+    },
+    {
+      key: "timeoutMs",
+      type: "number",
+      label: "\u5355\u6B21\u540E\u7AEF\u8D85\u65F6\u6BEB\u79D2",
+      description: "\u8D85\u65F6\u540E\u8BE5\u6BB5\u4FDD\u6301\u539F\u6587\uFF0C\u4E0D\u963B\u585E\u6B63\u5E38\u8BF7\u6C42\u3002",
+      defaultValue: 12e3,
+      min: 1e3,
+      max: 3e4
+    },
     {
       key: "maxChars",
       type: "number",
@@ -7638,14 +7665,9 @@ ${GCF_FENCE_CLOSE}`;
     }
     return { text: parts.join(""), didCompress: anyCompressed };
   }
-  function apply11(body, ctx, cfg) {
-    try {
-      if (!body || typeof body !== "object") return false;
-      if (_backend === null) return false;
-      return false;
-    } catch {
-      return false;
-    }
+  async function apply11(body, ctx, cfg) {
+    const result = await applyAsync(body, ctx, cfg);
+    return result.compressed === true;
   }
   async function applyAsync(body, ctx, cfg) {
     const untouched = { body, compressed: false, stats: null };
@@ -7671,7 +7693,9 @@ ${GCF_FENCE_CLOSE}`;
         return untouched;
       }
       const backend = resolveBackend();
-      const backendOpts = { model: void 0, compressionRate: DEFAULT_COMPRESSION_RATE };
+      const baseUrl = typeof cfg?.baseUrl === "string" ? cfg.baseUrl : void 0;
+      const timeoutMs = typeof cfg?.timeoutMs === "number" ? cfg.timeoutMs : void 0;
+      const backendOpts = { model: cfg?.model || void 0, baseUrl, timeoutMs, compressionRate: typeof cfg?.compressionRate === "number" ? cfg.compressionRate : DEFAULT_COMPRESSION_RATE };
       let compressedCount = 0;
       for (const seg of segments) {
         try {
@@ -8109,11 +8133,12 @@ ${GCF_FENCE_CLOSE}`;
     return tools.some((tool) => {
       const flatName = tool && typeof tool.name === "string" ? tool.name : void 0;
       const nestedName = tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : void 0;
-      return matchesCcrRetrieveToolName2(flatName) || matchesCcrRetrieveToolName2(nestedName);
+      const responsesName = tool && tool.type === "mcp" && typeof tool.server_label === "string" ? tool.server_label : void 0;
+      return matchesCcrRetrieveToolName2(flatName) || matchesCcrRetrieveToolName2(nestedName) || responsesName && matchesCcrRetrieveToolName2(`mcp__${responsesName}__omniroute_ccr_retrieve`);
     });
   }
   function messageContainsSentinel(message) {
-    const content = message && message.content;
+    const content = message && (message.content ?? message.output);
     if (typeof content === "string") return content.includes(CCR_PROTOCOL_MARKER_SENTINEL);
     if (Array.isArray(content)) {
       return content.some(
@@ -8126,8 +8151,20 @@ ${GCF_FENCE_CLOSE}`;
     if (!body || typeof body !== "object") return false;
     if (!callerSupportsCcrRetrieve2(body)) return false;
     if (Array.isArray(body.messages) && body.messages.some(messageContainsSentinel)) return false;
+    if (Array.isArray(body.input) && body.input.some(messageContainsSentinel)) return false;
+    if (typeof body.instructions === "string" && body.instructions.includes(CCR_PROTOCOL_MARKER_SENTINEL)) return false;
     if (typeof body.system === "string" && body.system.includes(CCR_PROTOCOL_MARKER_SENTINEL)) return false;
     if (Array.isArray(body.system) && body.system.some(messageContainsSentinel)) return false;
+    if (protocol === "responses") {
+      body.instructions = typeof body.instructions === "string" && body.instructions ? body.instructions + "\n\n" + CCR_PROTOCOL_INSTRUCTION : CCR_PROTOCOL_INSTRUCTION;
+      return true;
+    }
+    if (protocol === "gemini") {
+      const part = { text: CCR_PROTOCOL_INSTRUCTION };
+      if (body.systemInstruction && Array.isArray(body.systemInstruction.parts)) body.systemInstruction.parts.push(part);
+      else body.systemInstruction = { parts: [part] };
+      return true;
+    }
     if (protocol === "anthropic") {
       if (typeof body.system === "string") body.system = body.system + "\n\n" + CCR_PROTOCOL_INSTRUCTION;
       else if (Array.isArray(body.system)) body.system.push({ type: "text", text: CCR_PROTOCOL_INSTRUCTION });
@@ -8326,6 +8363,7 @@ ${GCF_FENCE_CLOSE}`;
     "edit",
     "edit_file",
     "multiedit",
+    "multi_edit",
     "str_replace",
     "str_replace_editor",
     "str_replace_based_edit_tool",
@@ -8691,7 +8729,7 @@ ${GCF_FENCE_CLOSE}`;
       id: "ccr",
       fields: [
         { key: "minBlockBytes", type: "number", label: "\u6700\u5C0F\u5757\u5B57\u8282", description: "\u5C0F\u4E8E\u8FD9\u4E2A\u5927\u5C0F\u7684\u5757\u4E0D\u6362\u6210\u5F15\u7528", defaultValue: 2048, min: 256, max: 65536 },
-        { key: "minRepeat", type: "number", label: "\u6700\u5C11\u91CD\u590D\u6B21\u6570", description: "\u540C\u4E00\u5757\u81F3\u5C11\u51FA\u73B0\u51E0\u6B21\u624D\u6298\u53E0", defaultValue: 2, min: 2, max: 10 }
+        { key: "minRepeat", type: "number", label: "\u6700\u5C11\u91CD\u590D\u6B21\u6570", description: "\u540C\u4E00\u5757\u81F3\u5C11\u51FA\u73B0\u51E0\u6B21\u624D\u6298\u53E0\uFF1B1 \u8868\u793A\u4E0D\u8981\u6C42\u91CD\u590D", defaultValue: 1, min: 1, max: 10 }
       ],
       label: "CCR",
       description: "Lossless \u2014 replaces large repeated/contiguous blocks with content-addressed references instead of deleting them; the original content stays retrievable.",
@@ -8966,8 +9004,8 @@ ${GCF_FENCE_CLOSE}`;
       levels: null,
       sampling: false,
       inputScope: "messages",
-      available: false,
-      requires: "\u9700\u8981\u4E00\u4E2A\u5916\u90E8 chat-completion \u540E\u7AEF\uFF0C\u672C\u63D2\u4EF6\u5185\u65E0\u6CD5\u63D0\u4F9B",
+      available: true,
+      requires: "\u53EF\u9009\uFF1A\u7531\u53EF\u4FE1 Bun \u5BBF\u4E3B\u914D\u7F6E\u73B0\u6709\u7F51\u5173\u7684 chat-completion \u540E\u7AEF\uFF1B\u672A\u914D\u7F6E\u65F6 no-op",
       tier: null
     },
     {
@@ -9083,12 +9121,12 @@ ${GCF_FENCE_CLOSE}`;
     "session-dedup": false,
     ccr: true,
     lite: true,
-    rtk: false,
-    "codex-responses": false,
+    rtk: true,
+    "codex-responses": true,
     headroom: true,
     relevance: false,
     caveman: false,
-    "read-lifecycle": false,
+    "read-lifecycle": true,
     aggressive: false,
     llmlingua: false,
     ultra: false,

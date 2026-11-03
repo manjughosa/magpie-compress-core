@@ -25,6 +25,12 @@ const big = (n, fill = "x") => {
 }
 
 export async function run() {
+  {
+    const responses = { model: "m", input: [{ type: "message", role: "user", content: [{ type: "input_text", text: "a  \n\n\nb" }] }] }
+    check("responses 默认与 messages 路径一样做幂等空白折叠", apply(responses, ctxFor("responses"), {}) === true && responses.input[0].content[0].text === "a\n\nb")
+    const guarded = { model: "m", input: [{ type: "message", role: "user", content: [{ type: "input_text", text: "a  \n\n\nb" }] }] }
+    check("responses 显式保护当前轮时不动", apply(guarded, ctxFor("responses"), { preserveCurrentTurn: true }) === false && guarded.input[0].content[0].text === "a  \n\n\nb")
+  }
   // ---- collapseWhitespace (1–8) ----
   let r = collapseWhitespace({ messages: [{ role: "user", content: "a\n\n\nb" }] })
   check("1 ≥3换行→2", r.body.messages[0].content === "a\n\nb" && r.applied)

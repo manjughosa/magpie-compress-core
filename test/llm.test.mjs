@@ -41,14 +41,11 @@ export async function run() {
   check("3 lossy/cacheImpact/defaultOn", lossy === true && cacheImpact === "high" && defaultOn === false)
   check("4 stackPriority 取源码值 38", stackPriority === 38)
   check("5 isSingleMode/levels", isSingleMode === false && levels === undefined)
-  check("6 available=false（无 backend 即 no-op）", available === false)
+  check("6 可选后端引擎已注册；未配置后端仍 no-op", available === true)
   check(
-    "7 configSchema 只有 maxChars",
-    configSchema.length === 1 &&
-      configSchema[0].key === "maxChars" &&
-      configSchema[0].defaultValue === 4000 &&
-      configSchema[0].min === 500 &&
-      configSchema[0].max === 20000
+    "7 configSchema 含后端模型与窗口上限",
+    configSchema.some((f) => f.key === "model") &&
+      configSchema.some((f) => f.key === "maxChars" && f.defaultValue === 4000 && f.min === 500 && f.max === 20000)
   )
   check("8 初始没有 backend", getLlmCompressorBackend() === null && hasLlmCompressorBackend() === false)
 
@@ -60,7 +57,7 @@ export async function run() {
   ])
   const snapshot = JSON.stringify(body)
   const before = bodyChars(body)
-  check("9 无 backend：apply 返回 false", apply(body, ctxFor("chat"), {}) === false)
+  check("9 无 backend：apply 返回 false", await apply(body, ctxFor("chat"), {}) === false)
   const r1 = await applyAsync(body, ctxFor("chat"), {})
   check("10 无 backend：applyAsync compressed=false", r1.compressed === false)
   check("11 无 backend：body 一字未动", JSON.stringify(body) === snapshot && bodyChars(body) === before)
@@ -82,7 +79,7 @@ export async function run() {
     `        [实测] llm(注入 slice-60 backend) 压缩率 ${(((before2 - bodyChars(body2)) / before2) * 100).toFixed(1)}% (${before2} → ${bodyChars(body2)} chars)`
   )
   check("15 system 段不动", body2.messages[0].content === "system prompt")
-  check("16 同步 apply 仍是 pass-through", apply(body2, ctxFor("chat"), {}) === false)
+  check("16 已配置 backend 的引擎入口也能压缩", await apply(body2, ctxFor("chat"), {}) === false && body2.messages[0].content === "system prompt")
 
   // ---- 代码块墓碑化：物理上不外发 ----
   let sawFence = false
@@ -173,7 +170,7 @@ export async function run() {
   let allBool = true
   for (const bad of [null, undefined, 0, "string", [], { messages: null }, { messages: [null, 1] }]) {
     try {
-      const out = apply(bad, ctxFor("chat"), {})
+      const out = await apply(bad, ctxFor("chat"), {})
       if (typeof out !== "boolean") allBool = false
       await applyAsync(bad, ctxFor("chat"), {})
     } catch {
@@ -182,7 +179,15 @@ export async function run() {
   }
   check("32 畸形输入不抛", badThrew === false)
   check("33 畸形输入返回布尔", allBool)
-  check("34 未知协议返回 false", apply({ messages: [{ role: "user", content: "x" }] }, ctxFor("nope"), {}) === false)
-  check("35 无参数返回 false", apply() === false)
-  check("36 setLlmCompressorBackend(null) 复位", getLlmCompressorBackend() === null)
+  check("34 未知协议返回 false", await apply({ messages: [{ role: "user", content: "x" }] }, ctxFor("nope"), {}) === false)
+  check("35 无参数返回 false", await apply() === false)
+  // ---- 管线接入：同步默认不变；显式开启时才等待异步后端 ----
+  setLlmCompressorBackend(async (text) => text.slice(0, 60))
+  const { runPipeline, runPipelineAsync } = await import("../pipeline.js")
+  const pipelineBody = chatBody([{ role: "user", text: PROSE }])
+  const enabled = { strategies: { llm: true } }
+  check("37 同步默认管线不等待异步后端", runPipeline(pipelineBody, ctxFor("chat"), enabled).strategies.find(s => s.id === "llm").status === "skipped")
+  const pipelineRecord = await runPipelineAsync(pipelineBody, ctxFor("chat"), enabled)
+  check("38 可选异步管线真正命中 llm", pipelineRecord.strategies.find(s => s.id === "llm").status === "hit" && pipelineRecord.savedBytes > 0)
+  setLlmCompressorBackend(null)
 }

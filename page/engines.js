@@ -744,6 +744,10 @@ globalThis.CompressCatalog = {
               "label": "multiedit"
             },
             {
+              "value": "multi_edit",
+              "label": "multi_edit"
+            },
+            {
               "value": "str_replace",
               "label": "str_replace"
             },
@@ -928,11 +932,41 @@ globalThis.CompressCatalog = {
       "levels": null,
       "sampling": false,
       "inputScope": "messages",
-      "available": false,
-      "requires": "需要一个外部 chat-completion 后端，本插件内无法提供",
+      "available": true,
+      "requires": "可选：由可信 Bun 宿主配置现有网关的 chat-completion 后端；未配置时 no-op",
       "tier": null,
       "note": null,
       "fields": [
+        {
+          "key": "model",
+          "type": "select",
+          "label": "后端模型",
+          "description": "仅在可信 Bun 宿主中使用；选择现有网关的 provider/model。未配置时 no-op。",
+          "defaultValue": "",
+          "options": []
+        },
+        {
+          "key": "baseUrl",
+          "type": "select",
+          "label": "后端地址",
+          "description": "OpenAI 兼容 /v1 地址，默认本机 Magpie；不要在这里粘贴密钥。",
+          "defaultValue": "http://127.0.0.1:3425/v1",
+          "options": [
+            {
+              "value": "http://127.0.0.1:3425/v1",
+              "label": "本机 Magpie"
+            }
+          ]
+        },
+        {
+          "key": "timeoutMs",
+          "type": "number",
+          "label": "单次后端超时毫秒",
+          "description": "超时后该段保持原文，不阻塞正常请求。",
+          "defaultValue": 12000,
+          "min": 1000,
+          "max": 30000
+        },
         {
           "key": "maxChars",
           "type": "number",

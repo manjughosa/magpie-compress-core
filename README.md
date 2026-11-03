@@ -33,10 +33,14 @@ magpie plugin add github:magpie-community/plugins             # 从仓库装（p
 | `llmlingua` | LLMLingua-2 | 35 | 是 | 不可用 | 需要 ONNX 模型与 worker 线程，插件宿主里跑不了。 |
 | `ultra` | Ultra | 40 | 是 | 已移植 | 启发式 token 级剪枝，最激进的纯本地选项。 |
 | `ionizer` | Ionizer | 50 | 是 | 已移植 | 采样式压缩，故意有损。 |
-| `llm` | LLM Compressor | 60 | 是 | 不可用 | 需要一个外部 chat-completion 后端，本插件内提供不了。 |
+| `llm` | LLM Compressor | 60 | 是 | 可选后端 | 可信 Bun 宿主可接现有网关；未配置模型时 no-op，默认关闭。 |
 | `omniglyph` | OmniGlyph | 90 | 是 | 不可用 | 需要 omniglyph 包与支持图片直传的供应商。 |
 
-不可用的三个在面板上照常显示，标 `不可用` 并写明缺什么，开关点不动。
+不可用的 LLMLingua-2 / OmniGlyph 在面板上照常显示并写明缺什么。LLM Compressor 是可选后端：未配置模型时不工作，不会偷偷发请求。
+
+默认开启无损策略与 RTK / Codex Tool Output / Read Lifecycle。Read Lifecycle 只折叠被同路径后续 Read 或 Write 明确取代的旧结果，保留一行说明；它会改变历史前缀，介意缓存时单独关闭。RTK 不要与 Magpie 官方 RTK 同时开启。Relevance、Caveman、Aggressive、Ultra、Ionizer 这些散文剪枝策略仍可单独开启，不做全局默认叠加。
+
+LLM 后端在 options 里配置，例如 `"llm": {"enabled": true, "model": "group/deepseek-v4.1-flash", "timeoutMs": 12000}`。仅可信 Bun 宿主发请求，默认使用本机 `http://127.0.0.1:3425/v1`；同步 moejs fallback 不会等待异步后端。
 
 ## ccr 与 retrieve：压掉的东西去哪了
 

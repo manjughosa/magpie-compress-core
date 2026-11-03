@@ -1,5 +1,5 @@
 // Dependency-free compression runner shared by the moejs fallback and Bun host.
-import { PIPELINE } from "./engines/index.js"
+import { PIPELINE, engineModule } from "./engines/index.js"
 import { conversationView } from "./adapter.js"
 import { restoreText } from "./engines/headroom.js"
 
@@ -69,12 +69,12 @@ export const DEFAULT_STRATEGIES = Object.freeze({
   "session-dedup": false,
   ccr: true,
   lite: true,
-  rtk: false,
-  "codex-responses": false,
+  rtk: true,
+  "codex-responses": true,
   headroom: true,
   relevance: false,
   caveman: false,
-  "read-lifecycle": false,
+  "read-lifecycle": true,
   aggressive: false,
   llmlingua: false,
   ultra: false,
@@ -223,6 +223,46 @@ function headroomRoundTrip(beforeBody, body, ctx) {
   }
   return { checked, passed }
 }
+export async function runPipelineAsync(body, ctx, options = {}, beforeBody = null) {
+  const snapshot = clone(body)
+  const record = runPipeline(body, ctx, options, beforeBody)
+
+  const llm = record.strategies.find(s => s.id === "llm")
+  if (!llm?.enabled) return record
+  const stateBefore = clone(ctx.state)
+  const bytesBefore = record.afterBytes
+  const started = Date.now()
+  try {
+    const changed = await engineModule("llm").applyAsync(body, ctx, engineConfig(engineModule("llm"), options)).then(r => r.compressed === true)
+    const afterBytes = byteLength(body)
+    llm.status = changed ? "hit" : "skipped"
+    llm.reason = changed ? "changed" : "nothing_to_remove"
+    llm.beforeBytes = bytesBefore
+    llm.afterBytes = afterBytes
+    llm.savedBytes = Math.max(0, bytesBefore - afterBytes)
+    llm.ms = Date.now() - started
+    record.afterBytes = afterBytes
+    record.savedBytes = Math.max(0, record.beforeBytes - afterBytes)
+    record.savedPct = record.beforeBytes ? Math.round((record.beforeBytes - afterBytes) / record.beforeBytes * 10000) / 100 : 0
+    record.estimatedAfterTokens = Math.ceil(afterBytes / 4)
+    record.totalMs += llm.ms
+    return record
+  } catch (error) {
+    restore(body, snapshot)
+    ctx.state = stateBefore
+    const afterBytes = byteLength(body)
+    llm.status = "fail_open"
+    llm.reason = "engine_error"
+    llm.error = String(error?.message || error).slice(0, 160)
+    llm.afterBytes = afterBytes
+    llm.savedBytes = 0
+    llm.ms = Date.now() - started
+    record.failOpen += 1
+    record.totalMs += llm.ms
+    return record
+  }
+}
+
 export function runPipeline(body, ctx, options = {}, beforeBody = null) {
   const started = Date.now()
   const limit = Number(options.maxBytes)

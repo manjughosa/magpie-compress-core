@@ -60,7 +60,7 @@ export async function run() {
 
   // ---- 基础判定 ----
   check("classifyTool read", classifyTool("Read") === "read" && classifyTool(" read_file ") === "read")
-  check("classifyTool write", classifyTool("str_replace_editor") === "write" && classifyTool("apply_patch") === "write")
+  check("classifyTool write", classifyTool("str_replace_editor") === "write" && classifyTool("apply_patch") === "write" && classifyTool("multi_edit") === "write")
   check("classifyTool 未知", classifyTool("grep") === null && classifyTool(undefined) === null)
   check("extractPath 字段顺序", extractPath({ file_path: " /a ", path: "/b" }) === "/a")
   check("extractPath 空串跳过", extractPath({ file_path: "  ", path: "/b" }) === "/b")

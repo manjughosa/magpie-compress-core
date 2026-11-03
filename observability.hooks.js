@@ -3,13 +3,15 @@
 // The in-app page writes magpie options through the bridge; this hook reads the
 // same options on every request, so one control surface owns every toggle.
 import { createHash, randomUUID } from "node:crypto"
-import { runPipeline, clone, byteLength } from "./pipeline.js"
+import { runPipeline, runPipelineAsync, clone, byteLength, strategyEnabled } from "./pipeline.js"
+import { engineModule } from "./engines/index.js"
 import { conversationView } from "./adapter.js"
 import { persist, redact, redactSecrets } from "./telemetry-store.js"
 import { record as recordCompression, flush as flushStats, snapshot as statsSnapshot } from "./stats-writer.js"
 import { saveCapture, refreshCapturesIndex } from "./capture-store.js"
 import { processCaptureCommand, processCcrCommand, processLabCommand, captureCommandId } from "./options-commands.js"
 import { createPersistentCcrStore } from "./ccr-store-file.js"
+import { configureLlmBackend } from "./llm-backend.js"
 
 // CCR 跨请求共享 store：引擎换出去的原文在这里活过请求边界，retrieve 工具
 // 进程（mcp/ccr-retrieve-server.mjs）读同一份文件兑现 marker。
@@ -29,6 +31,7 @@ const hash = text => createHash("sha256").update(text).digest("hex").slice(0, 16
 
 function finishOptions(ctx) {
   options = ctx.options && typeof ctx.options === "object" ? ctx.options : {}
+  configureLlmBackend(options)
 }
 function samplePairs(before, after, protocol) {
   if (options.telemetry?.samples !== true) return []
@@ -61,7 +64,9 @@ export async function onRequest(body, ctx) {
     const before = clone(body)
     const working = clone(body)
     const ccr = ccrStoreHandle()
-    const record = runPipeline(working, { ...ctx, state: {}, ccrStore: ccr.get(), persistCcrStore: ccr.persist }, options, before)
+    const record = strategyEnabled(engineModule("llm"), options)
+      ? await runPipelineAsync(working, { ...ctx, state: {}, ccrStore: ccr.get(), persistCcrStore: ccr.persist }, options, before)
+      : runPipeline(working, { ...ctx, state: {}, ccrStore: ccr.get(), persistCcrStore: ccr.persist }, options, before)
     record.id = randomUUID()
     record.type = "request"
     record.session = record.session ? `sha256:${hash(record.session)}` : ""

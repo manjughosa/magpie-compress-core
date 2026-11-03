@@ -515,10 +515,9 @@ export function apply(body, ctx, cfg) {
   }
   const view = conversationView(body, ctx && ctx.protocol)
   if (!view) return false
-  // 没有 messages 数组的协议（responses / gemini）：规则与 messages 路径同一条——
-  // 模型已经读过的段才动，正在发送的这一轮原样送出。system 段（Responses 的
-  // `instructions`、Gemini 的 `systemInstruction`）永远跳过：折叠它等于每个请求
-  // 都重写一次声明，缓存前缀当场作废（PR #423 review 第 3 条点名过）。
+  // 没有 messages 数组的协议（responses / gemini）：与 messages 默认路径一致，
+  // 默认全量做幂等空白折叠；显式 preserveCurrentTurn:true 才保护正在发送的轮次。
+  // system 段（Responses 的 `instructions`、Gemini 的 `systemInstruction`）仍不碰。
   const segments = view.segments
   const lastAssistant = (() => {
     let n = -1

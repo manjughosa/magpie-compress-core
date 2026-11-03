@@ -170,6 +170,7 @@ export function run() {
       rtk: { intensity: "standard", maxLinesPerResult: 120 },
       lite: { compressToolResults: false, maxToolLength: 2000, preserveCurrentTurn: false, supportsVision: true },
       headroom: { minRows: 8 },
+      ccr: { minRepeat: 1 },
       "session-dedup": { minBlockChars: 80, fuzzy: false },
       "codex-responses": { minBytes: 512, maxLines: 160 },
     }

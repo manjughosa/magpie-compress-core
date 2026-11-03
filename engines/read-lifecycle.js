@@ -58,6 +58,7 @@ const WRITE_NAMES = [
   "edit",
   "edit_file",
   "multiedit",
+  "multi_edit",
   "str_replace",
   "str_replace_editor",
   "str_replace_based_edit_tool",

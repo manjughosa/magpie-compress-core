@@ -506,6 +506,7 @@ export const id = "rtk"
 
 export function apply(body, ctx, cfg) {
   if (!body || typeof body !== "object") return false
+  if (ctx && ctx.protocol && !["chat", "anthropic"].includes(ctx.protocol)) return false
   const messages = body.messages
   if (!Array.isArray(messages) || messages.length === 0) return false
 

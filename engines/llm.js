@@ -51,12 +51,37 @@ export const defaultOn = false
 export const stackPriority = 38
 export const isSingleMode = false
 export const levels = undefined
-// 关键：没有 backend 就是 no-op，所以标成不可用。
-export const available = false
+// 没有显式配置后端时不可用；配置由可信 Bun 宿主注入，moejs 不做网络请求。
+export const available = true
 
 // configSchema 逐字取自 catalog.js:269-287。上游 LLM_COMPRESSOR_SCHEMA 的
 // {enabled, model, minTokens, compressionRate} 差异见文件头第 5 条。
 export const configSchema = [
+  {
+    key: "model",
+    type: "select",
+    label: "后端模型",
+    description: "仅在可信 Bun 宿主中使用；选择现有网关的 provider/model。未配置时 no-op。",
+    defaultValue: "",
+    options: [],
+  },
+  {
+    key: "baseUrl",
+    type: "select",
+    label: "后端地址",
+    description: "OpenAI 兼容 /v1 地址，默认本机 Magpie；不要在这里粘贴密钥。",
+    defaultValue: "http://127.0.0.1:3425/v1",
+    options: [{ value: "http://127.0.0.1:3425/v1", label: "本机 Magpie" }],
+  },
+  {
+    key: "timeoutMs",
+    type: "number",
+    label: "单次后端超时毫秒",
+    description: "超时后该段保持原文，不阻塞正常请求。",
+    defaultValue: 12000,
+    min: 1000,
+    max: 30000,
+  },
   {
     key: "maxChars",
     type: "number",
@@ -363,19 +388,9 @@ async function compressMessageText(text, backend, opts, maxChars) {
 // 中间件入口
 // ---------------------------------------------------------------------------
 
-/**
- * 同步路径：上游 apply 就是纯 pass-through（index.ts:269-271），这里同样不改 payload。
- * 没有注入 backend 时直接返回 false —— 与「DEFAULT backend 是 no-op」完全一致。
- */
-export function apply(body, ctx, cfg) {
-  try {
-    if (!body || typeof body !== "object") return false
-    // 无 backend → no-op；有 backend 时同步也拿不到 Promise 结果，真正工作在 applyAsync。
-    if (_backend === null) return false
-    return false
-  } catch {
-    return false
-  }
+export async function apply(body, ctx, cfg) {
+  const result = await applyAsync(body, ctx, cfg)
+  return result.compressed === true
 }
 
 /**
@@ -413,7 +428,9 @@ export async function applyAsync(body, ctx, cfg) {
     }
 
     const backend = resolveBackend()
-    const backendOpts = { model: undefined, compressionRate: DEFAULT_COMPRESSION_RATE }
+  const baseUrl = typeof cfg?.baseUrl === "string" ? cfg.baseUrl : undefined
+  const timeoutMs = typeof cfg?.timeoutMs === "number" ? cfg.timeoutMs : undefined
+  const backendOpts = { model: cfg?.model || undefined, baseUrl, timeoutMs, compressionRate: typeof cfg?.compressionRate === "number" ? cfg.compressionRate : DEFAULT_COMPRESSION_RATE }
 
     let compressedCount = 0
     for (const seg of segments) {

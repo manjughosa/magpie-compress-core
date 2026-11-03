@@ -328,7 +328,7 @@ function processMessages(messages, minBlockChars, blockMap, deadline, preserveCu
 
 const MAX_FUZZY_BLOCKS = 200
 const CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve"
-const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", ".", "/", ":"]
+const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":"]
 
 function fnv1a(s) {
   let h = 0x811c9dc5
@@ -399,7 +399,8 @@ export function callerSupportsCcrRetrieve(body) {
   return tools.some((tool) => {
     const flatName = tool && typeof tool.name === "string" ? tool.name : undefined
     const fn = tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : undefined
-    return matchesCcrRetrieveToolName(flatName) || matchesCcrRetrieveToolName(fn)
+    const mcpName = tool && tool.type === "mcp" && typeof tool.server_label === "string" ? tool.server_label : undefined
+    return matchesCcrRetrieveToolName(flatName) || matchesCcrRetrieveToolName(fn) || (mcpName && matchesCcrRetrieveToolName(`mcp__${mcpName}__omniroute_ccr_retrieve`))
   })
 }
 

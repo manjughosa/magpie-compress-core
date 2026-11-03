@@ -497,7 +497,7 @@ export function matchesCcrRetrieveToolName(name) {
 export const CCR_PROTOCOL_MARKER_SENTINEL = "[CCR protocol]"
 export const CCR_PROTOCOL_INSTRUCTION = `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space — call the \`${CCR_RETRIEVE_TOOL_NAME}\` tool with that hash to get the original text back verbatim. Copy the hash EXACTLY as written — all 24 hexadecimal characters, never truncated, abbreviated, or reformatted — a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation — look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME} for a dedup reference.`
 
-/** 调用方 tools[] 里是否声明了 CCR retrieve（三种 tool 形状都认）。 */
+/** 调用方 tools[] 里是否声明了 CCR retrieve。 */
 export function callerSupportsCcrRetrieve(body) {
   const tools = body && body["tools"]
   if (!Array.isArray(tools)) return false
@@ -505,12 +505,13 @@ export function callerSupportsCcrRetrieve(body) {
     const flatName = tool && typeof tool.name === "string" ? tool.name : undefined
     const nestedName =
       tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : undefined
-    return matchesCcrRetrieveToolName(flatName) || matchesCcrRetrieveToolName(nestedName)
+    const responsesName = tool && tool.type === "mcp" && typeof tool.server_label === "string" ? tool.server_label : undefined
+    return matchesCcrRetrieveToolName(flatName) || matchesCcrRetrieveToolName(nestedName) || (responsesName && matchesCcrRetrieveToolName(`mcp__${responsesName}__omniroute_ccr_retrieve`))
   })
 }
 
 function messageContainsSentinel(message) {
-  const content = message && message.content
+  const content = message && (message.content ?? message.output)
   if (typeof content === "string") return content.includes(CCR_PROTOCOL_MARKER_SENTINEL)
   if (Array.isArray(content)) {
     return content.some(
@@ -525,16 +526,28 @@ function messageContainsSentinel(message) {
 }
 
 /**
- * 在最前面插一条 system instruction（幂等：历史里已有 sentinel 就不插）。
- * 只对 messages 数组生效（chat / anthropic）；responses 的 instructions、gemini 的
- * systemInstruction 不碰——留白好过写错位置。
+ * 对当前协议注入一条取回说明（幂等：历史里已有 sentinel 就不插）。
  */
 export function injectCcrProtocolInstruction(body, protocol) {
   if (!body || typeof body !== "object") return false
   if (!callerSupportsCcrRetrieve(body)) return false
   if (Array.isArray(body.messages) && body.messages.some(messageContainsSentinel)) return false
+  if (Array.isArray(body.input) && body.input.some(messageContainsSentinel)) return false
+  if (typeof body.instructions === "string" && body.instructions.includes(CCR_PROTOCOL_MARKER_SENTINEL)) return false
   if (typeof body.system === "string" && body.system.includes(CCR_PROTOCOL_MARKER_SENTINEL)) return false
   if (Array.isArray(body.system) && body.system.some(messageContainsSentinel)) return false
+  if (protocol === "responses") {
+    body.instructions = typeof body.instructions === "string" && body.instructions
+      ? body.instructions + "\n\n" + CCR_PROTOCOL_INSTRUCTION
+      : CCR_PROTOCOL_INSTRUCTION
+    return true
+  }
+  if (protocol === "gemini") {
+    const part = { text: CCR_PROTOCOL_INSTRUCTION }
+    if (body.systemInstruction && Array.isArray(body.systemInstruction.parts)) body.systemInstruction.parts.push(part)
+    else body.systemInstruction = { parts: [part] }
+    return true
+  }
   // Anthropic 的 messages 里不允许 role:"system"（顶层的 system 字段才是它），
   // 放进去上游直接 400。chat 才用 messages 里的 system 消息。
   if (protocol === "anthropic") {

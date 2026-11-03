@@ -27,7 +27,7 @@ export async function run() {
     if (!engine) continue
     const input = copy(c.use === "input" ? doc.input : c.request)
     const body = copy(input)
-    const changed = engine.apply(body, { protocol: "chat", state: {} }, copy(c.options ?? {}))
+    const changed = await engine.apply(body, { protocol: "chat", state: {} }, copy(c.options ?? {}))
 
     if (c.expect === "unchanged") {
       check(`${c.engine}: leaves it alone`, changed === false && show(body) === show(input), c.why)

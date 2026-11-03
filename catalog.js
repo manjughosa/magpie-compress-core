@@ -47,7 +47,7 @@ export const ENGINES = [
     id: "ccr",
     fields: [
       { key: "minBlockBytes", type: "number", label: "最小块字节", description: "小于这个大小的块不换成引用", defaultValue: 2048, min: 256, max: 65536 },
-      { key: "minRepeat", type: "number", label: "最少重复次数", description: "同一块至少出现几次才折叠", defaultValue: 2, min: 2, max: 10 },
+      { key: "minRepeat", type: "number", label: "最少重复次数", description: "同一块至少出现几次才折叠；1 表示不要求重复", defaultValue: 1, min: 1, max: 10 },
     ],
     label: "CCR",
     description:
@@ -335,8 +335,8 @@ export const ENGINES = [
     levels: null,
     sampling: false,
     inputScope: "messages",
-    available: false,
-    requires: "需要一个外部 chat-completion 后端，本插件内无法提供",
+    available: true,
+    requires: "可选：由可信 Bun 宿主配置现有网关的 chat-completion 后端；未配置时 no-op",
     tier: null,
   },
   {

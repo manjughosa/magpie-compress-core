@@ -33,10 +33,14 @@ Run in ascending `stackPriority`. Each one switches and tunes on its own.
 | `llmlingua` | LLMLingua-2 | 35 | yes | unavailable | Needs an ONNX model and worker threads; cannot run inside the plugin host. |
 | `ultra` | Ultra | 40 | yes | ported | Heuristic token-level pruning, the most aggressive purely local option. |
 | `ionizer` | Ionizer | 50 | yes | ported | Sampling-based compression, deliberately lossy. |
-| `llm` | LLM Compressor | 60 | yes | unavailable | Needs an external chat-completion backend this plugin cannot provide. |
+| `llm` | LLM Compressor | 60 | yes | optional backend | The trusted Bun host can use the existing gateway; no model configured means no-op, default off. |
 | `omniglyph` | OmniGlyph | 90 | yes | unavailable | Needs the omniglyph package plus a provider that accepts inline images. |
 
-The three unavailable ones still appear in the panel, marked `unavailable` with the missing piece spelled out; their switches do not move.
+LLMLingua-2 and OmniGlyph remain unavailable with their missing requirements shown. LLM Compressor is an optional backend: without a model it does nothing and sends no request.
+
+Lossless strategies, RTK, Codex Tool Output and Read Lifecycle are enabled by default. Read Lifecycle folds only old reads superseded by a later Read/Write of the exact same path, leaving a short marker; disable it if rewriting history prefixes is not acceptable. Do not combine RTK with Magpie's official RTK. Relevance, Caveman, Aggressive, Ultra and Ionizer remain individually selectable rather than stacked globally.
+
+For the optional LLM backend set options such as `"llm": {"enabled": true, "model": "group/deepseek-v4.1-flash", "timeoutMs": 12000}`. Only the trusted Bun host calls it, using local `http://127.0.0.1:3425/v1` by default; the synchronous moejs fallback never waits for it.
 
 ## Presets
 

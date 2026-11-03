@@ -157,10 +157,16 @@ export async function run() {
       input: [{ role: "user", content: [{ type: "input_text", text }] }],
     }
     check("responses 协议能压", apply(responses, ctxFor("responses"), {}) === true)
+    check("responses 取回说明写入 instructions", responses.instructions.includes("[CCR protocol]"))
+    const secondResponses = { ...responses }
+    check("responses 取回说明不重复注入", injectCcrProtocolInstruction(secondResponses, "responses") === false)
+    const codexMcp = { ...responses, tools: [{ type: "mcp", server_label: "ccr-retrieve" }] }
+    check("Codex MCP server_label 可通过门控", callerSupportsCcrRetrieve(codexMcp) === true)
     const anthropic = { model: "m", tools: [retrieveTool], messages: [{ role: "user", content: [{ type: "text", text }] }] }
     check("anthropic 协议能压", apply(anthropic, ctxFor("anthropic"), {}) === true)
-    const gemini = { contents: [{ role: "user", parts: [{ text }] }] }
-    check("gemini 协议能压", apply(gemini, ctxFor("gemini"), { requireRetrieveTool: false }) === true)
+    const gemini = { tools: [{ name: "omniroute_ccr_retrieve" }], contents: [{ role: "user", parts: [{ text }] }] }
+    check("gemini 协议能压", apply(gemini, ctxFor("gemini"), {}) === true)
+    check("gemini 取回说明写入 systemInstruction", gemini.systemInstruction.parts[0].text.includes("[CCR protocol]"))
     check("未知协议 → false", apply(chatWithTool(text), ctxFor("weird"), { requireRetrieveTool: false }) === false)
   }
 
