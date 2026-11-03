@@ -233,6 +233,7 @@ export async function run() {
     check("callerSupports 名匹配", callerSupportsCcrRetrieve({ tools: [{ name: "omniroute_ccr_retrieve" }] }) &&
       callerSupportsCcrRetrieve({ tools: [{ name: "x__omniroute_ccr_retrieve" }] }) &&
       callerSupportsCcrRetrieve({ tools: [{ function: { name: "mcp.omniroute_ccr_retrieve" } }] }) &&
+      callerSupportsCcrRetrieve({ tools: [{ name: "ccr-retrieve-omniroute_ccr_retrieve" }] }) &&
       !callerSupportsCcrRetrieve({ tools: [{ name: "omniroute_ccr_retrieve_v2" }] }) &&
       !callerSupportsCcrRetrieve({}))
   }

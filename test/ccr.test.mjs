@@ -302,6 +302,10 @@ export async function run() {
     // omp 的 MCP 命名是 mcp__<server>_<tool>：server 与 tool 之间只有一个下划线。
     // 少了这一条，omp 的请求全被判成 no_retrieve_tool（2026-11-02 实测 2798 次）。
     check("omp 单下划线前缀名", matchesCcrRetrieveToolName("mcp__ccr_retrieve_omniroute_ccr_retrieve") === true)
+    // Copilot 的 MCP 命名是 <server>-<tool>（连字符）。少了这一条，Copilot（agent 上报名 OpenAI）
+    // 的请求全被判成 no_retrieve_tool（2026-11-03 实测 71 次）。
+    check("连字符前缀名", matchesCcrRetrieveToolName("ccr-retrieve-omniroute_ccr_retrieve") === true)
+    check("连字符但非边界不认", matchesCcrRetrieveToolName("xomniroute-ccr_retrieve") === false)
     check("非边界前缀不认", matchesCcrRetrieveToolName("xomniroute_ccr_retrieve") === false)
     check("扁平 tool.name", callerSupportsCcrRetrieve({ tools: [{ name: "omniroute_ccr_retrieve" }] }) === true)
     check("嵌套 function.name", callerSupportsCcrRetrieve({ tools: [retrieveTool] }) === true)

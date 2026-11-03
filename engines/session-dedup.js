@@ -328,7 +328,7 @@ function processMessages(messages, minBlockChars, blockMap, deadline, preserveCu
 
 const MAX_FUZZY_BLOCKS = 200
 const CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve"
-const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":"]
+const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":", "-"]
 
 function fnv1a(s) {
   let h = 0x811c9dc5

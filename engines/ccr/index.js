@@ -485,7 +485,7 @@ export function handleCcrRetrieve(store, args, callerId) {
 // ─── protocolInstruction 移植（#8033 / #7746 follow-up 门控） ────────────────
 
 const CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve"
-const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":"]
+const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":", "-"]
 
 /** 精确名或分隔符边界上的尾段匹配（MCP 网关会加命名空间前缀）。 */
 export function matchesCcrRetrieveToolName(name) {
