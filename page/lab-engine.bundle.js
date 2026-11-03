@@ -7811,9 +7811,11 @@ ${GCF_FENCE_CLOSE}`;
     applyCcr: () => applyCcr,
     available: () => available7,
     buildCcrMarker: () => buildCcrMarker2,
+    buildCcrProtocolInstructionIndirect: () => buildCcrProtocolInstructionIndirect,
     buildCcrReference: () => buildCcrReference,
     buildCcrReplacementText: () => buildCcrReplacementText,
     cacheImpact: () => cacheImpact7,
+    callerReachesRetrieveIndirectly: () => callerReachesRetrieveIndirectly,
     callerSupportsCcrRetrieve: () => callerSupportsCcrRetrieve2,
     configSchema: () => configSchema12,
     defaultOn: () => defaultOn7,
@@ -8207,6 +8209,9 @@ ${GCF_FENCE_CLOSE}`;
   }
   var CCR_PROTOCOL_MARKER_SENTINEL = "[CCR protocol]";
   var CCR_PROTOCOL_INSTRUCTION = `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space \u2014 call the \`${CCR_RETRIEVE_TOOL_NAME2}\` tool with that hash to get the original text back verbatim. Copy the hash EXACTLY as written \u2014 all 24 hexadecimal characters, never truncated, abbreviated, or reformatted \u2014 a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation \u2014 look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME2} for a dedup reference.`;
+  function buildCcrProtocolInstructionIndirect(callHint) {
+    return `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space \u2014 ${callHint} to get the original text back verbatim. Copy the hash EXACTLY as written \u2014 all 24 hexadecimal characters, never truncated, abbreviated, or reformatted \u2014 a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation \u2014 look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME2} for a dedup reference.`;
+  }
   function callerSupportsCcrRetrieve2(body) {
     const tools = body && body["tools"];
     if (!Array.isArray(tools)) return false;
@@ -8216,6 +8221,26 @@ ${GCF_FENCE_CLOSE}`;
       const responsesName = tool && tool.type === "mcp" && typeof tool.server_label === "string" ? tool.server_label : void 0;
       return matchesCcrRetrieveToolName2(flatName) || matchesCcrRetrieveToolName2(nestedName) || responsesName && matchesCcrRetrieveToolName2(`mcp__${responsesName}__omniroute_ccr_retrieve`);
     });
+  }
+  var INDIRECT_CALL_HINTS = {
+    omp: "from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`",
+    opencode: "from your code tool (e.g. `execute`), call `mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`",
+    codex: "use `tool_search` to find the `omniroute_ccr_retrieve` tool, then call it with the hash",
+    pi: "from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`"
+  };
+  var INDIRECT_CAPABLE_AGENTS = new Set(Object.keys(INDIRECT_CALL_HINTS));
+  var CODE_TOOL_NAMES = /* @__PURE__ */ new Set(["eval", "execute", "exec", "exec_command", "run_code", "run_command", "bash"]);
+  function callerReachesRetrieveIndirectly(body, agent) {
+    const agentName = (agent || "").toLowerCase().trim();
+    if (!INDIRECT_CAPABLE_AGENTS.has(agentName)) return null;
+    const tools = body && body["tools"];
+    if (!Array.isArray(tools)) return null;
+    const hasCodeTool = tools.some((tool) => {
+      const name = (tool && typeof tool.name === "string" ? tool.name : void 0) || (tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : void 0);
+      return name && CODE_TOOL_NAMES.has(name.toLowerCase());
+    });
+    if (!hasCodeTool) return null;
+    return { callHint: INDIRECT_CALL_HINTS[agentName] };
   }
   function messageContainsSentinel(message) {
     const content = message && (message.content ?? message.output);
@@ -8227,32 +8252,33 @@ ${GCF_FENCE_CLOSE}`;
     }
     return false;
   }
-  function injectCcrProtocolInstruction(body, protocol) {
+  function injectCcrProtocolInstruction(body, protocol, indirectHint) {
     if (!body || typeof body !== "object") return false;
-    if (!callerSupportsCcrRetrieve2(body)) return false;
+    if (!callerSupportsCcrRetrieve2(body) && !indirectHint) return false;
     if (Array.isArray(body.messages) && body.messages.some(messageContainsSentinel)) return false;
     if (Array.isArray(body.input) && body.input.some(messageContainsSentinel)) return false;
     if (typeof body.instructions === "string" && body.instructions.includes(CCR_PROTOCOL_MARKER_SENTINEL)) return false;
     if (typeof body.system === "string" && body.system.includes(CCR_PROTOCOL_MARKER_SENTINEL)) return false;
     if (Array.isArray(body.system) && body.system.some(messageContainsSentinel)) return false;
+    const instruction = indirectHint ? buildCcrProtocolInstructionIndirect(indirectHint) : CCR_PROTOCOL_INSTRUCTION;
     if (protocol === "responses") {
-      body.instructions = typeof body.instructions === "string" && body.instructions ? body.instructions + "\n\n" + CCR_PROTOCOL_INSTRUCTION : CCR_PROTOCOL_INSTRUCTION;
+      body.instructions = typeof body.instructions === "string" && body.instructions ? body.instructions + "\n\n" + instruction : instruction;
       return true;
     }
     if (protocol === "gemini") {
-      const part = { text: CCR_PROTOCOL_INSTRUCTION };
+      const part = { text: instruction };
       if (body.systemInstruction && Array.isArray(body.systemInstruction.parts)) body.systemInstruction.parts.push(part);
       else body.systemInstruction = { parts: [part] };
       return true;
     }
     if (protocol === "anthropic") {
-      if (typeof body.system === "string") body.system = body.system + "\n\n" + CCR_PROTOCOL_INSTRUCTION;
-      else if (Array.isArray(body.system)) body.system.push({ type: "text", text: CCR_PROTOCOL_INSTRUCTION });
-      else body.system = CCR_PROTOCOL_INSTRUCTION;
+      if (typeof body.system === "string") body.system = body.system + "\n\n" + instruction;
+      else if (Array.isArray(body.system)) body.system.push({ type: "text", text: instruction });
+      else body.system = instruction;
       return true;
     }
     if (!Array.isArray(body.messages)) return false;
-    body.messages.unshift({ role: "system", content: CCR_PROTOCOL_INSTRUCTION });
+    body.messages.unshift({ role: "system", content: instruction });
     return true;
   }
   function countOccurrences(haystack, needle, cap) {
@@ -8305,6 +8331,7 @@ ${GCF_FENCE_CLOSE}`;
     const empty = { body, compressed: false, stats: null, replacedCount: 0, map: null, store: null };
     if (cfg["enabled"] === false) return empty;
     if (!body || typeof body !== "object") return empty;
+    let indirectHint = null;
     if (cfg["requireRetrieveTool"] !== false) {
       let callerCanRetrieve = false;
       try {
@@ -8312,7 +8339,11 @@ ${GCF_FENCE_CLOSE}`;
       } catch {
         callerCanRetrieve = false;
       }
-      if (!callerCanRetrieve) return { ...empty, gateReason: "no_retrieve_tool" };
+      if (!callerCanRetrieve) {
+        const indirect = callerReachesRetrieveIndirectly(body, opts.agent);
+        if (!indirect) return { ...empty, gateReason: "no_retrieve_tool" };
+        indirectHint = indirect.callHint;
+      }
     }
     const view = conversationView(body, opts.protocol);
     if (!view || view.segments.length === 0) return empty;
@@ -8358,7 +8389,7 @@ ${GCF_FENCE_CLOSE}`;
     }
     if (cfg["requireRetrieveTool"] !== false) {
       try {
-        injectCcrProtocolInstruction(body, opts.protocol);
+        injectCcrProtocolInstruction(body, opts.protocol, indirectHint);
       } catch {
       }
     }
@@ -8371,6 +8402,7 @@ ${GCF_FENCE_CLOSE}`;
       const ctxObj = ctx || {};
       const r = applyCcr(body, cfg, {
         protocol: ctxObj.protocol,
+        agent: ctxObj.agent,
         principalId: cfg && cfg.principalId || void 0,
         // 不能用 session：retrieve server 看不到会话，查的是 anon 区
         store: ctxObj.ccrStore,
