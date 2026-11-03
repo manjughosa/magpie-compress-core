@@ -19,6 +19,8 @@ export const suites = [
   "lite.test.mjs",
   "session-dedup.test.mjs",
   "headroom.test.mjs",
+  "leanctx-structured.test.mjs",
+  "pipeline-composition.test.mjs",
   "codex-responses.test.mjs",
   "rtk.test.mjs",
   "observability.test.mjs",

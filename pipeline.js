@@ -2,6 +2,7 @@
 import { PIPELINE, engineModule } from "./engines/index.js"
 import { conversationView } from "./adapter.js"
 import { restoreText } from "./engines/headroom.js"
+import { restoreStructured, parseYamlSubset, parseDelimited } from "./engines/leanctx-structured.js"
 
 export const TELEMETRY_VERSION = 1
 
@@ -72,6 +73,7 @@ export const DEFAULT_STRATEGIES = Object.freeze({
   rtk: true,
   "codex-responses": true,
   headroom: true,
+  "leanctx-structured": false,
   relevance: false,
   caveman: false,
   "read-lifecycle": true,
@@ -183,6 +185,7 @@ function reasonFor(engine, ctx) {
   if (engine.id === "codex-responses" && ctx.protocol !== "responses") return "protocol_not_responses"
   if (engine.id === "codex-responses") return "no_eligible_response_item"
   if (engine.id === "headroom") return "no_eligible_json_array_or_not_smaller"
+  if (engine.id === "leanctx-structured") return "no_eligible_structured_tool_output"
   if (engine.id === "session-dedup") return "no_repeat_eligible_block"
   if (engine.id === "ccr") return ctx.state?.ccrGateReason || "nothing_to_remove"
   if (engine.id === "rtk") return "no_matching_tool_output_filter"
@@ -263,6 +266,24 @@ export async function runPipelineAsync(body, ctx, options = {}, beforeBody = nul
   }
 }
 
+function leanctxRoundTrip(beforeBody, body, ctx) {
+  const before = texts(beforeBody, ctx.protocol), after = texts(body, ctx.protocol)
+  let checked = 0, passed = 0
+  for (let i = 0; i < after.length; i++) {
+    if (!after[i].startsWith("[lc1]")) continue
+    checked++
+    const restored = restoreStructured(after[i])
+    if (restored === null) continue
+    const original = before[i].trim()
+    if (after[i].includes('"f":"yaml"')) {
+      if (JSON.stringify(restored) === JSON.stringify(parseYamlSubset(original))) passed++
+    } else {
+      const parsed = parseDelimited(original, after[i].includes('"f":"tsv"') ? "\t" : ",")
+      if (parsed && JSON.stringify(restored) === JSON.stringify(parsed.filter((_, index) => index === 0 || !JSON.parse(after[i].slice(after[i].indexOf("\n") + 1)).d?.includes(parsed[0][index - 1])))) passed++
+    }
+  }
+  return { checked, passed }
+}
 export function runPipeline(body, ctx, options = {}, beforeBody = null) {
   const started = Date.now()
   const limit = Number(options.maxBytes)
@@ -324,6 +345,7 @@ export function runPipeline(body, ctx, options = {}, beforeBody = null) {
       record.savedBytes = Math.max(0, record.beforeBytes - record.afterBytes)
       if (changed && engine.id === "session-dedup") record.roundTrip = dedupRoundTrip(snapshot, body, ctx)
       if (changed && engine.id === "headroom") record.roundTrip = headroomRoundTrip(snapshot, body, ctx)
+      if (changed && engine.id === "leanctx-structured") record.roundTrip = leanctxRoundTrip(snapshot, body, ctx)
       if (record.roundTrip) {
         roundTripsChecked += record.roundTrip.checked
         roundTripsPassed += record.roundTrip.passed

@@ -47,7 +47,7 @@ function encodeRootArray(arr, opts) {
     return `## [${arr.length}]: ${vals.join(",")}\n`
   }
   const fields = tabularFields(arr)
-  if (fields) return encodeTabular("## ", arr, fields, 0, opts)
+  if (fields) return encodeTabular("## ", arr, fields, 0, opts, true)
   return encodeExpanded("## ", arr, 0, opts)
 }
 
@@ -59,7 +59,7 @@ function encodeNamedArray(name, arr, depth, opts) {
     return `${prefix}${name}[${arr.length}]: ${vals.join(",")}\n`
   }
   const fields = tabularFields(arr)
-  if (fields) return encodeTabular(`${prefix}## ${name} `, arr, fields, depth, opts)
+  if (fields) return encodeTabular(`${prefix}## ${name} `, arr, fields, depth, opts, true)
   return encodeExpanded(`${prefix}## ${name} `, arr, depth, opts)
 }
 
@@ -258,7 +258,7 @@ function resolveKeyChain(item, keys) {
 
 // ── End flattening helpers ───────────────────────────────────────────────
 
-function encodeTabular(headerPrefix, arr, fields, depth, opts) {
+function encodeTabular(headerPrefix, arr, fields, depth, opts, factorConst = false) {
   const prefix = indent(depth)
 
   // Phase 0: Analyze fields for flattening.
@@ -315,7 +315,28 @@ function encodeTabular(headerPrefix, arr, fields, depth, opts) {
     if (sas) sharedArrSchemas.set(f, sas)
   }
 
-  const headerFields = columns.map((c) => c.headerName)
+  // GCF v3.6: top-level constant scalar columns are declared once in the
+  // header, not repeated on every row. Attachments keep their old shape.
+  const constCol = new Array(columns.length).fill(false)
+  const constVal = new Array(columns.length).fill("")
+  if (factorConst && arr.length >= 2) {
+    for (let j = 0; j < columns.length; j++) {
+      const col = columns[j]
+      if (col.colType !== "original") continue
+      let value, first = true
+      for (const item of arr) {
+        if (!Object.prototype.hasOwnProperty.call(item, col.field)) { value = undefined; break }
+        const v = item[col.field]
+        if (v !== null && v !== undefined && typeof v === "object") { value = undefined; break }
+        const encoded = formatScalar(v, 0)
+        if (first) { value = encoded; first = false }
+        else if (encoded !== value) { value = undefined; break }
+      }
+      if (value !== undefined) { constCol[j] = true; constVal[j] = value }
+    }
+    if (constCol.every(Boolean)) constCol[constCol.length - 1] = false
+  }
+  const headerFields = columns.map((c, i) => constCol[i] ? `${c.headerName}=${constVal[i]}` : c.headerName)
   let out = `${headerPrefix}[${arr.length}]{${headerFields.join(",")}}\n`
 
   for (let i = 0; i < arr.length; i++) {
@@ -385,7 +406,7 @@ function encodeTabular(headerPrefix, arr, fields, depth, opts) {
       attachments.push({ name: f, value: obj[f], inline: false })
     }
 
-    const row = cells.join("|")
+    const row = cells.filter((_, i) => !constCol[i]).join("|")
     if (rowHasAttachment) {
       out += `${prefix}@${i} ${row}\n`
     } else {

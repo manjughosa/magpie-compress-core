@@ -167,6 +167,20 @@
       ],
       "note": "Credited by repository: the port came through OmniRoute's copy of this project. An earlier revision of this file credited 'dennenulin/rtk', which does not resolve; rtk-ai/rtk is the repository that does.",
       "license": "Apache-2.0"
+    },
+    {
+      "name": "lean-ctx",
+      "repository": "https://github.com/yvgude/lean-ctx",
+      "used_by": ["engines/leanctx-structured.js"],
+      "note": "Apache-2.0 structured CSV/TSV/YAML compaction ideas and value-level round-trip design, adapted from rust/crates/lean-ctx-compress at 7c9025c46eae0781abec4f83bb302212413c009d. No permission, memory, MCP or proxy code is included.",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "gcf-typescript",
+      "repository": "https://github.com/blackwell-systems/gcf-typescript",
+      "used_by": ["engines/gcf/encode.js", "engines/gcf/decode.js"],
+      "note": "Constant-column factoring reviewed against upstream spec v3.6.0 / v2.7.0; existing nested/attachment codec is retained.",
+      "license": "MIT"
     }
   ],
   "changes": [

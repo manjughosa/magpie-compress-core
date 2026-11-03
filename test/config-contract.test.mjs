@@ -38,6 +38,7 @@ const SOURCES = {
   rtk: "rtk/index.js",
   "codex-responses": "codex-responses.js",
   headroom: "headroom.js",
+  "leanctx-structured": "leanctx-structured.js",
   relevance: "relevance/index.js",
   ultra: "ultra.js",
   caveman: "caveman.js",

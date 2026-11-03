@@ -21,6 +21,10 @@ it reaches, and a hash of every ported copy are recorded in PROVENANCE.json.
   rtk — https://github.com/rtk-ai/rtk
     Apache-2.0, see LICENSES/Apache-2.0.txt. Reaches engines/rtk/.
 
+  lean-ctx — https://github.com/yvgude/lean-ctx
+    Apache-2.0, see LICENSES/Apache-2.0.txt. Structured CSV/TSV/YAML compaction
+    ideas and value-level round-trip design reach engines/leanctx-structured.js.
+
 These projects were reached through OmniRoute's copies of them. Where an
 upstream keeps its own copyright line or NOTICE file, that is the one in its own
 repository; nothing here strips or replaces it.

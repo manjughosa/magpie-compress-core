@@ -105,6 +105,23 @@ body.panel { padding: 0 16px 20px; }
   line-height: 1;
 }
 
+/* ═══ 压缩流水线说明 ═══ */
+.pipeline-panel {
+  margin: 8px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+.pipeline-panel summary { cursor: pointer; font-weight: 600; }
+.pipeline-panel p { margin: 8px 0; color: var(--muted); font-size: 12px; }
+.pipeline-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+.pipeline-step { display: inline-flex; align-items: center; gap: 5px; padding: 4px 7px; border-radius: var(--radius-sm); background: var(--pill); font-size: 11px; }
+.pipeline-step:not(:last-child)::after { content: "→"; color: var(--muted); margin-left: 5px; }
+.pipeline-step.is-off { opacity: 0.5; }
+.pipeline-num { color: var(--muted); font-family: var(--code); }
+.pipeline-off { font-size: 10px; }
+
 /* ═══ 分段控制器 ═══ */
 
 .segs {

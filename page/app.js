@@ -42,6 +42,13 @@
   }
 
   function bindViewButtons() {
+    var btnPipeline = $("btnPipeline")
+    if (btnPipeline) btnPipeline.addEventListener("click", function () {
+      var panel = $("pipelinePanel")
+      if (!panel) return
+      panel.hidden = !panel.hidden
+      btnPipeline.setAttribute("aria-expanded", panel.hidden ? "false" : "true")
+    })
     var btnCustom = $("btnCustom")
     var btnLab = $("btnLab")
     var btnLabFromCustom = $("btnLabFromCustom")
@@ -198,6 +205,7 @@
     paintPresets()
     paintCcrBtn()
     paintMeter()
+    paintPipeline()
     paintRows()
     paintAdvanced()
     paintSessions()
@@ -258,6 +266,20 @@
       note.textContent = T.statsFileNote
       host.appendChild(note)
     }
+  }
+
+  function paintPipeline() {
+    var host = $("pipelineSteps")
+    if (!host) return
+    U.clear(host)
+    var enabled = strategies()
+    V.engines().slice().sort(function (a, b) { return a.stackPriority - b.stackPriority }).forEach(function (engine) {
+      var on = enabled[engine.id] === true
+      var step = U.el("li", "pipeline-step" + (on ? " is-on" : " is-off"))
+      step.append(U.el("span", "pipeline-num", String(engine.stackPriority)), U.el("span", "pipeline-name", engine.label))
+      if (!on) step.append(U.el("span", "pipeline-off", engine.available === false ? "依赖未配置" : "未启用"))
+      host.append(step)
+    })
   }
 
   function paintRows() {

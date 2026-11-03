@@ -78,6 +78,7 @@
         "rtk": true,
         "codex-responses": true,
         "headroom": true,
+        "leanctx-structured": false,
         "relevance": false,
         "caveman": false,
         "read-lifecycle": true,

@@ -233,7 +233,12 @@ function parseArrayFromHeader(lines, headerLine, depth, bracketPart) {
   if (afterBracket.startsWith("{")) {
     const braceEnd = findClosingBrace(afterBracket)
     if (braceEnd < 0) throw new Error("invalid field declaration")
-    const fields = splitFieldDecl(afterBracket.slice(0, braceEnd + 1))
+    const declStr = afterBracket.slice(0, braceEnd + 1)
+    if (declStr.includes("=")) {
+      const entries = parseFieldEntries(declStr)
+      if (entries.some(e => e.isConst)) return decodeConstantArray(lines, headerLine, depth, entries, count)
+    }
+    const fields = splitFieldDecl(declStr)
     const [rows, consumed] = parseTabularBody(lines, headerLine + 1, depth, fields, count)
     if (count >= 0 && rows.length !== count)
       throw new Error(`count_mismatch: declared ${count}, got ${rows.length}`)
@@ -340,6 +345,41 @@ function unflattenPaths(pathColumns, flatValues, flatAbsent) {
   }
 
   return result
+}
+
+function parseFieldEntries(decl) {
+  return splitRespectingQuotes(decl.slice(1, -1), ",").map(token => {
+    let quoted = false, escaped = false, eq = -1
+    for (let i = 0; i < token.length; i++) {
+      const ch = token[i]
+      if (escaped) { escaped = false; continue }
+      if (ch === "\\" && quoted) { escaped = true; continue }
+      if (ch === '"') quoted = !quoted
+      if (ch === "=" && !quoted) { eq = i; break }
+    }
+    if (eq < 0) return { name: parseKeyFromHeader(token), isConst: false }
+    return { name: parseKeyFromHeader(token.slice(0, eq)), isConst: true, value: parseScalar(token.slice(eq + 1), false) }
+  })
+}
+
+function decodeConstantArray(lines, headerLine, depth, entries, count) {
+  const bare = entries.filter(e => !e.isConst).map(e => e.name)
+  if (!bare.length) throw new Error("no_bare_column: every field is constant")
+  const [rows, consumed] = parseTabularBody(lines, headerLine + 1, depth, bare, count)
+  if (count >= 0 && rows.length !== count) throw new Error(`count_mismatch: declared ${count}, got ${rows.length}`)
+  const out = rows.map(row => {
+    const next = {}
+    for (const entry of entries) {
+      if (entry.isConst) safeAssign(next, entry.name, entry.value)
+      else if (entry.name.includes(">")) {
+        const top = entry.name.split(">")[0]
+        if (Object.prototype.hasOwnProperty.call(row, top)) safeAssign(next, top, row[top])
+      } else if (Object.prototype.hasOwnProperty.call(row, entry.name)) safeAssign(next, entry.name, row[entry.name])
+    }
+    for (const key of Object.keys(row)) if (!Object.prototype.hasOwnProperty.call(next, key)) safeAssign(next, key, row[key])
+    return next
+  })
+  return [out, consumed + 1]
 }
 
 function parseTabularBody(lines, start, depth, fields, expectedCount) {

@@ -161,6 +161,23 @@ export const ENGINES = [
     tierN: 1,
   },
   {
+    id: "leanctx-structured",
+    fields: [],
+    label: "LeanCTX Structured",
+    description: "Opt-in structured compaction for CSV/TSV and common YAML manifests. Values are retained; original formatting is not.",
+    why: "整理工具输出中的表格和 YAML 清单；保留数据值，可选择丢弃高熵列。",
+    stackPriority: 17,
+    lossy: true,
+    cacheImpact: "moderate",
+    isSingleMode: false,
+    levels: null,
+    sampling: false,
+    inputScope: "tool-results",
+    available: true,
+    requires: null,
+    tier: null,
+  },
+  {
     id: "relevance",
     fields: [
       { key: "overlapThreshold", type: "number", label: "重叠阈值", description: "与用户问题词重叠低于此值的句子被丢掉（默认 0.1）", defaultValue: 0.1, min: 0, max: 1 },

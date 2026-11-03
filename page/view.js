@@ -205,6 +205,7 @@
     rtk: "剥掉命令/工具输出里的 ANSI 噪声、进度条和重复行，保留失败、警告和摘要（上游省 60–90%）。",
     "codex-responses": "对 OpenAI Responses API 的 shell/patch/search/build 工具输出做保守压缩。",
     headroom: "把表格化 JSON 按列压成 [N rows] 形式，结构仍然可读。",
+    "leanctx-structured": "把工具输出中的 CSV/TSV 和 YAML 清单整理成结构化数据；常量只留一次，可选择丢弃高熵列。",
     relevance: "按最后一条用户消息给句子打分，丢掉低分句。",
     caveman: "按语言规则包做基于规则的散文压缩（全强度约省 30%）。",
     "read-lifecycle": "折叠被后续 Read/Write 覆盖的 Read 结果，每个路径只保留最新视图。",

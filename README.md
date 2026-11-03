@@ -25,7 +25,8 @@ magpie plugin add github:magpie-community/plugins             # 从仓库装（p
 | `lite` | Lite Cleanup | 5 | 否 | 已移植 | 只处理空白、重复行与格式，不动措辞。最快，永远安全。 |
 | `rtk` | RTK Tool Output | 10 | 是 | 已移植 | 剥掉 ANSI 噪声、进度条与重复行，保留报错、警告与摘要。 |
 | `codex-responses` | Codex Tool Output | 12 | 是 | 已移植 | 对 Responses API 的 shell / 补丁 / 搜索 / 构建输出做保守裁剪。 |
-| `headroom` | Headroom (GCF) | 15 | 否 | 已移植 | 表格化 JSON 转列式，长行折成 `[N rows]`，靠围栏里的 GCF 数据还原。 |
+| `headroom` | Headroom (GCF) | 15 | 否 | 已升级 | 表格化 JSON 转列式；新版常量列只写一次，靠围栏里的 GCF 数据还原。 |
+| `leanctx-structured` | LeanCTX Structured | 17 | 是 | 可选 | 工具输出中的 CSV/TSV/YAML 整理；常量只留一次，可选丢弃高熵列，默认关闭。 |
 | `relevance` | Relevance | 18 | 是 | 已移植 | 按最后一条用户消息给句子打分，丢掉低分句；数字、URL、报错、代码、堆栈行永不丢。 |
 | `caveman` | Caveman | 20 | 是 | 已移植 | 规则式散文压缩，11 种语言的规则包。 |
 | `read-lifecycle` | Read Lifecycle | 22 | 是 | 已移植 | 把被后续 Read/Write 覆盖掉的旧文件读取结果折成短桩。 |

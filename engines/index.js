@@ -13,6 +13,7 @@ import * as ionizer from "./ionizer.js"
 import * as llm from "./llm.js"
 import * as ccr from "./ccr/index.js"
 import * as readLifecycle from "./read-lifecycle.js"
+import * as leanctxStructured from "./leanctx-structured.js"
 import { ENGINES, ORDER, engineById } from "../catalog.js"
 
 const MODULES = {
@@ -21,6 +22,7 @@ const MODULES = {
   rtk,
   "codex-responses": codexResponses,
   headroom,
+  "leanctx-structured": leanctxStructured,
   relevance,
   ultra,
   caveman,

@@ -2665,8 +2665,8 @@ ${stripped.text}
       if (Array.isArray(toolCalls)) {
         for (const tc of toolCalls) {
           if (!tc || typeof tc !== "object") continue;
-          const id14 = typeof tc.id === "string" ? tc.id : null;
-          if (!id14) continue;
+          const id15 = typeof tc.id === "string" ? tc.id : null;
+          if (!id15) continue;
           const fn = tc.function;
           if (!fn || typeof fn !== "object") continue;
           const toolName = typeof fn.name === "string" ? fn.name : "";
@@ -2678,21 +2678,21 @@ ${stripped.text}
             } catch {
             }
           }
-          toolCallLookup.set(id14, { toolName, command });
+          toolCallLookup.set(id15, { toolName, command });
         }
       }
       if (Array.isArray(msg.content)) {
         for (const part of msg.content) {
           if (!part || typeof part !== "object" || part.type !== "tool_use") continue;
-          const id14 = typeof part.id === "string" ? part.id : null;
-          if (!id14) continue;
+          const id15 = typeof part.id === "string" ? part.id : null;
+          if (!id15) continue;
           const toolName = typeof part.name === "string" ? part.name : "";
           const input = part.input;
           let command = null;
           if (input && typeof input === "object") {
             command = typeof input.command === "string" ? input.command : typeof input.cmd === "string" ? input.cmd : null;
           }
-          toolCallLookup.set(id14, { toolName, command });
+          toolCallLookup.set(id15, { toolName, command });
         }
       }
     }
@@ -3341,7 +3341,7 @@ ${stripped.text}
 `;
     }
     const fields = tabularFields(arr);
-    if (fields) return encodeTabular("## ", arr, fields, 0, opts);
+    if (fields) return encodeTabular("## ", arr, fields, 0, opts, true);
     return encodeExpanded("## ", arr, 0, opts);
   }
   function encodeNamedArray(name, arr, depth, opts) {
@@ -3354,7 +3354,7 @@ ${stripped.text}
 `;
     }
     const fields = tabularFields(arr);
-    if (fields) return encodeTabular(`${prefix}## ${name} `, arr, fields, depth, opts);
+    if (fields) return encodeTabular(`${prefix}## ${name} `, arr, fields, depth, opts, true);
     return encodeExpanded(`${prefix}## ${name} `, arr, depth, opts);
   }
   function tabularFields(arr) {
@@ -3522,7 +3522,7 @@ ${stripped.text}
     }
     return { value: current, exists: true };
   }
-  function encodeTabular(headerPrefix, arr, fields, depth, opts) {
+  function encodeTabular(headerPrefix, arr, fields, depth, opts, factorConst = false) {
     const prefix = indent(depth);
     const flattenMap = /* @__PURE__ */ new Map();
     if (!opts || !opts.noFlatten) {
@@ -3568,7 +3568,40 @@ ${stripped.text}
       const sas = sharedArraySchema(arr, f);
       if (sas) sharedArrSchemas.set(f, sas);
     }
-    const headerFields = columns.map((c) => c.headerName);
+    const constCol = new Array(columns.length).fill(false);
+    const constVal = new Array(columns.length).fill("");
+    if (factorConst && arr.length >= 2) {
+      for (let j = 0; j < columns.length; j++) {
+        const col = columns[j];
+        if (col.colType !== "original") continue;
+        let value, first = true;
+        for (const item of arr) {
+          if (!Object.prototype.hasOwnProperty.call(item, col.field)) {
+            value = void 0;
+            break;
+          }
+          const v = item[col.field];
+          if (v !== null && v !== void 0 && typeof v === "object") {
+            value = void 0;
+            break;
+          }
+          const encoded = formatScalar(v, 0);
+          if (first) {
+            value = encoded;
+            first = false;
+          } else if (encoded !== value) {
+            value = void 0;
+            break;
+          }
+        }
+        if (value !== void 0) {
+          constCol[j] = true;
+          constVal[j] = value;
+        }
+      }
+      if (constCol.every(Boolean)) constCol[constCol.length - 1] = false;
+    }
+    const headerFields = columns.map((c, i) => constCol[i] ? `${c.headerName}=${constVal[i]}` : c.headerName);
     let out = `${headerPrefix}[${arr.length}]{${headerFields.join(",")}}
 `;
     for (let i = 0; i < arr.length; i++) {
@@ -3632,7 +3665,7 @@ ${stripped.text}
         rowHasAttachment = true;
         attachments.push({ name: f, value: obj[f], inline: false });
       }
-      const row = cells.join("|");
+      const row = cells.filter((_, i2) => !constCol[i2]).join("|");
       if (rowHasAttachment) {
         out += `${prefix}@${i} ${row}
 `;
@@ -3931,7 +3964,12 @@ ${stripped.text}
     if (afterBracket.startsWith("{")) {
       const braceEnd = findClosingBrace2(afterBracket);
       if (braceEnd < 0) throw new Error("invalid field declaration");
-      const fields = splitFieldDecl(afterBracket.slice(0, braceEnd + 1));
+      const declStr = afterBracket.slice(0, braceEnd + 1);
+      if (declStr.includes("=")) {
+        const entries = parseFieldEntries(declStr);
+        if (entries.some((e) => e.isConst)) return decodeConstantArray(lines, headerLine, depth, entries, count);
+      }
+      const fields = splitFieldDecl(declStr);
       const [rows, consumed2] = parseTabularBody(lines, headerLine + 1, depth, fields, count);
       if (count >= 0 && rows.length !== count)
         throw new Error(`count_mismatch: declared ${count}, got ${rows.length}`);
@@ -4020,6 +4058,48 @@ ${stripped.text}
       }
     }
     return result;
+  }
+  function parseFieldEntries(decl) {
+    return splitRespectingQuotes(decl.slice(1, -1), ",").map((token) => {
+      let quoted = false, escaped = false, eq = -1;
+      for (let i = 0; i < token.length; i++) {
+        const ch = token[i];
+        if (escaped) {
+          escaped = false;
+          continue;
+        }
+        if (ch === "\\" && quoted) {
+          escaped = true;
+          continue;
+        }
+        if (ch === '"') quoted = !quoted;
+        if (ch === "=" && !quoted) {
+          eq = i;
+          break;
+        }
+      }
+      if (eq < 0) return { name: parseKeyFromHeader(token), isConst: false };
+      return { name: parseKeyFromHeader(token.slice(0, eq)), isConst: true, value: parseScalar(token.slice(eq + 1), false) };
+    });
+  }
+  function decodeConstantArray(lines, headerLine, depth, entries, count) {
+    const bare = entries.filter((e) => !e.isConst).map((e) => e.name);
+    if (!bare.length) throw new Error("no_bare_column: every field is constant");
+    const [rows, consumed] = parseTabularBody(lines, headerLine + 1, depth, bare, count);
+    if (count >= 0 && rows.length !== count) throw new Error(`count_mismatch: declared ${count}, got ${rows.length}`);
+    const out = rows.map((row) => {
+      const next = {};
+      for (const entry of entries) {
+        if (entry.isConst) safeAssign(next, entry.name, entry.value);
+        else if (entry.name.includes(">")) {
+          const top = entry.name.split(">")[0];
+          if (Object.prototype.hasOwnProperty.call(row, top)) safeAssign(next, top, row[top]);
+        } else if (Object.prototype.hasOwnProperty.call(row, entry.name)) safeAssign(next, entry.name, row[entry.name]);
+      }
+      for (const key of Object.keys(row)) if (!Object.prototype.hasOwnProperty.call(next, key)) safeAssign(next, key, row[key]);
+      return next;
+    });
+    return [out, consumed + 1];
   }
   function parseTabularBody(lines, start, depth, fields, expectedCount) {
     const ind = "  ".repeat(depth);
@@ -4336,8 +4416,8 @@ ${stripped.text}
       const sp = content.indexOf(" ");
       if (sp < 0) break;
       const idStr = content.slice(1, sp);
-      const id14 = parseInt(idStr, 10);
-      if (!isNaN(id14) && id14 !== items.length) {
+      const id15 = parseInt(idStr, 10);
+      if (!isNaN(id15) && id15 !== items.length) {
         throw new Error(`invalid_item_id: expected @${items.length}, got @${idStr}`);
       }
       const marker = content.slice(sp + 1);
@@ -8564,6 +8644,41 @@ ${GCF_FENCE_CLOSE}`;
     }
     return stub;
   }
+  function contentSignature(content) {
+    if (typeof content === "string") {
+      if (content.startsWith("[read superseded ") || content.startsWith("[lc1]")) return null;
+      return content;
+    }
+    if (Array.isArray(content)) {
+      const texts2 = content.filter((part) => isRecord(part) && part.type === "text" && typeof part.text === "string").map((part) => part.text);
+      return texts2.length ? texts2.join("\n") : null;
+    }
+    return null;
+  }
+  function collectMessageOutputs(messages) {
+    const outputs = /* @__PURE__ */ new Map();
+    for (const msg of messages) {
+      if (!isRecord(msg)) continue;
+      if (msg.role === "tool" && typeof msg.tool_call_id === "string") outputs.set(msg.tool_call_id, contentSignature(msg.content));
+      if (Array.isArray(msg.content)) {
+        for (const block of msg.content) {
+          if (isRecord(block) && block.type === "tool_result" && typeof block.tool_use_id === "string") outputs.set(block.tool_use_id, contentSignature(block.content));
+        }
+      }
+    }
+    return outputs;
+  }
+  function filterSupersededReads(superseded, invocations, outputs) {
+    const latest = /* @__PURE__ */ new Map();
+    for (const inv of invocations) if (inv.kind === "read") latest.set(inv.path, inv);
+    for (const inv of invocations) {
+      if (inv.kind !== "read" || !superseded.has(inv.callId)) continue;
+      const newest = latest.get(inv.path);
+      if (!newest || newest.callId === inv.callId) continue;
+      const before = outputs.get(inv.callId), after = outputs.get(newest.callId);
+      if (before !== void 0 && before !== null && before === after) superseded.delete(inv.callId);
+    }
+  }
   function collapseSupersededReads(messages, superseded, readPathByCallId, opts) {
     if (!(superseded instanceof Set) || superseded.size === 0) {
       return { messages, collapsedCount: 0 };
@@ -8660,6 +8775,8 @@ ${GCF_FENCE_CLOSE}`;
       if (!Array.isArray(items) || items.length === 0) return empty;
       const { invocations, readPathByCallId } = extractResponseInvocations(items, names);
       const superseded = findSupersededReadCallIds(invocations);
+      const outputs = new Map(items.filter((item) => isRecord(item) && item.type === "function_call_output").map((item) => [item.call_id, contentSignature(item.output)]));
+      filterSupersededReads(superseded, invocations, outputs);
       const r = collapseResponseOutputs(items, superseded, readPathByCallId, stubOpts);
       if (r.collapsedCount === 0) return empty;
       collapsedCount = r.collapsedCount;
@@ -8672,6 +8789,7 @@ ${GCF_FENCE_CLOSE}`;
       if (!Array.isArray(messages) || messages.length === 0) return empty;
       const { invocations, readPathByCallId } = extractInvocations(messages, names);
       const superseded = findSupersededReadCallIds(invocations);
+      filterSupersededReads(superseded, invocations, collectMessageOutputs(messages));
       const r = collapseSupersededReads(messages, superseded, readPathByCallId, stubOpts);
       if (r.collapsedCount === 0) return empty;
       collapsedCount = r.collapsedCount;
@@ -8698,6 +8816,311 @@ ${GCF_FENCE_CLOSE}`;
     } catch {
       return false;
     }
+  }
+
+  // engines/leanctx-structured.js
+  var leanctx_structured_exports = {};
+  __export(leanctx_structured_exports, {
+    apply: () => apply14,
+    available: () => available9,
+    cacheImpact: () => cacheImpact9,
+    compactDelimited: () => compactDelimited,
+    compactYaml: () => compactYaml,
+    configSchema: () => configSchema14,
+    defaultOn: () => defaultOn9,
+    description: () => description5,
+    id: () => id14,
+    isSingleMode: () => isSingleMode9,
+    label: () => label9,
+    levels: () => levels9,
+    lossy: () => lossy9,
+    parseDelimited: () => parseDelimited,
+    parseYamlSubset: () => parseYamlSubset,
+    restoreStructured: () => restoreStructured,
+    stackPriority: () => stackPriority9,
+    why: () => why9
+  });
+  var id14 = "leanctx-structured";
+  var label9 = "LeanCTX Structured";
+  var why9 = "\u628A CSV/TSV \u4E0E\u5E38\u89C1 YAML \u6E05\u5355\u6574\u7406\u6210\u7ED3\u6784\u5316\u6570\u636E\uFF1B\u5E38\u91CF\u53EA\u7559\u4E00\u6B21\uFF0C\u53EF\u9009\u4E22\u5F03\u9AD8\u71B5\u5217\u3002";
+  var description5 = "Opt-in structured compaction for CSV/TSV and common YAML manifests. Values are retained; original formatting is not.";
+  var lossy9 = true;
+  var cacheImpact9 = "moderate";
+  var defaultOn9 = false;
+  var stackPriority9 = 17;
+  var isSingleMode9 = false;
+  var levels9 = void 0;
+  var available9 = true;
+  var MARKER = "[lc1]";
+  var MIN_ROWS = 4;
+  var MIN_SAVE_RATIO = 0.25;
+  var configSchema14 = [
+    {
+      key: "dropEntropy",
+      type: "number",
+      label: "\u9AD8\u71B5\u5217\u4E22\u5F03\u9608\u503C",
+      description: "1 = \u4E0D\u4E22\u5217\uFF1B\u5C0F\u4E8E 1 \u65F6\u4E22\u5F03\u552F\u4E00\u503C\u6BD4\u4F8B\u8FBE\u5230\u9608\u503C\u7684\u5217\u3002\u53EA\u5904\u7406\u5DE5\u5177\u8F93\u51FA\u3002",
+      defaultValue: 1,
+      min: 0.5,
+      max: 1
+    },
+    {
+      key: "formats",
+      type: "multiselect",
+      label: "\u5904\u7406\u683C\u5F0F",
+      description: "\u4EC5\u5904\u7406\u660E\u786E\u8BC6\u522B\u7684 CSV/TSV/YAML\uFF0C\u4E0D\u5904\u7406\u666E\u901A\u5BF9\u8BDD\u6216 JSON\u3002",
+      defaultValue: ["csv", "yaml"],
+      options: [{ value: "csv", label: "CSV / TSV" }, { value: "yaml", label: "YAML \u6E05\u5355" }]
+    }
+  ];
+  function parseDelimited(text, delimiter) {
+    if (typeof text !== "string" || !text.trim()) return null;
+    const rows = [];
+    let row = [], field = "", quoted = false, quotedField = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (quoted) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') {
+            field += '"';
+            i++;
+          } else quoted = false;
+        } else field += ch;
+        continue;
+      }
+      if (ch === '"') {
+        if (field !== "") return null;
+        quoted = true;
+        quotedField = true;
+        continue;
+      }
+      if (ch === delimiter) {
+        row.push(field);
+        field = "";
+        continue;
+      }
+      if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && text[i + 1] === "\n") i++;
+        row.push(field);
+        field = "";
+        if (row.some((cell) => cell.trim() !== "")) rows.push(row);
+        row = [];
+        continue;
+      }
+      field += ch;
+    }
+    if (quoted) return null;
+    if (quotedField && !rows.some((row2) => row2.some((cell) => cell.includes("\n")))) return null;
+    if (field !== "" || row.length) {
+      row.push(field);
+      if (row.some((cell) => cell.trim() !== "")) rows.push(row);
+    }
+    if (rows.length < MIN_ROWS) return null;
+    const header = rows[0];
+    if (header.length < 2 || new Set(header).size !== header.length || header.some((h) => !h.trim())) return null;
+    if (rows.slice(1).some((r) => r.length !== header.length)) return null;
+    if (quotedField && !rows.some((row2) => row2.some((cell) => cell.includes("\n")))) return null;
+    return rows;
+  }
+  function distinctCounts(rows) {
+    return rows[0].map((_, i) => new Set(rows.slice(1).map((row) => row[i])).size);
+  }
+  function compactDelimited(text, delimiter, dropEntropy = 1) {
+    const rows = parseDelimited(text, delimiter);
+    if (!rows) return null;
+    const header = rows[0], data = rows.slice(1), distinct = distinctCounts(rows);
+    const constants = {}, dropped = [], kept = [];
+    for (let i = 0; i < header.length; i++) {
+      if (dropEntropy < 1 && distinct[i] / data.length >= dropEntropy) {
+        dropped.push(header[i]);
+        continue;
+      }
+      if (distinct[i] === 1) {
+        constants[header[i]] = data[0][i];
+        continue;
+      }
+      kept.push(i);
+    }
+    if (!Object.keys(constants).length && !dropped.length) return null;
+    if (dropped.length === header.length) return null;
+    const payload = { f: delimiter === "	" ? "tsv" : "csv", h: header };
+    if (dropped.length) payload.d = dropped;
+    if (Object.keys(constants).length) payload.c = constants;
+    payload.r = data.map((row) => kept.map((i) => row[i]));
+    const out = MARKER + "\n" + JSON.stringify(payload);
+    return out.length < text.length * (1 - MIN_SAVE_RATIO) ? out : null;
+  }
+  function restoreStructured(text) {
+    if (typeof text !== "string" || !text.startsWith(MARKER + "\n")) return null;
+    const doc = JSON.parse(text.slice(MARKER.length + 1));
+    if (doc.f === "csv" || doc.f === "tsv") {
+      if (!Array.isArray(doc.h) || !Array.isArray(doc.r)) return null;
+      const dropped = doc.d || [];
+      const kept = doc.h.filter((h) => !dropped.includes(h) && !(doc.c && Object.hasOwn(doc.c, h)));
+      const outHeader = doc.h.filter((h) => !dropped.includes(h));
+      return [outHeader, ...doc.r.map((row) => {
+        if (!Array.isArray(row) || row.length !== kept.length) throw new Error("invalid_structured_rows");
+        const values = Object.fromEntries(kept.map((h, i) => [h, row[i]]));
+        return outHeader.map((h) => doc.c && Object.hasOwn(doc.c, h) ? doc.c[h] : values[h] ?? "");
+      })];
+    }
+    if (doc.f === "yaml") {
+      if (!doc.c || !doc.v) return null;
+      const restore2 = (value) => {
+        if (Array.isArray(value)) return value.map((item) => item && typeof item === "object" && !Array.isArray(item) ? { ...doc.c, ...item } : item);
+        if (value && typeof value === "object") {
+          const out = { ...value };
+          for (const key of ["items", "list"]) if (Array.isArray(out[key])) out[key] = restore2(out[key]);
+          return out;
+        }
+        return value;
+      };
+      return restore2(doc.v);
+    }
+    return null;
+  }
+  function yamlScalar(raw) {
+    const s = raw.trim();
+    if (!s) return "";
+    if (s === "null" || s === "~") return null;
+    if (s === "true") return true;
+    if (s === "false") return false;
+    if (/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(s)) return Number(s);
+    if (s.startsWith('"')) {
+      try {
+        return JSON.parse(s);
+      } catch {
+        return void 0;
+      }
+    }
+    if (s.startsWith("'") && s.endsWith("'") && s.length >= 2) return s.slice(1, -1).replace(/''/g, "'");
+    if (/^[^\s:][^:]*$/.test(s)) return s;
+    return void 0;
+  }
+  function yamlLine(line, indent2) {
+    if (line.length < indent2 || line.slice(0, indent2).trim()) return null;
+    const text = line.slice(indent2);
+    if (!text || text.startsWith("#")) return { empty: true };
+    const sequence = text === "-" || text.startsWith("- ");
+    const content = sequence ? text.slice(1).trimStart() : text;
+    const match = content.match(/^([A-Za-z_][A-Za-z0-9_.-]*):(?:\s+(.*))?$/);
+    if (sequence && !match) return { sequence: true, scalar: yamlScalar(content) };
+    if (!match) return null;
+    return { sequence, key: match[1], raw: match[2] ?? "" };
+  }
+  function parseYamlSubset(text) {
+    if (typeof text !== "string" || !text.includes("\n") || /^(?:\{|\[)|^(?:---|\.\.\.)\s*$|^\s*%/.test(text.trimStart())) return null;
+    const root = {}, rootList = [];
+    let rootIsList = false, current = null, nested = null;
+    for (const line of text.replace(/\r/g, "").split("\n")) {
+      if (/^\s*(?:#.*)?$/.test(line)) continue;
+      const info = yamlLine(line, 0);
+      if (info) {
+        nested = null;
+        if (info.sequence) {
+          current = null;
+          rootIsList = true;
+          if (info.key) {
+            current = {};
+            if (info.raw) current[info.key] = yamlScalar(info.raw);
+            if (info.raw && current[info.key] === void 0) return null;
+            rootList.push(current);
+          } else {
+            const value2 = info.scalar;
+            if (value2 === void 0) return null;
+            rootList.push(value2);
+            current = null;
+          }
+        } else {
+          if (rootIsList) return null;
+          if (Object.hasOwn(root, info.key)) return null;
+          if (!info.raw) {
+            root[info.key] = {};
+            nested = { parent: root, key: info.key, list: null };
+          } else {
+            const value2 = yamlScalar(info.raw);
+            if (value2 === void 0) return null;
+            root[info.key] = value2;
+          }
+          current = null;
+        }
+        continue;
+      }
+      if (!nested) return null;
+      const child = yamlLine(line, current && !/^\s*-\s/.test(line) ? 4 : 2);
+      if (!child || child.empty || child.scalar !== void 0) return null;
+      if (child.sequence) {
+        if (!nested.list) {
+          nested.parent[nested.key] = [];
+          nested.list = nested.parent[nested.key];
+        }
+        current = null;
+        if (child.key) {
+          const obj = {};
+          if (child.raw) obj[child.key] = yamlScalar(child.raw);
+          if (child.raw && obj[child.key] === void 0) return null;
+          nested.list.push(obj);
+          current = obj;
+        } else {
+          const value2 = child.scalar;
+          if (value2 === void 0) return null;
+          nested.list.push(value2);
+          current = null;
+        }
+      } else {
+        const target = current || (rootIsList ? null : nested.parent[nested.key]);
+        if (!target || Array.isArray(target) || Object.hasOwn(target, child.key)) return null;
+        const value2 = yamlScalar(child.raw);
+        if (value2 === void 0) return null;
+        target[child.key] = value2;
+      }
+    }
+    const value = rootIsList ? rootList : root;
+    return (Array.isArray(value) ? value.length : Object.keys(value).length) ? value : null;
+  }
+  function yamlConstants(value) {
+    if (!value || typeof value !== "object") return { constants: {}, data: value };
+    const list = Array.isArray(value) ? value : value.items || value.list;
+    if (!Array.isArray(list) || list.length < MIN_ROWS || list.some((x) => !x || typeof x !== "object" || Array.isArray(x))) return { constants: {}, data: value };
+    const keys = [...new Set(list.flatMap(Object.keys))];
+    const constants = {};
+    for (const key of keys) {
+      const first = list[0][key];
+      if (first !== void 0 && (typeof first !== "object" || first === null) && list.every((item) => Object.hasOwn(item, key) && item[key] === first)) constants[key] = first;
+    }
+    if (!Object.keys(constants).length) return { constants: {}, data: value };
+    const data = list.map((item) => Object.fromEntries(Object.entries(item).filter(([key]) => !Object.hasOwn(constants, key))));
+    return { constants, data: Array.isArray(value) ? data : { ...value, [value.items ? "items" : "list"]: data } };
+  }
+  function compactYaml(text, dropEntropy = 1) {
+    if (dropEntropy < 1) return null;
+    const value = parseYamlSubset(text);
+    if (!value) return null;
+    const { constants, data } = yamlConstants(value);
+    const out = MARKER + "\n" + JSON.stringify({ f: "yaml", c: constants, v: data });
+    return out.length < text.length * (1 - MIN_SAVE_RATIO) ? out : null;
+  }
+  function apply14(body, ctx, cfg) {
+    if (!body || typeof body !== "object") return false;
+    const view = conversationView(body, ctx?.protocol);
+    if (!view) return false;
+    const formats = Array.isArray(cfg?.formats) ? cfg.formats : ["csv", "yaml"];
+    const dropEntropy = typeof cfg?.dropEntropy === "number" ? Math.max(0.5, Math.min(1, cfg.dropEntropy)) : 1;
+    let changed = false;
+    for (const seg of view.segments) {
+      if (!seg.toolOutput || seg.text.startsWith(MARKER)) continue;
+      let next = null;
+      if (formats.includes("csv")) {
+        const first = seg.text.trimStart()[0];
+        if (first !== "{" && first !== "[") next = compactDelimited(seg.text, ",", dropEntropy) || compactDelimited(seg.text, "	", dropEntropy);
+      }
+      if (!next && formats.includes("yaml")) next = compactYaml(seg.text, dropEntropy);
+      if (next) {
+        seg.set(next);
+        changed = true;
+      }
+    }
+    return changed;
   }
 
   // catalog.js
@@ -8836,6 +9259,23 @@ ${GCF_FENCE_CLOSE}`;
       tier: 2,
       tierPct: 43.8,
       tierN: 1
+    },
+    {
+      id: "leanctx-structured",
+      fields: [],
+      label: "LeanCTX Structured",
+      description: "Opt-in structured compaction for CSV/TSV and common YAML manifests. Values are retained; original formatting is not.",
+      why: "\u6574\u7406\u5DE5\u5177\u8F93\u51FA\u4E2D\u7684\u8868\u683C\u548C YAML \u6E05\u5355\uFF1B\u4FDD\u7559\u6570\u636E\u503C\uFF0C\u53EF\u9009\u62E9\u4E22\u5F03\u9AD8\u71B5\u5217\u3002",
+      stackPriority: 17,
+      lossy: true,
+      cacheImpact: "moderate",
+      isSingleMode: false,
+      levels: null,
+      sampling: false,
+      inputScope: "tool-results",
+      available: true,
+      requires: null,
+      tier: null
     },
     {
       id: "relevance",
@@ -9030,8 +9470,8 @@ ${GCF_FENCE_CLOSE}`;
   ];
   var ORDER = ENGINES.slice().sort((a, b) => a.stackPriority - b.stackPriority).map((e) => e.id);
   var byId = new Map(ENGINES.map((e) => [e.id, e]));
-  function engineById(id14) {
-    return byId.get(id14) || null;
+  function engineById(id15) {
+    return byId.get(id15) || null;
   }
 
   // engines/index.js
@@ -9041,6 +9481,7 @@ ${GCF_FENCE_CLOSE}`;
     rtk: rtk_exports,
     "codex-responses": codex_responses_exports,
     headroom: headroom_exports,
+    "leanctx-structured": leanctx_structured_exports,
     relevance: relevance_exports,
     ultra: ultra_exports,
     caveman: caveman_exports,
@@ -9056,10 +9497,10 @@ ${GCF_FENCE_CLOSE}`;
     if (!mod) continue;
     REGISTRY.set(meta.id, { ...meta, ...mod, stackPriority: meta.stackPriority, ported: true });
   }
-  var PIPELINE = ORDER.map((id14) => REGISTRY.get(id14)).filter(Boolean);
+  var PIPELINE = ORDER.map((id15) => REGISTRY.get(id15)).filter(Boolean);
   var PORTED_IDS = Array.from(REGISTRY.keys());
-  function engineModule(id14) {
-    return REGISTRY.get(id14) || null;
+  function engineModule(id15) {
+    return REGISTRY.get(id15) || null;
   }
 
   // pipeline.js
@@ -9124,6 +9565,7 @@ ${GCF_FENCE_CLOSE}`;
     rtk: true,
     "codex-responses": true,
     headroom: true,
+    "leanctx-structured": false,
     relevance: false,
     caveman: false,
     "read-lifecycle": true,
@@ -9225,6 +9667,7 @@ ${GCF_FENCE_CLOSE}`;
     if (engine.id === "codex-responses" && ctx.protocol !== "responses") return "protocol_not_responses";
     if (engine.id === "codex-responses") return "no_eligible_response_item";
     if (engine.id === "headroom") return "no_eligible_json_array_or_not_smaller";
+    if (engine.id === "leanctx-structured") return "no_eligible_structured_tool_output";
     if (engine.id === "session-dedup") return "no_repeat_eligible_block";
     if (engine.id === "ccr") return ctx.state?.ccrGateReason || "nothing_to_remove";
     if (engine.id === "rtk") return "no_matching_tool_output_filter";
@@ -9266,6 +9709,24 @@ ${GCF_FENCE_CLOSE}`;
       if (!count) continue;
       checked += count;
       if (canonicalJson(before[i]) === restoreText(after[i])) passed += count;
+    }
+    return { checked, passed };
+  }
+  function leanctxRoundTrip(beforeBody, body, ctx) {
+    const before = texts(beforeBody, ctx.protocol), after = texts(body, ctx.protocol);
+    let checked = 0, passed = 0;
+    for (let i = 0; i < after.length; i++) {
+      if (!after[i].startsWith("[lc1]")) continue;
+      checked++;
+      const restored = restoreStructured(after[i]);
+      if (restored === null) continue;
+      const original = before[i].trim();
+      if (after[i].includes('"f":"yaml"')) {
+        if (JSON.stringify(restored) === JSON.stringify(parseYamlSubset(original))) passed++;
+      } else {
+        const parsed = parseDelimited(original, after[i].includes('"f":"tsv"') ? "	" : ",");
+        if (parsed && JSON.stringify(restored) === JSON.stringify(parsed.filter((_, index) => index === 0 || !JSON.parse(after[i].slice(after[i].indexOf("\n") + 1)).d?.includes(parsed[0][index - 1])))) passed++;
+      }
     }
     return { checked, passed };
   }
@@ -9352,6 +9813,7 @@ ${GCF_FENCE_CLOSE}`;
         record.savedBytes = Math.max(0, record.beforeBytes - record.afterBytes);
         if (changed && engine.id === "session-dedup") record.roundTrip = dedupRoundTrip(snapshot, body, ctx);
         if (changed && engine.id === "headroom") record.roundTrip = headroomRoundTrip(snapshot, body, ctx);
+        if (changed && engine.id === "leanctx-structured") record.roundTrip = leanctxRoundTrip(snapshot, body, ctx);
         if (record.roundTrip) {
           roundTripsChecked += record.roundTrip.checked;
           roundTripsPassed += record.roundTrip.passed;
@@ -9430,7 +9892,7 @@ ${GCF_FENCE_CLOSE}`;
   }
   async function runLab(request, options = {}) {
     const body = parseRequest(request);
-    const { id: id14, mode, protocol, strategy } = request;
+    const { id: id15, mode, protocol, strategy } = request;
     const meta = typeof strategy === "string" ? engineById(strategy) : null;
     if (!meta) inputError("\u7B56\u7565\u4E0D\u5728\u5F15\u64CE\u76EE\u5F55\u4E2D");
     if (meta.available === false) inputError("\u7B56\u7565\u5F53\u524D\u4E0D\u53EF\u7528");
@@ -9453,7 +9915,7 @@ ${GCF_FENCE_CLOSE}`;
       const record = report.strategies.find((item) => item.id === strategy) || null;
       const after = body;
       return {
-        id: id14,
+        id: id15,
         ok: true,
         at: (/* @__PURE__ */ new Date()).toISOString(),
         mode,
@@ -9469,7 +9931,7 @@ ${GCF_FENCE_CLOSE}`;
       };
     } catch (error) {
       return {
-        id: id14,
+        id: id15,
         ok: false,
         at: (/* @__PURE__ */ new Date()).toISOString(),
         mode,

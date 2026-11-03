@@ -25,7 +25,8 @@ Run in ascending `stackPriority`. Each one switches and tunes on its own.
 | `lite` | Lite Cleanup | 5 | no | ported | Whitespace, repeated lines and formatting only — never wording. Fastest, always safe. |
 | `rtk` | RTK Tool Output | 10 | yes | ported | Strips ANSI noise, progress bars and repeated rows; keeps errors, warnings and summaries. |
 | `codex-responses` | Codex Tool Output | 12 | yes | ported | Conservative trimming of shell / patch / search / build output on the Responses API. |
-| `headroom` | Headroom (GCF) | 15 | no | ported | Tabular JSON becomes columnar, long rows fold to `[N rows]`, restorable from the GCF payload in a fenced block. |
+| `headroom` | Headroom (GCF) | 15 | no | upgraded | Tabular JSON becomes columnar; repeated constant columns are declared once, restorable from the GCF payload. |
+| `leanctx-structured` | LeanCTX Structured | 17 | yes | opt-in | CSV/TSV/YAML tool output compaction; constant values appear once, optional high-entropy column dropping, default off. |
 | `relevance` | Relevance | 18 | yes | ported | Scores sentences against the last user message and drops the low ones; numbers, URLs, errors, code and stack lines are never dropped. |
 | `caveman` | Caveman | 20 | yes | ported | Rule-based prose compression, rule packs for 11 languages. |
 | `read-lifecycle` | Read Lifecycle | 22 | yes | ported | Folds file reads that a later Read/Write has superseded into a short stub. |

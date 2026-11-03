@@ -417,6 +417,54 @@ globalThis.CompressCatalog = {
       ]
     },
     {
+      "id": "leanctx-structured",
+      "label": "LeanCTX Structured",
+      "description": "Opt-in structured compaction for CSV/TSV and common YAML manifests. Values are retained; original formatting is not.",
+      "why": "整理工具输出中的表格和 YAML 清单；保留数据值，可选择丢弃高熵列。",
+      "stackPriority": 17,
+      "lossy": true,
+      "cacheImpact": "moderate",
+      "isSingleMode": false,
+      "levels": null,
+      "sampling": false,
+      "inputScope": "tool-results",
+      "available": true,
+      "requires": null,
+      "tier": null,
+      "note": null,
+      "fields": [
+        {
+          "key": "dropEntropy",
+          "type": "number",
+          "label": "高熵列丢弃阈值",
+          "description": "1 = 不丢列；小于 1 时丢弃唯一值比例达到阈值的列。只处理工具输出。",
+          "defaultValue": 1,
+          "min": 0.5,
+          "max": 1
+        },
+        {
+          "key": "formats",
+          "type": "multiselect",
+          "label": "处理格式",
+          "description": "仅处理明确识别的 CSV/TSV/YAML，不处理普通对话或 JSON。",
+          "defaultValue": [
+            "csv",
+            "yaml"
+          ],
+          "options": [
+            {
+              "value": "csv",
+              "label": "CSV / TSV"
+            },
+            {
+              "value": "yaml",
+              "label": "YAML 清单"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "relevance",
       "label": "Relevance",
       "description": "Sentence-level relevance scoring against the last user query; low-scoring sentences are dropped.",
@@ -1015,6 +1063,7 @@ globalThis.CompressCatalog = {
     "rtk",
     "codex-responses",
     "headroom",
+    "leanctx-structured",
     "relevance",
     "caveman",
     "aggressive",

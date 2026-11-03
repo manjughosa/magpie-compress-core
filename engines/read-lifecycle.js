@@ -317,6 +317,47 @@ export function replaceResultText(content, stub) {
  * 把被取代的 Read 结果折叠成 stub（Anthropic tool_result 块 + OpenAI role:"tool" 消息）。
  * 返回新 messages 数组与折叠计数。
  */
+function contentSignature(content) {
+  // Compare the original tool result, not contentToText's GCF-flattened view:
+  // ordinary text can coincidentally look like a GCF expanded array.
+  if (typeof content === "string") {
+    if (content.startsWith("[read superseded ") || content.startsWith("[lc1]")) return null
+    return content
+  }
+  if (Array.isArray(content)) {
+    const texts = content.filter(part => isRecord(part) && part.type === "text" && typeof part.text === "string").map(part => part.text)
+    return texts.length ? texts.join("\n") : null
+  }
+  return null
+}
+
+function collectMessageOutputs(messages) {
+  const outputs = new Map()
+  for (const msg of messages) {
+    if (!isRecord(msg)) continue
+    if (msg.role === "tool" && typeof msg.tool_call_id === "string") outputs.set(msg.tool_call_id, contentSignature(msg.content))
+    if (Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (isRecord(block) && block.type === "tool_result" && typeof block.tool_use_id === "string") outputs.set(block.tool_use_id, contentSignature(block.content))
+      }
+    }
+  }
+  return outputs
+}
+
+/** Keep identical re-reads intact: only superseded content with a different result is stale. */
+function filterSupersededReads(superseded, invocations, outputs) {
+  const latest = new Map()
+  for (const inv of invocations) if (inv.kind === "read") latest.set(inv.path, inv)
+  for (const inv of invocations) {
+    if (inv.kind !== "read" || !superseded.has(inv.callId)) continue
+    const newest = latest.get(inv.path)
+    if (!newest || newest.callId === inv.callId) continue
+    const before = outputs.get(inv.callId), after = outputs.get(newest.callId)
+    if (before !== undefined && before !== null && before === after) superseded.delete(inv.callId)
+  }
+}
+
 export function collapseSupersededReads(messages, superseded, readPathByCallId, opts) {
   if (!(superseded instanceof Set) || superseded.size === 0) {
     return { messages, collapsedCount: 0 }
@@ -445,6 +486,8 @@ export function applyReadLifecycle(body, cfg, opts) {
     if (!Array.isArray(items) || items.length === 0) return empty
     const { invocations, readPathByCallId } = extractResponseInvocations(items, names)
     const superseded = findSupersededReadCallIds(invocations)
+    const outputs = new Map(items.filter(item => isRecord(item) && item.type === "function_call_output").map(item => [item.call_id, contentSignature(item.output)]))
+    filterSupersededReads(superseded, invocations, outputs)
     const r = collapseResponseOutputs(items, superseded, readPathByCallId, stubOpts)
     if (r.collapsedCount === 0) return empty
     collapsedCount = r.collapsedCount
@@ -457,6 +500,7 @@ export function applyReadLifecycle(body, cfg, opts) {
     if (!Array.isArray(messages) || messages.length === 0) return empty
     const { invocations, readPathByCallId } = extractInvocations(messages, names)
     const superseded = findSupersededReadCallIds(invocations)
+    filterSupersededReads(superseded, invocations, collectMessageOutputs(messages))
     const r = collapseSupersededReads(messages, superseded, readPathByCallId, stubOpts)
     if (r.collapsedCount === 0) return empty
     collapsedCount = r.collapsedCount
