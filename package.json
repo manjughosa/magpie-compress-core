@@ -1,1 +1,109 @@
-ewogICJuYW1lIjogIkBtYWdwaWUtY29tbXVuaXR5L21pZGRsZXdhcmUtY29tcHJlc3MtY29yZSIsCiAgInZlcnNpb24iOiAiMC40LjAiLAogICJkZXNjcmlwdGlvbiI6ICJtYWdwaWUgbWlkZGxld2FyZTogT21uaVJvdXRlJ3MgY29udGV4dC1jb21wcmVzc2lvbiBlbmdpbmVzLCBwb3J0ZWQuIDE1IHN0cmF0ZWdpZXMsIGZvdXIgcHJlc2V0cywgdHdvIHBhbmVscy4iLAogICJyZXBvc2l0b3J5IjogewogICAgInR5cGUiOiAiZ2l0IiwKICAgICJ1cmwiOiAiZ2l0K2h0dHBzOi8vZ2l0aHViLmNvbS9tYW5qdWdob3NhL21hZ3BpZS1jb21wcmVzcy1jb3JlLmdpdCIKICB9LAogICJ0eXBlIjogIm1vZHVsZSIsCiAgImxpY2Vuc2UiOiAiTUlUIiwKICAiZmlsZXMiOiBbCiAgICAiTElDRU5TRSIsCiAgICAiTk9USUNFIiwKICAgICJMSUNFTlNFUyIsCiAgICAiUFJPVkVOQU5DRS5qc29uIiwKICAgICJSRUFETUUubWQiLAogICAgIlJFQURNRS5lbi5tZCIsCiAgICAiREVCVUdHSU5HLm1kIiwKICAgICJhZGFwdGVyLmpzIiwKICAgICJjYXB0dXJlLXN0b3JlLmpzIiwKICAgICJjYXRhbG9nLmpzIiwKICAgICJjb21wcmVzcy1jb3JlLm1pZGRsZXdhcmUuanMiLAogICAgImVuZ2luZXMiLAogICAgImhhc2guanMiLAogICAgImxhYi5qcyIsCiAgICAibGxtLWJhY2tlbmQuanMiLAogICAgIm9ic2VydmFiaWxpdHkuaG9va3MuanMiLAogICAgIm9wdGlvbnMtY29tbWFuZHMuanMiLAogICAgInBhZ2UvKi5odG1sIiwKICAgICJwYWdlLyouanMiLAogICAgInBhZ2UvKi5jc3MiLAogICAgInBhZ2UvaWNvbi5zdmciLAogICAgIiFwYWdlL2NhcHR1cmVzIiwKICAgICIhcGFnZS9jYXB0dXJlcy1pbmRleC5qcyIsCiAgICAiIXBhZ2UvY29tcHJlc3Mtc3RhdHMuanMiLAogICAgInBhZ2UtcHVibGlzaC5qcyIsCiAgICAicGlwZWxpbmUuanMiLAogICAgInN0YXRzLXdyaXRlci5qcyIsCiAgICAidGVsZW1ldHJ5LXN0b3JlLmpzIgogIF0sCiAgImtleXdvcmRzIjogWwogICAgIm1hZ3BpZSIsCiAgICAibWFncGllLW1pZGRsZXdhcmUiLAogICAgIm1hZ3BpZS1ob29rcyIsCiAgICAibWFncGllLXBhZ2UiLAogICAgImNvbXByZXNzaW9uIgogIF0sCiAgIm1hZ3BpZSI6IHsKICAgICJtaWRkbGV3YXJlIjogIi4vY29tcHJlc3MtY29yZS5taWRkbGV3YXJlLmpzIiwKICAgICJob29rcyI6ICIuL29ic2VydmFiaWxpdHkuaG9va3MuanMiLAogICAgInBhZ2UiOiB7CiAgICAgICJ0aXRsZSI6ICJDb21wcmVzc2lvbiIsCiAgICAgICJ0aXRsZXMiOiB7CiAgICAgICAgInpoIjogIuWOi+e8qSIsCiAgICAgICAgInpoLVRXIjogIuWjk+e4riIsCiAgICAgICAgImphIjogIuWcp+e4riIKICAgICAgfSwKICAgICAgImZpbGUiOiAicGFnZS9pbmRleC5odG1sIiwKICAgICAgImljb24iOiAicGFnZS9pY29uLnN2ZyIKICAgIH0sCiAgICAicGFuZWxzIjogWwogICAgICB7CiAgICAgICAgInNsb3QiOiAidXNhZ2UiLAogICAgICAgICJ0aXRsZSI6ICJDb21wcmVzc2lvbiIsCiAgICAgICAgInRpdGxlcyI6IHsKICAgICAgICAgICJ6aCI6ICLljovnvKkiLAogICAgICAgICAgInpoLVRXIjogIuWjk+e4riIsCiAgICAgICAgICAiamEiOiAi5Zyn57iuIgogICAgICAgIH0sCiAgICAgICAgImZpbGUiOiAicGFnZS91c2FnZS5odG1sIgogICAgICB9CiAgICBdLAogICAgIm9wdGlvbnMiOiB7CiAgICAgICJzdHJhdGVnaWVzIjogewogICAgICAgICJzZXNzaW9uLWRlZHVwIjogZmFsc2UsCiAgICAgICAgImNjciI6IHRydWUsCiAgICAgICAgImxpdGUiOiB0cnVlLAogICAgICAgICJydGsiOiB0cnVlLAogICAgICAgICJjb2RleC1yZXNwb25zZXMiOiB0cnVlLAogICAgICAgICJoZWFkcm9vbSI6IHRydWUsCiAgICAgICAgInJlbGV2YW5jZSI6IGZhbHNlLAogICAgICAgICJjYXZlbWFuIjogZmFsc2UsCiAgICAgICAgInJlYWQtbGlmZWN5Y2xlIjogdHJ1ZSwKICAgICAgICAiYWdncmVzc2l2ZSI6IGZhbHNlLAogICAgICAgICJsbG1saW5ndWEiOiBmYWxzZSwKICAgICAgICAidWx0cmEiOiBmYWxzZSwKICAgICAgICAiaW9uaXplciI6IGZhbHNlLAogICAgICAgICJsbG0iOiBmYWxzZSwKICAgICAgICAib21uaWdseXBoIjogZmFsc2UKICAgICAgfSwKICAgICAgImJ1ZGdldE1zIjogMCwKICAgICAgInByZXNlcnZlIjogewogICAgICAgICJzeXN0ZW0iOiBmYWxzZSwKICAgICAgICAibGFzdFR1cm5zIjogMAogICAgICB9LAogICAgICAiZ2F0ZXdheVRpbWVvdXRNcyI6IDQwMDAsCiAgICAgICJjYXB0dXJlIjogdHJ1ZQogICAgfQogIH0sCiAgInNjcmlwdHMiOiB7CiAgICAiYnVpbGQ6Y2F0YWxvZyI6ICJub2RlIHNjcmlwdHMvZ2VuLXBhZ2UtY2F0YWxvZy5tanMiLAogICAgImJ1aWxkOnBhZ2UiOiAibm9kZSBzY3JpcHRzL2J1aWxkLWxhYi1idW5kbGUubWpzIiwKICAgICJwcmVwYWNrIjogIm5wbSBydW4gYnVpbGQ6Y2F0YWxvZyAmJiBucG0gcnVuIGJ1aWxkOnBhZ2UiLAogICAgInRlc3QiOiAibm9kZSB0ZXN0L3J1bi5tanMiCiAgfSwKICAiZGV2RGVwZW5kZW5jaWVzIjogewogICAgImVzYnVpbGQiOiAiMC4yNS4wIgogIH0KfQo=
+{
+  "name": "@magpie-community/middleware-compress-core",
+  "version": "0.4.0",
+  "description": "magpie middleware: OmniRoute's context-compression engines, ported. 15 strategies, four presets, two panels.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manjughosa/magpie-compress-core.git"
+  },
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "LICENSE",
+    "NOTICE",
+    "LICENSES",
+    "PROVENANCE.json",
+    "README.md",
+    "README.en.md",
+    "DEBUGGING.md",
+    "adapter.js",
+    "capture-store.js",
+    "catalog.js",
+    "compress-core.middleware.js",
+    "engines",
+    "hash.js",
+    "lab.js",
+    "llm-backend.js",
+    "observability.hooks.js",
+    "options-commands.js",
+    "page/*.html",
+    "page/*.js",
+    "page/*.css",
+    "page/icon.svg",
+    "!page/captures",
+    "!page/captures-index.js",
+    "!page/compress-stats.js",
+    "page-publish.js",
+    "pipeline.js",
+    "stats-writer.js",
+    "telemetry-store.js"
+  ],
+  "keywords": [
+    "magpie",
+    "magpie-middleware",
+    "magpie-hooks",
+    "magpie-page",
+    "compression"
+  ],
+  "magpie": {
+    "middleware": "./compress-core.middleware.js",
+    "hooks": "./observability.hooks.js",
+    "page": {
+      "title": "Compression",
+      "titles": {
+        "zh": "压缩",
+        "zh-TW": "壓縮",
+        "ja": "圧縮"
+      },
+      "file": "page/index.html",
+      "icon": "page/icon.svg"
+    },
+    "panels": [
+      {
+        "slot": "usage",
+        "title": "Compression",
+        "titles": {
+          "zh": "压缩",
+          "zh-TW": "壓縮",
+          "ja": "圧縮"
+        },
+        "file": "page/usage.html"
+      }
+    ],
+    "options": {
+      "strategies": {
+        "session-dedup": false,
+        "ccr": true,
+        "lite": true,
+        "rtk": true,
+        "codex-responses": true,
+        "headroom": true,
+        "relevance": false,
+        "caveman": false,
+        "read-lifecycle": true,
+        "aggressive": false,
+        "llmlingua": false,
+        "ultra": false,
+        "ionizer": false,
+        "llm": false,
+        "omniglyph": false
+      },
+      "budgetMs": 0,
+      "preserve": {
+        "system": false,
+        "lastTurns": 0
+      },
+      "gatewayTimeoutMs": 4000,
+      "capture": true
+    }
+  },
+  "scripts": {
+    "build:catalog": "node scripts/gen-page-catalog.mjs",
+    "build:page": "node scripts/build-lab-bundle.mjs",
+    "prepack": "npm run build:catalog && npm run build:page",
+    "test": "node test/run.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.0"
+  }
+}

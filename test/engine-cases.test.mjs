@@ -1,1 +1,39 @@
-Ly8gdGVzdC9lbmdpbmUtY2FzZXMudGVzdC5tanMg4oCUIOavj+S4quW8leaTjuS4gOadoeWlkee6puOAggovLwovLyDnlKjkvovlnKggdGVzdC9maXh0dXJlcy9lbmdpbmUtY2FzZXMuanNvbu+8muS8muWKqOaJi+eahOW8leaTjuWtmOWOi+WujOeahCBib2R577yIZ29sZGVu77yJ77yMCi8vIOS4jeivpeWKqOaJi+eahOW8leaTjuWtmCAidW5jaGFuZ2VkIuOAgui/meS6m+mUgeeahOaYryoq5b2T5YmN6KGM5Li6KirvvIzkuI3mmK/mraPnoa7mgKfnmoTor4HmmI7vvJsKLy8g5L2G5a6D5L+d6K+B5Lu75L2V5LiA5qyh5pS55Yqo6YO96IO96K+05riF44CM5ZOq5Liq5byV5pOO5Zyo5ZOq5Lu96L6T5YWl5LiK5Y+Y5LqG44CN44CCCi8vCi8vIOaWsOWinuW8leaTjuaXtu+8muW+gCBmaXh0dXJlIOmHjOWKoOS4gOadoe+8jOi/memHjOS4jeeUqOaUueOAggoKaW1wb3J0IHsgcmVhZEZpbGVTeW5jIH0gZnJvbSAibm9kZTpmcyIKaW1wb3J0IHsgZGlybmFtZSwgam9pbiB9IGZyb20gIm5vZGU6cGF0aCIKaW1wb3J0IHsgZmlsZVVSTFRvUGF0aCB9IGZyb20gIm5vZGU6dXJsIgppbXBvcnQgeyBjaGVjayB9IGZyb20gIi4vaGVscGVycy5tanMiCmltcG9ydCB7IGVuZ2luZU1vZHVsZSB9IGZyb20gIi4uL2VuZ2luZXMvaW5kZXguanMiCgpjb25zdCBoZXJlID0gZGlybmFtZShmaWxlVVJMVG9QYXRoKGltcG9ydC5tZXRhLnVybCkpCmNvbnN0IGRvYyA9IEpTT04ucGFyc2UocmVhZEZpbGVTeW5jKGpvaW4oaGVyZSwgImZpeHR1cmVzIiwgImVuZ2luZS1jYXNlcy5qc29uIiksICJ1dGY4IikpCgpjb25zdCBjb3B5ID0gKHYpID0+IEpTT04ucGFyc2UoSlNPTi5zdHJpbmdpZnkodikpCmNvbnN0IHNob3cgPSAodikgPT4gSlNPTi5zdHJpbmdpZnkodikKCmV4cG9ydCBjb25zdCBuYW1lID0gImVuZ2luZSBjYXNlcyAob25lIGNvbnRyYWN0IHBlciBlbmdpbmUpIgoKZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIHJ1bigpIHsKICBmb3IgKGNvbnN0IGMgb2YgZG9jLmNhc2VzKSB7CiAgICBjb25zdCBlbmdpbmUgPSBlbmdpbmVNb2R1bGUoYy5lbmdpbmUpCiAgICBjaGVjayhgJHtjLmVuZ2luZX06IHJlZ2lzdGVyZWRgLCAhIWVuZ2luZSkKICAgIGlmICghZW5naW5lKSBjb250aW51ZQogICAgY29uc3QgaW5wdXQgPSBjb3B5KGMudXNlID09PSAiaW5wdXQiID8gZG9jLmlucHV0IDogYy5yZXF1ZXN0KQogICAgY29uc3QgYm9keSA9IGNvcHkoaW5wdXQpCiAgICBjb25zdCBjaGFuZ2VkID0gYXdhaXQgZW5naW5lLmFwcGx5KGJvZHksIHsgcHJvdG9jb2w6ICJjaGF0Iiwgc3RhdGU6IHt9IH0sIGNvcHkoYy5vcHRpb25zID8/IHt9KSkKCiAgICBpZiAoYy5leHBlY3QgPT09ICJ1bmNoYW5nZWQiKSB7CiAgICAgIGNoZWNrKGAke2MuZW5naW5lfTogbGVhdmVzIGl0IGFsb25lYCwgY2hhbmdlZCA9PT0gZmFsc2UgJiYgc2hvdyhib2R5KSA9PT0gc2hvdyhpbnB1dCksIGMud2h5KQogICAgICBjb250aW51ZQogICAgfQogICAgY2hlY2soYCR7Yy5lbmdpbmV9OiBjaGFuZ2VzIGl0YCwgY2hhbmdlZCA9PT0gdHJ1ZSwgYy53aHkpCiAgICBjaGVjayhgJHtjLmVuZ2luZX06IHNhbWUgYm9keSBhcyB0aGUgZml4dHVyZWAsIHNob3coYm9keSkgPT09IHNob3coYy5leHBlY3RfcmVxdWVzdCksIGMud2h5KQogIH0KfQo=
+// test/engine-cases.test.mjs — 每个引擎一条契约。
+//
+// 用例在 test/fixtures/engine-cases.json：会动手的引擎存压完的 body（golden），
+// 不该动手的引擎存 "unchanged"。这些锁的是**当前行为**，不是正确性的证明；
+// 但它保证任何一次改动都能说清「哪个引擎在哪份输入上变了」。
+//
+// 新增引擎时：往 fixture 里加一条，这里不用改。
+
+import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+import { check } from "./helpers.mjs"
+import { engineModule } from "../engines/index.js"
+
+const here = dirname(fileURLToPath(import.meta.url))
+const doc = JSON.parse(readFileSync(join(here, "fixtures", "engine-cases.json"), "utf8"))
+
+const copy = (v) => JSON.parse(JSON.stringify(v))
+const show = (v) => JSON.stringify(v)
+
+export const name = "engine cases (one contract per engine)"
+
+export async function run() {
+  for (const c of doc.cases) {
+    const engine = engineModule(c.engine)
+    check(`${c.engine}: registered`, !!engine)
+    if (!engine) continue
+    const input = copy(c.use === "input" ? doc.input : c.request)
+    const body = copy(input)
+    const changed = await engine.apply(body, { protocol: "chat", state: {} }, copy(c.options ?? {}))
+
+    if (c.expect === "unchanged") {
+      check(`${c.engine}: leaves it alone`, changed === false && show(body) === show(input), c.why)
+      continue
+    }
+    check(`${c.engine}: changes it`, changed === true, c.why)
+    check(`${c.engine}: same body as the fixture`, show(body) === show(c.expect_request), c.why)
+  }
+}

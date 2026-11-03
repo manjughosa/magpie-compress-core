@@ -1,1 +1,193 @@
-Ly8gdGVzdC9sbG0udGVzdC5tanMg4oCUIGxsbSDlvJXmk47np7vmpI3mtYvor5XvvIjljaDkvY3lrp7njrDvvJrml6AgYmFja2VuZCDljbMgbm8tb3DvvInjgIIKLy8g6KaG55uW77ya5pegIGJhY2tlbmQg5pe25Y6f5qC36L+U5ZueIC8g5rOo5YWlIGJhY2tlbmQg5ZCO5Y6L57yp5pWj5paH5LiU5Luj56CB5Z2X5LiN5YqoIC8g5ZCO56uv5byC5bi4IGZhaWwtb3BlbiAvCi8vICAgICAgIG1pblRva2VucyDpl6jmp5sgLyDlopPnopHljJbov5jljp8gLyDnlbjlvaLovpPlhaXkuI3mipsgLyDlhYPmlbDmja7vvIhhdmFpbGFibGU9ZmFsc2XvvInjgIIKCmltcG9ydCB7CiAgYXBwbHksCiAgYXBwbHlBc3luYywKICBzZXRMbG1Db21wcmVzc29yQmFja2VuZCwKICBnZXRMbG1Db21wcmVzc29yQmFja2VuZCwKICBoYXNMbG1Db21wcmVzc29yQmFja2VuZCwKICBleHRyYWN0UHJlc2VydmVkQmxvY2tzLAogIHJlc3RvcmVQcmVzZXJ2ZWRCbG9ja3MsCiAgZmluZEZlbmNlZENvZGVCbG9ja3MsCiAgaWQsCiAgbGFiZWwsCiAgbG9zc3ksCiAgY2FjaGVJbXBhY3QsCiAgZGVmYXVsdE9uLAogIHN0YWNrUHJpb3JpdHksCiAgaXNTaW5nbGVNb2RlLAogIGxldmVscywKICBhdmFpbGFibGUsCiAgY29uZmlnU2NoZW1hLAp9IGZyb20gIi4uL2VuZ2luZXMvbGxtLmpzIgppbXBvcnQgeyBjaGVjaywgY3R4Rm9yLCBib2R5Q2hhcnMsIGNoYXRCb2R5IH0gZnJvbSAiLi9oZWxwZXJzLm1qcyIKCmV4cG9ydCBjb25zdCBuYW1lID0gImxsbSIKCi8vIOe6r+aVo+aWh++8iOS4jeWQq+aVsOWtly/mi6zlj7cv54K55Y+35qCH6K+G56ym77yM6YG/5YWN6KKr5aKT56KR5YyW5ZCD5o6J77yM5L6/5LqO6aqM6K+BIuecn+eahOWkluWPkeS6hiLvvIkKY29uc3QgUFJPU0UgPQogICJ0aGUgcXVpY2sgYnJvd24gZm94IGp1bXBzIG92ZXIgdGhlIGxhenkgZG9nIGFuZCBrZWVwcyBydW5uaW5nIHRocm91Z2ggdGhlIGZvcmVzdCB3aGlsZSBub3RoaW5nIGVsc2UgaGFwcGVucyBhdCBhbGwgIi5yZXBlYXQoCiAgICA4MAogICkKCmNvbnN0IEZFTkNFRCA9ICJgYGBqc1xuY29uc3Qgc2VjcmV0ID0gNDJcbmNvbnNvbGUubG9nKHNlY3JldClcbmBgYCIKCmV4cG9ydCBhc3luYyBmdW5jdGlvbiBydW4oKSB7CiAgLy8gLS0tLSDlhYPmlbDmja4gLS0tLQogIGNoZWNrKCIxIGlkIiwgaWQgPT09ICJsbG0iKQogIGNoZWNrKCIyIGxhYmVsIiwgbGFiZWwgPT09ICJMTE0gQ29tcHJlc3NvciIpCiAgY2hlY2soIjMgbG9zc3kvY2FjaGVJbXBhY3QvZGVmYXVsdE9uIiwgbG9zc3kgPT09IHRydWUgJiYgY2FjaGVJbXBhY3QgPT09ICJoaWdoIiAmJiBkZWZhdWx0T24gPT09IGZhbHNlKQogIGNoZWNrKCI0IHN0YWNrUHJpb3JpdHkg5Y+W5rqQ56CB5YC8IDM4Iiwgc3RhY2tQcmlvcml0eSA9PT0gMzgpCiAgY2hlY2soIjUgaXNTaW5nbGVNb2RlL2xldmVscyIsIGlzU2luZ2xlTW9kZSA9PT0gZmFsc2UgJiYgbGV2ZWxzID09PSB1bmRlZmluZWQpCiAgY2hlY2soIjYg5Y+v6YCJ5ZCO56uv5byV5pOO5bey5rOo5YaM77yb5pyq6YWN572u5ZCO56uv5LuNIG5vLW9wIiwgYXZhaWxhYmxlID09PSB0cnVlKQogIGNoZWNrKAogICAgIjcgY29uZmlnU2NoZW1hIOWQq+WQjuerr+aooeWei+S4jueql+WPo+S4iumZkCIsCiAgICBjb25maWdTY2hlbWEuc29tZSgoZikgPT4gZi5rZXkgPT09ICJtb2RlbCIpICYmCiAgICAgIGNvbmZpZ1NjaGVtYS5zb21lKChmKSA9PiBmLmtleSA9PT0gIm1heENoYXJzIiAmJiBmLmRlZmF1bHRWYWx1ZSA9PT0gNDAwMCAmJiBmLm1pbiA9PT0gNTAwICYmIGYubWF4ID09PSAyMDAwMCkKICApCiAgY2hlY2soIjgg5Yid5aeL5rKh5pyJIGJhY2tlbmQiLCBnZXRMbG1Db21wcmVzc29yQmFja2VuZCgpID09PSBudWxsICYmIGhhc0xsbUNvbXByZXNzb3JCYWNrZW5kKCkgPT09IGZhbHNlKQoKICAvLyAtLS0tIOaXoCBiYWNrZW5k77ya5Y6f5qC36L+U5ZueIC0tLS0KICBjb25zdCBib2R5ID0gY2hhdEJvZHkoWwogICAgeyByb2xlOiAic3lzdGVtIiwgdGV4dDogInN5c3RlbSBwcm9tcHQiIH0sCiAgICB7IHJvbGU6ICJ1c2VyIiwgdGV4dDogUFJPU0UgfSwKICAgIHsgcm9sZTogImFzc2lzdGFudCIsIHRleHQ6ICJhY2tub3dsZWRnZWQiIH0sCiAgXSkKICBjb25zdCBzbmFwc2hvdCA9IEpTT04uc3RyaW5naWZ5KGJvZHkpCiAgY29uc3QgYmVmb3JlID0gYm9keUNoYXJzKGJvZHkpCiAgY2hlY2soIjkg5pegIGJhY2tlbmTvvJphcHBseSDov5Tlm54gZmFsc2UiLCBhd2FpdCBhcHBseShib2R5LCBjdHhGb3IoImNoYXQiKSwge30pID09PSBmYWxzZSkKICBjb25zdCByMSA9IGF3YWl0IGFwcGx5QXN5bmMoYm9keSwgY3R4Rm9yKCJjaGF0IiksIHt9KQogIGNoZWNrKCIxMCDml6AgYmFja2VuZO+8mmFwcGx5QXN5bmMgY29tcHJlc3NlZD1mYWxzZSIsIHIxLmNvbXByZXNzZWQgPT09IGZhbHNlKQogIGNoZWNrKCIxMSDml6AgYmFja2VuZO+8mmJvZHkg5LiA5a2X5pyq5YqoIiwgSlNPTi5zdHJpbmdpZnkoYm9keSkgPT09IHNuYXBzaG90ICYmIGJvZHlDaGFycyhib2R5KSA9PT0gYmVmb3JlKQoKICAvLyAtLS0tIOazqOWFpSBiYWNrZW5k77ya5Y6L57yp5pWj5paHIC0tLS0KICBzZXRMbG1Db21wcmVzc29yQmFja2VuZChhc3luYyAodGV4dCkgPT4gdGV4dC5zbGljZSgwLCA2MCkpCiAgY2hlY2soIjEyIOazqOWFpeWQjiBoYXNMbG1Db21wcmVzc29yQmFja2VuZCIsIGhhc0xsbUNvbXByZXNzb3JCYWNrZW5kKCkgPT09IHRydWUpCgogIGNvbnN0IGJvZHkyID0gY2hhdEJvZHkoWwogICAgeyByb2xlOiAic3lzdGVtIiwgdGV4dDogInN5c3RlbSBwcm9tcHQiIH0sCiAgICB7IHJvbGU6ICJ1c2VyIiwgdGV4dDogUFJPU0UgfSwKICAgIHsgcm9sZTogImFzc2lzdGFudCIsIHRleHQ6ICJhY2tub3dsZWRnZWQiIH0sCiAgXSkKICBjb25zdCBiZWZvcmUyID0gYm9keUNoYXJzKGJvZHkyKQogIGNvbnN0IHIyID0gYXdhaXQgYXBwbHlBc3luYyhib2R5MiwgY3R4Rm9yKCJjaGF0IiksIHt9KQogIGNoZWNrKCIxMyDmnIkgYmFja2VuZO+8mmNvbXByZXNzZWQ9dHJ1ZSIsIHIyLmNvbXByZXNzZWQgPT09IHRydWUpCiAgY2hlY2soIjE0IOaciSBiYWNrZW5k77ya5L2T56ev5Y+Y5bCPIiwgYm9keUNoYXJzKGJvZHkyKSA8IGJlZm9yZTIsIGAke2JlZm9yZTJ9IOKGkiAke2JvZHlDaGFycyhib2R5Mil9YCkKICBjb25zb2xlLmxvZygKICAgIGAgICAgICAgIFvlrp7mtYtdIGxsbSjms6jlhaUgc2xpY2UtNjAgYmFja2VuZCkg5Y6L57yp546HICR7KCgoYmVmb3JlMiAtIGJvZHlDaGFycyhib2R5MikpIC8gYmVmb3JlMikgKiAxMDApLnRvRml4ZWQoMSl9JSAoJHtiZWZvcmUyfSDihpIgJHtib2R5Q2hhcnMoYm9keTIpfSBjaGFycylgCiAgKQogIGNoZWNrKCIxNSBzeXN0ZW0g5q615LiN5YqoIiwgYm9keTIubWVzc2FnZXNbMF0uY29udGVudCA9PT0gInN5c3RlbSBwcm9tcHQiKQogIGNoZWNrKCIxNiDlt7LphY3nva4gYmFja2VuZCDnmoTlvJXmk47lhaXlj6PkuZ/og73ljovnvKkiLCBhd2FpdCBhcHBseShib2R5MiwgY3R4Rm9yKCJjaGF0IiksIHt9KSA9PT0gZmFsc2UgJiYgYm9keTIubWVzc2FnZXNbMF0uY29udGVudCA9PT0gInN5c3RlbSBwcm9tcHQiKQoKICAvLyAtLS0tIOS7o+eggeWdl+Wik+eikeWMlu+8mueJqeeQhuS4iuS4jeWkluWPkSAtLS0tCiAgbGV0IHNhd0ZlbmNlID0gZmFsc2UKICBzZXRMbG1Db21wcmVzc29yQmFja2VuZChhc3luYyAodGV4dCkgPT4gewogICAgaWYgKHRleHQuaW5jbHVkZXMoImNvbnN0IHNlY3JldCIpKSBzYXdGZW5jZSA9IHRydWUKICAgIHJldHVybiB0ZXh0LnNsaWNlKDAsIDgwKQogIH0pCiAgY29uc3QgYm9keTMgPSBjaGF0Qm9keShbCiAgICB7IHJvbGU6ICJ1c2VyIiwgdGV4dDogUFJPU0UgKyAiXG4iICsgRkVOQ0VEICsgIlxuIiArIFBST1NFIH0sCiAgICB7IHJvbGU6ICJhc3Npc3RhbnQiLCB0ZXh0OiAiZG9uZSIgfSwKICBdKQogIGNvbnN0IHIzID0gYXdhaXQgYXBwbHlBc3luYyhib2R5MywgY3R4Rm9yKCJjaGF0IiksIHt9KQogIGNvbnN0IG91dFRleHQgPSBib2R5My5tZXNzYWdlc1swXS5jb250ZW50CiAgY2hlY2soIjE3IOWQq+S7o+eggeWdl+eahOa2iOaBr+S7jeiDveWOiyIsIHIzLmNvbXByZXNzZWQgPT09IHRydWUpCiAgY2hlY2soIjE4IOS7o+eggeWdl+acquWkluWPkee7meWQjuerryIsIHNhd0ZlbmNlID09PSBmYWxzZSkKICBjaGVjaygiMTkg5Luj56CB5Z2X5Y6f5qC35Zue5aGrIiwgb3V0VGV4dC5pbmNsdWRlcygiY29uc3Qgc2VjcmV0ID0gNDIiKSAmJiBvdXRUZXh0LmluY2x1ZGVzKCJgYGBqcyIpKQogIGNoZWNrKCIyMCDlm7TmoI/lpJbnmoTmlaPmlofooqvljovnvKkiLCBvdXRUZXh0Lmxlbmd0aCA8IFBST1NFLmxlbmd0aCArIEZFTkNFRC5sZW5ndGggKyAyKQoKICAvLyAtLS0tIOWQjuerr+W8guW4uCBmYWlsLW9wZW4gLS0tLQogIHNldExsbUNvbXByZXNzb3JCYWNrZW5kKGFzeW5jICgpID0+IHsKICAgIHRocm93IG5ldyBFcnJvcigiYmFja2VuZCBkb3duIikKICB9KQogIGNvbnN0IGJvZHk0ID0gY2hhdEJvZHkoW3sgcm9sZTogInVzZXIiLCB0ZXh0OiBQUk9TRSB9XSkKICBjb25zdCBzbmFwNCA9IEpTT04uc3RyaW5naWZ5KGJvZHk0KQogIGxldCB0aHJldyA9IGZhbHNlCiAgbGV0IHI0ID0gbnVsbAogIHRyeSB7CiAgICByNCA9IGF3YWl0IGFwcGx5QXN5bmMoYm9keTQsIGN0eEZvcigiY2hhdCIpLCB7fSkKICB9IGNhdGNoIHsKICAgIHRocmV3ID0gdHJ1ZQogIH0KICBjaGVjaygiMjEg5ZCO56uv5oqb6ZSZ5LiN5YaS5rOhIiwgdGhyZXcgPT09IGZhbHNlICYmIHI0LmNvbXByZXNzZWQgPT09IGZhbHNlKQogIGNoZWNrKCIyMiDlkI7nq6/mipvplJnml7YgYm9keSDkuI3lj5giLCBKU09OLnN0cmluZ2lmeShib2R5NCkgPT09IHNuYXA0KQoKICAvLyAtLS0tIOWQjuerr+i/lOWbnuabtOmVvyDihpIg5LiN566X5Y6L57ypIC0tLS0KICBzZXRMbG1Db21wcmVzc29yQmFja2VuZChhc3luYyAodGV4dCkgPT4gdGV4dCArIHRleHQpCiAgY29uc3QgYm9keTUgPSBjaGF0Qm9keShbeyByb2xlOiAidXNlciIsIHRleHQ6IFBST1NFIH1dKQogIGNvbnN0IHI1ID0gYXdhaXQgYXBwbHlBc3luYyhib2R5NSwgY3R4Rm9yKCJjaGF0IiksIHt9KQogIGNoZWNrKCIyMyDov5Tlm57mm7Tplb/kuI3ph4fnurMiLCByNS5jb21wcmVzc2VkID09PSBmYWxzZSkKCiAgLy8gLS0tLSDlkI7nq6/ov5Tlm57pnZ7lrZfnrKbkuLIgLS0tLQogIHNldExsbUNvbXByZXNzb3JCYWNrZW5kKGFzeW5jICgpID0+IDEyMzQ1KQogIGNvbnN0IGJvZHk2ID0gY2hhdEJvZHkoW3sgcm9sZTogInVzZXIiLCB0ZXh0OiBQUk9TRSB9XSkKICBjb25zdCByNiA9IGF3YWl0IGFwcGx5QXN5bmMoYm9keTYsIGN0eEZvcigiY2hhdCIpLCB7fSkKICBjaGVjaygiMjQg6L+U5Zue6Z2e5a2X56ym5Liy5LiN6YeH57qzIiwgcjYuY29tcHJlc3NlZCA9PT0gZmFsc2UpCgogIC8vIC0tLS0gbWluVG9rZW5zIOmXqOanm++8iDIwMDAgdG9rZW5zIOKJiCA4MDAwIOWtl+espu+8iS0tLS0KICBzZXRMbG1Db21wcmVzc29yQmFja2VuZChhc3luYyAodGV4dCkgPT4gdGV4dC5zbGljZSgwLCAxMCkpCiAgY29uc3Qgc2hvcnRCb2R5ID0gY2hhdEJvZHkoW3sgcm9sZTogInVzZXIiLCB0ZXh0OiAic2hvcnQgcHJvc2Ugb25seSIgfV0pCiAgY29uc3QgclNob3J0ID0gYXdhaXQgYXBwbHlBc3luYyhzaG9ydEJvZHksIGN0eEZvcigiY2hhdCIpLCB7fSkKICBjaGVjaygiMjUg5L2O5LqOIG1pblRva2VucyDot7Pov4ciLCByU2hvcnQuY29tcHJlc3NlZCA9PT0gZmFsc2UgJiYgc2hvcnRCb2R5Lm1lc3NhZ2VzWzBdLmNvbnRlbnQgPT09ICJzaG9ydCBwcm9zZSBvbmx5IikKCiAgLy8gLS0tLSBtYXhDaGFycyDnqpflj6MgLS0tLQogIGNvbnN0IHNlZW4gPSBbXQogIHNldExsbUNvbXByZXNzb3JCYWNrZW5kKGFzeW5jICh0ZXh0KSA9PiB7CiAgICBzZWVuLnB1c2godGV4dC5sZW5ndGgpCiAgICByZXR1cm4gdGV4dC5zbGljZSgwLCAxMDApCiAgfSkKICBjb25zdCBib2R5NyA9IGNoYXRCb2R5KFt7IHJvbGU6ICJ1c2VyIiwgdGV4dDogUFJPU0UgfV0pCiAgYXdhaXQgYXBwbHlBc3luYyhib2R5NywgY3R4Rm9yKCJjaGF0IiksIHsgbWF4Q2hhcnM6IDUwMCB9KQogIGNoZWNrKCIyNiBtYXhDaGFycyDnlJ/mlYjvvIjliIbnqpflj6PlpJblj5HvvIkiLCBzZWVuLmxlbmd0aCA+IDEgJiYgc2Vlbi5ldmVyeSgobikgPT4gbiA8PSA1MDApLCBKU09OLnN0cmluZ2lmeShzZWVuKSkKICBjb25zdCBzZWVuQ2xhbXBlZCA9IFtdCiAgc2V0TGxtQ29tcHJlc3NvckJhY2tlbmQoYXN5bmMgKHRleHQpID0+IHsKICAgIHNlZW5DbGFtcGVkLnB1c2godGV4dC5sZW5ndGgpCiAgICByZXR1cm4gdGV4dC5zbGljZSgwLCAxMDApCiAgfSkKICBjb25zdCBib2R5OCA9IGNoYXRCb2R5KFt7IHJvbGU6ICJ1c2VyIiwgdGV4dDogUFJPU0UgfV0pCiAgYXdhaXQgYXBwbHlBc3luYyhib2R5OCwgY3R4Rm9yKCJjaGF0IiksIHsgbWF4Q2hhcnM6IDEgfSkKICBjaGVjaygKICAgICIyNyBtYXhDaGFycyDkuIvnlYzlpLnliLAgNTAwIiwKICAgIHNlZW5DbGFtcGVkLmxlbmd0aCA+IDEgJiYgc2VlbkNsYW1wZWQuZXZlcnkoKG4pID0+IG4gPD0gNTAwKSwKICAgIEpTT04uc3RyaW5naWZ5KHNlZW5DbGFtcGVkKQogICkKCiAgLy8gLS0tLSDlopPnopHljJbov5jljp8gLS0tLQogIGNvbnN0IHRyaWNreSA9CiAgICBGRU5DRUQgKwogICAgIlxuYW5kIGBpbmxpbmUoKWAgcGx1cyBodHRwczovL2V4YW1wbGUuY29tL3ggYW5kIHByb2Nlc3MuZW52LkhPTUUgYW5kIE15Q29uc3ROYW1lIHdpdGggc3JjL2FwcC9tYWluLnRzIgogIGNvbnN0IHsgdGV4dDogdG9tYnN0b25lZCwgYmxvY2tzIH0gPSBleHRyYWN0UHJlc2VydmVkQmxvY2tzKHRyaWNreSkKICBjaGVjaygiMjgg5aKT56KR5YyW5Lqn55Sf5Y2g5L2N56ymIiwgYmxvY2tzLmxlbmd0aCA+IDAgJiYgdG9tYnN0b25lZCAhPT0gdHJpY2t5KQogIGNoZWNrKCIyOSDljaDkvY3nrKbkuI3lpJbms4Tku6PnoIEiLCAhdG9tYnN0b25lZC5pbmNsdWRlcygiY29uc3Qgc2VjcmV0IikpCiAgY2hlY2soIjMwIOi/mOWOn+WQjuS4juWOn+aWh+S4gOiHtCIsIHJlc3RvcmVQcmVzZXJ2ZWRCbG9ja3ModG9tYnN0b25lZCwgYmxvY2tzKSA9PT0gdHJpY2t5KQogIGNoZWNrKCIzMSBmaW5kRmVuY2VkQ29kZUJsb2NrcyIsIGZpbmRGZW5jZWRDb2RlQmxvY2tzKHRyaWNreSkubGVuZ3RoID09PSAxKQoKICAvLyAtLS0tIOeVuOW9oui+k+WFpeS4jeaKmyAtLS0tCiAgc2V0TGxtQ29tcHJlc3NvckJhY2tlbmQobnVsbCkKICBsZXQgYmFkVGhyZXcgPSBmYWxzZQogIGxldCBhbGxCb29sID0gdHJ1ZQogIGZvciAoY29uc3QgYmFkIG9mIFtudWxsLCB1bmRlZmluZWQsIDAsICJzdHJpbmciLCBbXSwgeyBtZXNzYWdlczogbnVsbCB9LCB7IG1lc3NhZ2VzOiBbbnVsbCwgMV0gfV0pIHsKICAgIHRyeSB7CiAgICAgIGNvbnN0IG91dCA9IGF3YWl0IGFwcGx5KGJhZCwgY3R4Rm9yKCJjaGF0IiksIHt9KQogICAgICBpZiAodHlwZW9mIG91dCAhPT0gImJvb2xlYW4iKSBhbGxCb29sID0gZmFsc2UKICAgICAgYXdhaXQgYXBwbHlBc3luYyhiYWQsIGN0eEZvcigiY2hhdCIpLCB7fSkKICAgIH0gY2F0Y2ggewogICAgICBiYWRUaHJldyA9IHRydWUKICAgIH0KICB9CiAgY2hlY2soIjMyIOeVuOW9oui+k+WFpeS4jeaKmyIsIGJhZFRocmV3ID09PSBmYWxzZSkKICBjaGVjaygiMzMg55W45b2i6L6T5YWl6L+U5Zue5biD5bCUIiwgYWxsQm9vbCkKICBjaGVjaygiMzQg5pyq55+l5Y2P6K6u6L+U5ZueIGZhbHNlIiwgYXdhaXQgYXBwbHkoeyBtZXNzYWdlczogW3sgcm9sZTogInVzZXIiLCBjb250ZW50OiAieCIgfV0gfSwgY3R4Rm9yKCJub3BlIiksIHt9KSA9PT0gZmFsc2UpCiAgY2hlY2soIjM1IOaXoOWPguaVsOi/lOWbniBmYWxzZSIsIGF3YWl0IGFwcGx5KCkgPT09IGZhbHNlKQogIC8vIC0tLS0g566h57q/5o6l5YWl77ya5ZCM5q2l6buY6K6k5LiN5Y+Y77yb5pi+5byP5byA5ZCv5pe25omN562J5b6F5byC5q2l5ZCO56uvIC0tLS0KICBzZXRMbG1Db21wcmVzc29yQmFja2VuZChhc3luYyAodGV4dCkgPT4gdGV4dC5zbGljZSgwLCA2MCkpCiAgY29uc3QgeyBydW5QaXBlbGluZSwgcnVuUGlwZWxpbmVBc3luYyB9ID0gYXdhaXQgaW1wb3J0KCIuLi9waXBlbGluZS5qcyIpCiAgY29uc3QgcGlwZWxpbmVCb2R5ID0gY2hhdEJvZHkoW3sgcm9sZTogInVzZXIiLCB0ZXh0OiBQUk9TRSB9XSkKICBjb25zdCBlbmFibGVkID0geyBzdHJhdGVnaWVzOiB7IGxsbTogdHJ1ZSB9IH0KICBjaGVjaygiMzcg5ZCM5q2l6buY6K6k566h57q/5LiN562J5b6F5byC5q2l5ZCO56uvIiwgcnVuUGlwZWxpbmUocGlwZWxpbmVCb2R5LCBjdHhGb3IoImNoYXQiKSwgZW5hYmxlZCkuc3RyYXRlZ2llcy5maW5kKHMgPT4gcy5pZCA9PT0gImxsbSIpLnN0YXR1cyA9PT0gInNraXBwZWQiKQogIGNvbnN0IHBpcGVsaW5lUmVjb3JkID0gYXdhaXQgcnVuUGlwZWxpbmVBc3luYyhwaXBlbGluZUJvZHksIGN0eEZvcigiY2hhdCIpLCBlbmFibGVkKQogIGNoZWNrKCIzOCDlj6/pgInlvILmraXnrqHnur/nnJ/mraPlkb3kuK0gbGxtIiwgcGlwZWxpbmVSZWNvcmQuc3RyYXRlZ2llcy5maW5kKHMgPT4gcy5pZCA9PT0gImxsbSIpLnN0YXR1cyA9PT0gImhpdCIgJiYgcGlwZWxpbmVSZWNvcmQuc2F2ZWRCeXRlcyA+IDApCiAgc2V0TGxtQ29tcHJlc3NvckJhY2tlbmQobnVsbCkKfQo=
+// test/llm.test.mjs — llm 引擎移植测试（占位实现：无 backend 即 no-op）。
+// 覆盖：无 backend 时原样返回 / 注入 backend 后压缩散文且代码块不动 / 后端异常 fail-open /
+//       minTokens 门槛 / 墓碑化还原 / 畸形输入不抛 / 元数据（available=false）。
+
+import {
+  apply,
+  applyAsync,
+  setLlmCompressorBackend,
+  getLlmCompressorBackend,
+  hasLlmCompressorBackend,
+  extractPreservedBlocks,
+  restorePreservedBlocks,
+  findFencedCodeBlocks,
+  id,
+  label,
+  lossy,
+  cacheImpact,
+  defaultOn,
+  stackPriority,
+  isSingleMode,
+  levels,
+  available,
+  configSchema,
+} from "../engines/llm.js"
+import { check, ctxFor, bodyChars, chatBody } from "./helpers.mjs"
+
+export const name = "llm"
+
+// 纯散文（不含数字/括号/点号标识符，避免被墓碑化吃掉，便于验证"真的外发了"）
+const PROSE =
+  "the quick brown fox jumps over the lazy dog and keeps running through the forest while nothing else happens at all ".repeat(
+    80
+  )
+
+const FENCED = "```js\nconst secret = 42\nconsole.log(secret)\n```"
+
+export async function run() {
+  // ---- 元数据 ----
+  check("1 id", id === "llm")
+  check("2 label", label === "LLM Compressor")
+  check("3 lossy/cacheImpact/defaultOn", lossy === true && cacheImpact === "high" && defaultOn === false)
+  check("4 stackPriority 取源码值 38", stackPriority === 38)
+  check("5 isSingleMode/levels", isSingleMode === false && levels === undefined)
+  check("6 可选后端引擎已注册；未配置后端仍 no-op", available === true)
+  check(
+    "7 configSchema 含后端模型与窗口上限",
+    configSchema.some((f) => f.key === "model") &&
+      configSchema.some((f) => f.key === "maxChars" && f.defaultValue === 4000 && f.min === 500 && f.max === 20000)
+  )
+  check("8 初始没有 backend", getLlmCompressorBackend() === null && hasLlmCompressorBackend() === false)
+
+  // ---- 无 backend：原样返回 ----
+  const body = chatBody([
+    { role: "system", text: "system prompt" },
+    { role: "user", text: PROSE },
+    { role: "assistant", text: "acknowledged" },
+  ])
+  const snapshot = JSON.stringify(body)
+  const before = bodyChars(body)
+  check("9 无 backend：apply 返回 false", await apply(body, ctxFor("chat"), {}) === false)
+  const r1 = await applyAsync(body, ctxFor("chat"), {})
+  check("10 无 backend：applyAsync compressed=false", r1.compressed === false)
+  check("11 无 backend：body 一字未动", JSON.stringify(body) === snapshot && bodyChars(body) === before)
+
+  // ---- 注入 backend：压缩散文 ----
+  setLlmCompressorBackend(async (text) => text.slice(0, 60))
+  check("12 注入后 hasLlmCompressorBackend", hasLlmCompressorBackend() === true)
+
+  const body2 = chatBody([
+    { role: "system", text: "system prompt" },
+    { role: "user", text: PROSE },
+    { role: "assistant", text: "acknowledged" },
+  ])
+  const before2 = bodyChars(body2)
+  const r2 = await applyAsync(body2, ctxFor("chat"), {})
+  check("13 有 backend：compressed=true", r2.compressed === true)
+  check("14 有 backend：体积变小", bodyChars(body2) < before2, `${before2} → ${bodyChars(body2)}`)
+  console.log(
+    `        [实测] llm(注入 slice-60 backend) 压缩率 ${(((before2 - bodyChars(body2)) / before2) * 100).toFixed(1)}% (${before2} → ${bodyChars(body2)} chars)`
+  )
+  check("15 system 段不动", body2.messages[0].content === "system prompt")
+  check("16 已配置 backend 的引擎入口也能压缩", await apply(body2, ctxFor("chat"), {}) === false && body2.messages[0].content === "system prompt")
+
+  // ---- 代码块墓碑化：物理上不外发 ----
+  let sawFence = false
+  setLlmCompressorBackend(async (text) => {
+    if (text.includes("const secret")) sawFence = true
+    return text.slice(0, 80)
+  })
+  const body3 = chatBody([
+    { role: "user", text: PROSE + "\n" + FENCED + "\n" + PROSE },
+    { role: "assistant", text: "done" },
+  ])
+  const r3 = await applyAsync(body3, ctxFor("chat"), {})
+  const outText = body3.messages[0].content
+  check("17 含代码块的消息仍能压", r3.compressed === true)
+  check("18 代码块未外发给后端", sawFence === false)
+  check("19 代码块原样回填", outText.includes("const secret = 42") && outText.includes("```js"))
+  check("20 围栏外的散文被压缩", outText.length < PROSE.length + FENCED.length + 2)
+
+  // ---- 后端异常 fail-open ----
+  setLlmCompressorBackend(async () => {
+    throw new Error("backend down")
+  })
+  const body4 = chatBody([{ role: "user", text: PROSE }])
+  const snap4 = JSON.stringify(body4)
+  let threw = false
+  let r4 = null
+  try {
+    r4 = await applyAsync(body4, ctxFor("chat"), {})
+  } catch {
+    threw = true
+  }
+  check("21 后端抛错不冒泡", threw === false && r4.compressed === false)
+  check("22 后端抛错时 body 不变", JSON.stringify(body4) === snap4)
+
+  // ---- 后端返回更长 → 不算压缩 ----
+  setLlmCompressorBackend(async (text) => text + text)
+  const body5 = chatBody([{ role: "user", text: PROSE }])
+  const r5 = await applyAsync(body5, ctxFor("chat"), {})
+  check("23 返回更长不采纳", r5.compressed === false)
+
+  // ---- 后端返回非字符串 ----
+  setLlmCompressorBackend(async () => 12345)
+  const body6 = chatBody([{ role: "user", text: PROSE }])
+  const r6 = await applyAsync(body6, ctxFor("chat"), {})
+  check("24 返回非字符串不采纳", r6.compressed === false)
+
+  // ---- minTokens 门槛（2000 tokens ≈ 8000 字符）----
+  setLlmCompressorBackend(async (text) => text.slice(0, 10))
+  const shortBody = chatBody([{ role: "user", text: "short prose only" }])
+  const rShort = await applyAsync(shortBody, ctxFor("chat"), {})
+  check("25 低于 minTokens 跳过", rShort.compressed === false && shortBody.messages[0].content === "short prose only")
+
+  // ---- maxChars 窗口 ----
+  const seen = []
+  setLlmCompressorBackend(async (text) => {
+    seen.push(text.length)
+    return text.slice(0, 100)
+  })
+  const body7 = chatBody([{ role: "user", text: PROSE }])
+  await applyAsync(body7, ctxFor("chat"), { maxChars: 500 })
+  check("26 maxChars 生效（分窗口外发）", seen.length > 1 && seen.every((n) => n <= 500), JSON.stringify(seen))
+  const seenClamped = []
+  setLlmCompressorBackend(async (text) => {
+    seenClamped.push(text.length)
+    return text.slice(0, 100)
+  })
+  const body8 = chatBody([{ role: "user", text: PROSE }])
+  await applyAsync(body8, ctxFor("chat"), { maxChars: 1 })
+  check(
+    "27 maxChars 下界夹到 500",
+    seenClamped.length > 1 && seenClamped.every((n) => n <= 500),
+    JSON.stringify(seenClamped)
+  )
+
+  // ---- 墓碑化还原 ----
+  const tricky =
+    FENCED +
+    "\nand `inline()` plus https://example.com/x and process.env.HOME and MyConstName with src/app/main.ts"
+  const { text: tombstoned, blocks } = extractPreservedBlocks(tricky)
+  check("28 墓碑化产生占位符", blocks.length > 0 && tombstoned !== tricky)
+  check("29 占位符不外泄代码", !tombstoned.includes("const secret"))
+  check("30 还原后与原文一致", restorePreservedBlocks(tombstoned, blocks) === tricky)
+  check("31 findFencedCodeBlocks", findFencedCodeBlocks(tricky).length === 1)
+
+  // ---- 畸形输入不抛 ----
+  setLlmCompressorBackend(null)
+  let badThrew = false
+  let allBool = true
+  for (const bad of [null, undefined, 0, "string", [], { messages: null }, { messages: [null, 1] }]) {
+    try {
+      const out = await apply(bad, ctxFor("chat"), {})
+      if (typeof out !== "boolean") allBool = false
+      await applyAsync(bad, ctxFor("chat"), {})
+    } catch {
+      badThrew = true
+    }
+  }
+  check("32 畸形输入不抛", badThrew === false)
+  check("33 畸形输入返回布尔", allBool)
+  check("34 未知协议返回 false", await apply({ messages: [{ role: "user", content: "x" }] }, ctxFor("nope"), {}) === false)
+  check("35 无参数返回 false", await apply() === false)
+  // ---- 管线接入：同步默认不变；显式开启时才等待异步后端 ----
+  setLlmCompressorBackend(async (text) => text.slice(0, 60))
+  const { runPipeline, runPipelineAsync } = await import("../pipeline.js")
+  const pipelineBody = chatBody([{ role: "user", text: PROSE }])
+  const enabled = { strategies: { llm: true } }
+  check("37 同步默认管线不等待异步后端", runPipeline(pipelineBody, ctxFor("chat"), enabled).strategies.find(s => s.id === "llm").status === "skipped")
+  const pipelineRecord = await runPipelineAsync(pipelineBody, ctxFor("chat"), enabled)
+  check("38 可选异步管线真正命中 llm", pipelineRecord.strategies.find(s => s.id === "llm").status === "hit" && pipelineRecord.savedBytes > 0)
+  setLlmCompressorBackend(null)
+}

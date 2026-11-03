@@ -1,1 +1,272 @@
-Ly8gdGVzdC9jb2RleC1yZXNwb25zZXMudGVzdC5tanMg4oCUIGNvZGV4UmVzcG9uc2VzIOW8leaTjuenu+akjeeahOmqjOivgQovLyDojIPlm7TvvJrlm5vnp43ljovnvKnlmajvvIhtaW5pZnlKc29uL2NvbXBhY3REaWZmL2NvbXBhY3RTZWFyY2gvY29sbGFwc2VMaW5lc++8ieOAgQovLyBlbGlnaWJpbGl0ee+8iOS/neaKpOW3peWFt+WQjeOAgWxvY2FsX3NoZWxsIOacieaNn+WAmemAiei3s+i/h+OAgWNhbGxfaWQg5Y+N5p+l77yJ44CBCi8vIOmFjee9ruWQiOW5tuOAgeWNj+iurumXqO+8iHJlc3BvbnNlcy1vbmx577yJ44CBdG9rZW4g5Y2V6LCD5oCn44CCCgppbXBvcnQgYXNzZXJ0IGZyb20gIm5vZGU6YXNzZXJ0IgppbXBvcnQgeyBjaGVjaywgY3R4Rm9yIH0gZnJvbSAiLi9oZWxwZXJzLm1qcyIKaW1wb3J0ICogYXMgbWlkZGxld2FyZSBmcm9tICIuLi9jb21wcmVzcy1jb3JlLm1pZGRsZXdhcmUuanMiCmltcG9ydCAqIGFzIGNvZGV4IGZyb20gIi4uL2VuZ2luZXMvY29kZXgtcmVzcG9uc2VzLmpzIgoKZXhwb3J0IGNvbnN0IG5hbWUgPSAiY29kZXgtcmVzcG9uc2VzIgoKLy8g4pSA4pSA4pSAIOa1i+ivleivreaWmSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKCi8vIG1pbmlmeUpzb27vvJpwcmV0dHktcHJpbnQg55qEIEpTT04g5a+56LGhCmNvbnN0IEpTT05fT0JKID0gSlNPTi5zdHJpbmdpZnkoCiAgeyBzdGF0dXM6ICJvayIsIGl0ZW1zOiBBcnJheS5mcm9tKHsgbGVuZ3RoOiAyMCB9LCAoXywgaSkgPT4gKHsgaWQ6IGksIG5hbWU6IGBpdGVtLSR7aX1gLCB2YWx1ZTogaSAqIDEwIH0pKSB9LAogIG51bGwsCiAgMgopCgovLyBjb21wYWN0RGlmZu+8mumVvyBkaWZm77yM5ZCrIGNvbnRleHQg6KGMCmZ1bmN0aW9uIG1ha2VEaWZmKCkgewogIGNvbnN0IGxpbmVzID0gWyJkaWZmIC0tZ2l0IGEvZm9vLnRzIGIvZm9vLnRzIiwgIi0tLSBhL2Zvby50cyIsICIrKysgYi9mb28udHMiXQogIGZvciAobGV0IGggPSAwOyBoIDwgNTsgaCsrKSB7CiAgICBsaW5lcy5wdXNoKGBAQCAtJHtoICogMjB9LDEwICske2ggKiAyMH0sMTIgQEBgKQogICAgZm9yIChsZXQgaSA9IDA7IGkgPCA4OyBpKyspIGxpbmVzLnB1c2goYCBjb250ZXh0IGxpbmUgJHtpfSBvZiBodW5rICR7aH1gKQogICAgbGluZXMucHVzaChgLXJlbW92ZWQgbGluZSAke2h9YCkKICAgIGxpbmVzLnB1c2goYCthZGRlZCBsaW5lICR7aH1gKQogIH0KICByZXR1cm4gbGluZXMuam9pbigiXG4iKQp9CmNvbnN0IERJRkYgPSBtYWtlRGlmZigpCgovLyBjb21wYWN0U2VhcmNo77yaZ3JlcCDovpPlh7oKZnVuY3Rpb24gbWFrZVNlYXJjaCgpIHsKICBjb25zdCBsaW5lcyA9IFtdCiAgZm9yIChsZXQgZiA9IDA7IGYgPCA1OyBmKyspIHsKICAgIGZvciAobGV0IG0gPSAwOyBtIDwgMTA7IG0rKykgewogICAgICBsaW5lcy5wdXNoKGBzcmMvZmlsZSR7Zn0udHM6JHttICogMTB9OjU6IGNvbnN0IG1hdGNoJHtmfV8ke219ID0gZmluZFRhcmdldChwYXR0ZXJuKWApCiAgICB9CiAgfQogIHJldHVybiBsaW5lcy5qb2luKCJcbiIpCn0KY29uc3QgU0VBUkNIID0gbWFrZVNlYXJjaCgpCgovLyBjb2xsYXBzZUxpbmVz77ya6ZW/IGJ1aWxkIOaXpeW/lwpmdW5jdGlvbiBtYWtlTG9nKCkgewogIGNvbnN0IGxpbmVzID0gW10KICBsaW5lcy5wdXNoKCJucG0gcnVuIGJ1aWxkIHN0YXJ0ZWQiKQogIGZvciAobGV0IGkgPSAwOyBpIDwgMzA7IGkrKykgbGluZXMucHVzaChgW2luZm9dIGNvbXBpbGluZyBtb2R1bGUgJHtpfWApCiAgbGluZXMucHVzaCgiRVJST1I6IHR5cGUgY2hlY2sgZmFpbGVkIGluIHNyYy9mb28udHM6NDIiKQogIGZvciAobGV0IGkgPSAzMDsgaSA8IDYwOyBpKyspIGxpbmVzLnB1c2goYFtpbmZvXSBtb3JlIG91dHB1dCAke2l9YCkKICBsaW5lcy5wdXNoKCJlcnJvciBUUzIzMjI6IFR5cGUgJ3N0cmluZycgaXMgbm90IGFzc2lnbmFibGUgdG8gdHlwZSAnbnVtYmVyJyIpCiAgZm9yIChsZXQgaSA9IDYwOyBpIDwgOTA7IGkrKykgbGluZXMucHVzaChgW2luZm9dIHRyYWlsaW5nICR7aX1gKQogIGxpbmVzLnB1c2goIkJ1aWxkIGNvbXBsZXRlZCB3aXRoIDIgZXJyb3JzIikKICByZXR1cm4gbGluZXMuam9pbigiXG4iKQp9CmNvbnN0IExPRyA9IG1ha2VMb2coKQoKLy8g4pSA4pSA4pSAIOaehOmAoCByZXNwb25zZXMgYm9keSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKCmZ1bmN0aW9uIHJlc3BvbnNlc0JvZHkoaXRlbXMpIHsKICByZXR1cm4geyBtb2RlbDogImdwdC01LWNvZGV4IiwgaW5wdXQ6IGl0ZW1zIH0KfQoKZnVuY3Rpb24gZm5DYWxsKGNhbGxJZCwgbmFtZSkgewogIHJldHVybiB7IHR5cGU6ICJmdW5jdGlvbl9jYWxsIiwgY2FsbF9pZDogY2FsbElkLCBuYW1lLCBhcmd1bWVudHM6ICJ7fSIsIGlkOiBgZmMtJHtjYWxsSWR9YCB9Cn0KCmZ1bmN0aW9uIGZuT3V0cHV0KGNhbGxJZCwgb3V0cHV0KSB7CiAgcmV0dXJuIHsgdHlwZTogImZ1bmN0aW9uX2NhbGxfb3V0cHV0IiwgY2FsbF9pZDogY2FsbElkLCBvdXRwdXQgfQp9CgovLyDilIDilIDilIAg5rWL6K+VIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAoKZXhwb3J0IGZ1bmN0aW9uIHJ1bigpIHsKICAvLyDigJTigJQgQSDnu4TvvJrljovnvKnlmajljZXlhYMg4oCU4oCUCgogIHsKICAgIC8vIEEtMDEgbWluaWZ5SnNvbiDmm7Tnn60KICAgIGNvbnN0IGJvZHkgPSByZXNwb25zZXNCb2R5KFtmbkNhbGwoImMxIiwgImJhc2giKSwgZm5PdXRwdXQoImMxIiwgSlNPTl9PQkopXSkKICAgIGNvbnN0IGJlZm9yZSA9IEpTT05fT0JKLmxlbmd0aAogICAgY29kZXguYXBwbHkoYm9keSwgY3R4Rm9yKCJyZXNwb25zZXMiKSwgeyBlbmFibGVkOiB0cnVlIH0pCiAgICBjb25zdCBhZnRlciA9IGJvZHkuaW5wdXRbMV0ub3V0cHV0CiAgICBjaGVjaygiQS0wMSBtaW5pZnlKc29uIOWOi+e8qSIsIGFmdGVyLmxlbmd0aCA8IGJlZm9yZSAmJiBKU09OLnBhcnNlKGFmdGVyKS5pdGVtcy5sZW5ndGggPT09IDIwKQogIH0KCiAgewogICAgLy8gQS0wMiBjb21wYWN0RGlmZiDljrsgY29udGV4dAogICAgY29uc3QgYm9keSA9IHJlc3BvbnNlc0JvZHkoW2ZuQ2FsbCgiYzEiLCAiYmFzaCIpLCBmbk91dHB1dCgiYzEiLCBESUZGKV0pCiAgICBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IHRydWUgfSkKICAgIGNvbnN0IG91dCA9IGJvZHkuaW5wdXRbMV0ub3V0cHV0CiAgICBjaGVjaygiQS0wMiBjb21wYWN0RGlmZiDmm7Tnn60iLCBvdXQubGVuZ3RoIDwgRElGRi5sZW5ndGgpCiAgICBjaGVjaygiQS0wMiBjb21wYWN0RGlmZiDkv50gKy8tL0BAIiwgb3V0LmluY2x1ZGVzKCIrYWRkZWQgbGluZSIpICYmIG91dC5pbmNsdWRlcygiQEAiKSkKICB9CgogIHsKICAgIC8vIEEtMDMgY29tcGFjdFNlYXJjaCDmjInot6/lvoTliIbnu4QKICAgIGNvbnN0IGJvZHkgPSByZXNwb25zZXNCb2R5KFtmbkNhbGwoImMxIiwgImJhc2giKSwgZm5PdXRwdXQoImMxIiwgU0VBUkNIKV0pCiAgICBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IHRydWUgfSkKICAgIGNvbnN0IG91dCA9IGJvZHkuaW5wdXRbMV0ub3V0cHV0CiAgICBjaGVjaygiQS0wMyBjb21wYWN0U2VhcmNoIOabtOefrSIsIG91dC5sZW5ndGggPCBTRUFSQ0gubGVuZ3RoKQogICAgY2hlY2soIkEtMDMgY29tcGFjdFNlYXJjaCDmr4/ot6/lvoTiiaQzIiwgKG91dC5tYXRjaCgvZmlsZTBcLnRzL2cpIHx8IFtdKS5sZW5ndGggPD0gMyArIDEpIC8vICsxIGZvciBwYXRoIGhlYWRlcgogIH0KCiAgewogICAgLy8gQS0wNCBjb2xsYXBzZUxpbmVzIOS/nSBlcnJvciArIOWJjeWQjjjooYwKICAgIGNvbnN0IGJvZHkgPSByZXNwb25zZXNCb2R5KFtmbkNhbGwoImMxIiwgImJhc2giKSwgZm5PdXRwdXQoImMxIiwgTE9HKV0pCiAgICBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IHRydWUgfSkKICAgIGNvbnN0IG91dCA9IGJvZHkuaW5wdXRbMV0ub3V0cHV0CiAgICBjaGVjaygiQS0wNCBjb2xsYXBzZUxpbmVzIOabtOefrSIsIG91dC5sZW5ndGggPCBMT0cubGVuZ3RoKQogICAgY2hlY2soIkEtMDQgY29sbGFwc2VMaW5lcyDkv50gZXJyb3IiLCBvdXQuaW5jbHVkZXMoIkVSUk9SOiB0eXBlIGNoZWNrIGZhaWxlZCIpKQogICAgY2hlY2soIkEtMDQgY29sbGFwc2VMaW5lcyDkv50g5aS06YOoIiwgb3V0LmluY2x1ZGVzKCJucG0gcnVuIGJ1aWxkIHN0YXJ0ZWQiKSkKICAgIGNoZWNrKCJBLTA0IGNvbGxhcHNlTGluZXMg5L+dIOWwvumDqCIsIG91dC5pbmNsdWRlcygiQnVpbGQgY29tcGxldGVkIikpCiAgfQoKICAvLyDigJTigJQgQiDnu4TvvJplbGlnaWJpbGl0eSDpl6gg4oCU4oCUCgogIHsKICAgIC8vIEItMDEg5L+d5oqk5bel5YW35LiN5Yqo77yIcmVhZCDlnKjkv53miqTliJfooajvvIkKICAgIGNvbnN0IGJvZHkgPSByZXNwb25zZXNCb2R5KFtmbkNhbGwoImMxIiwgInJlYWQiKSwgZm5PdXRwdXQoImMxIiwgSlNPTl9PQkopXSkKICAgIGNvZGV4LmFwcGx5KGJvZHksIGN0eEZvcigicmVzcG9uc2VzIiksIHsgZW5hYmxlZDogdHJ1ZSB9KQogICAgY2hlY2soIkItMDEgcmVhZCDkv53miqQiLCBib2R5LmlucHV0WzFdLm91dHB1dCA9PT0gSlNPTl9PQkopCiAgfQoKICB7CiAgICAvLyBCLTAyIOmdnuS/neaKpOW3peWFt+WPr+WKqO+8iGJhc2gg5LiN5Zyo5L+d5oqk5YiX6KGo77yJCiAgICBjb25zdCBib2R5ID0gcmVzcG9uc2VzQm9keShbZm5DYWxsKCJjMSIsICJiYXNoIiksIGZuT3V0cHV0KCJjMSIsIEpTT05fT0JKKV0pCiAgICBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IHRydWUgfSkKICAgIGNoZWNrKCJCLTAyIGJhc2gg5Y+v5YqoIiwgYm9keS5pbnB1dFsxXS5vdXRwdXQgIT09IEpTT05fT0JKKQogIH0KCiAgewogICAgLy8gQi0wMyBjYWxsX2lkIOS4jeWcqCBmdW5jdGlvbkNhbGxzIOKGkiDkuI3liqgKICAgIGNvbnN0IGJvZHkgPSByZXNwb25zZXNCb2R5KFtmbkNhbGwoImMxIiwgImJhc2giKSwgZm5PdXRwdXQoImMtdW5rbm93biIsIEpTT05fT0JKKV0pCiAgICBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IHRydWUgfSkKICAgIGNoZWNrKCJCLTAzIOWtpOWEv2NhbGxfaWTkuI3liqgiLCBib2R5LmlucHV0WzFdLm91dHB1dCA9PT0gSlNPTl9PQkopCiAgfQoKICB7CiAgICAvLyBCLTA0IGxvY2FsX3NoZWxsX2NhbGxfb3V0cHV0IOaBkiBlbGlnaWJsZQogICAgY29uc3QgYm9keSA9IHJlc3BvbnNlc0JvZHkoWwogICAgICB7IHR5cGU6ICJsb2NhbF9zaGVsbF9jYWxsX291dHB1dCIsIGNhbGxfaWQ6ICJzMSIsIG91dHB1dDogTE9HIH0sCiAgICBdKQogICAgY29kZXguYXBwbHkoYm9keSwgY3R4Rm9yKCJyZXNwb25zZXMiKSwgeyBlbmFibGVkOiB0cnVlIH0pCiAgICAvLyBMT0cg5pyJIGNvbGxhcHNlTGluZXMg5YCZ6YCJIOKGkiDkvYbmnInmjZ/lgJnpgInkvJrorqkgbG9jYWxfc2hlbGwg6Lez6L+HCiAgICBjaGVjaygiQi0wNCBsb2NhbF9zaGVsbCDmnInmjZ/lgJnpgInot7Pov4ciLCBib2R5LmlucHV0WzBdLm91dHB1dCA9PT0gTE9HKQogIH0KCiAgewogICAgLy8gQi0wNSBsb2NhbF9zaGVsbCDnuq8gSlNPTu+8iOaXoOacieaNn+WAmemAie+8ieKGkiDlj68gbWluaWZ5SnNvbgogICAgY29uc3QgYm9keSA9IHJlc3BvbnNlc0JvZHkoWwogICAgICB7IHR5cGU6ICJsb2NhbF9zaGVsbF9jYWxsX291dHB1dCIsIGNhbGxfaWQ6ICJzMSIsIG91dHB1dDogSlNPTl9PQkogfSwKICAgIF0pCiAgICBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IHRydWUgfSkKICAgIGNoZWNrKCJCLTA1IGxvY2FsX3NoZWxsIOaXoOaNn21pbmlmeSIsIGJvZHkuaW5wdXRbMF0ub3V0cHV0ICE9PSBKU09OX09CSiAmJiBKU09OLnBhcnNlKGJvZHkuaW5wdXRbMF0ub3V0cHV0KS5pdGVtcy5sZW5ndGggPT09IDIwKQogIH0KCiAgewogICAgLy8gQi0wNiBhcHBseV9wYXRjaF9jYWxsX291dHB1dCDmgZIgZWxpZ2libGUKICAgIGNvbnN0IGJvZHkgPSByZXNwb25zZXNCb2R5KFsKICAgICAgeyB0eXBlOiAiYXBwbHlfcGF0Y2hfY2FsbF9vdXRwdXQiLCBjYWxsX2lkOiAicDEiLCBvdXRwdXQ6IEpTT05fT0JKIH0sCiAgICBdKQogICAgY29kZXguYXBwbHkoYm9keSwgY3R4Rm9yKCJyZXNwb25zZXMiKSwgeyBlbmFibGVkOiB0cnVlIH0pCiAgICBjaGVjaygiQi0wNiBhcHBseV9wYXRjaCDlj6/liqgiLCBib2R5LmlucHV0WzBdLm91dHB1dCAhPT0gSlNPTl9PQkopCiAgfQoKICB7CiAgICAvLyBCLTA3IHByZXNlcnZlVG9vbE5hbWVzIOiHquWumuS5ieS/neaKpAogICAgY29uc3QgYm9keSA9IHJlc3BvbnNlc0JvZHkoW2ZuQ2FsbCgiYzEiLCAibXl0b29sIiksIGZuT3V0cHV0KCJjMSIsIEpTT05fT0JKKV0pCiAgICBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IHRydWUsIHByZXNlcnZlVG9vbE5hbWVzOiBbIm15dG9vbCJdIH0pCiAgICBjaGVjaygiQi0wNyBwcmVzZXJ2ZVRvb2xOYW1lcyIsIGJvZHkuaW5wdXRbMV0ub3V0cHV0ID09PSBKU09OX09CSikKICB9CgogIHsKICAgIC8vIEItMDggaGVhZGxlc3NfcmV0cmlldmFsIOWQjue8gOS/neaKpAogICAgY29uc3QgYm9keSA9IHJlc3BvbnNlc0JvZHkoW2ZuQ2FsbCgiYzEiLCAibWNwX19oZWFkbGVzc19yZXRyaWV2YWwiKSwgZm5PdXRwdXQoImMxIiwgSlNPTl9PQkopXSkKICAgIGNvZGV4LmFwcGx5KGJvZHksIGN0eEZvcigicmVzcG9uc2VzIiksIHsgZW5hYmxlZDogdHJ1ZSB9KQogICAgY2hlY2soIkItMDggX19oZWFkbGVzc19yZXRyaWV2YWzkv53miqQiLCBib2R5LmlucHV0WzFdLm91dHB1dCA9PT0gSlNPTl9PQkopCiAgfQoKICAvLyDigJTigJQgQyDnu4TvvJrlrZfoioIvdG9rZW4g6Zeo56aBIOKAlOKAlAoKICB7CiAgICAvLyBDLTAxIOefreS6jiBtaW5CeXRlcyDkuI3liqgKICAgIGNvbnN0IHNob3J0ID0gSlNPTi5zdHJpbmdpZnkoeyBhOiAxIH0pCiAgICBjb25zdCBib2R5ID0gcmVzcG9uc2VzQm9keShbZm5DYWxsKCJjMSIsICJiYXNoIiksIGZuT3V0cHV0KCJjMSIsIHNob3J0KV0pCiAgICBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IHRydWUsIG1pbkJ5dGVzOiA1MTIgfSkKICAgIGNoZWNrKCJDLTAxIDxtaW5CeXRlc+S4jeWKqCIsIGJvZHkuaW5wdXRbMV0ub3V0cHV0ID09PSBzaG9ydCkKICB9CgogIHsKICAgIC8vIEMtMDIgbWluQnl0ZXM9MCDnn60gSlNPTiDkuZ/lj6/liqgKICAgIGNvbnN0IHNob3J0ID0gSlNPTi5zdHJpbmdpZnkoeyBhOiAxLCBiOiAyLCBjOiAzIH0sIG51bGwsIDIpCiAgICBjb25zdCBib2R5ID0gcmVzcG9uc2VzQm9keShbZm5DYWxsKCJjMSIsICJiYXNoIiksIGZuT3V0cHV0KCJjMSIsIHNob3J0KV0pCiAgICBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IHRydWUsIG1pbkJ5dGVzOiAwIH0pCiAgICBjaGVjaygiQy0wMiBtaW5CeXRlcz0w5Y+v5YqoIiwgYm9keS5pbnB1dFsxXS5vdXRwdXQgIT09IHNob3J0KQogIH0KCiAgewogICAgLy8gQy0wMyDplb/kuo4gbWF4Q2FuZGlkYXRlQnl0ZXMg5LiN5YqoCiAgICBjb25zdCBiaWcgPSBKU09OLnN0cmluZ2lmeSh7IGl0ZW1zOiBBcnJheS5mcm9tKHsgbGVuZ3RoOiAyMDAwMCB9LCAoXywgaSkgPT4gKHsgaWQ6IGksIG5hbWU6IGB4YC5yZXBlYXQoNTApIH0pKSB9KQogICAgY29uc3QgYm9keSA9IHJlc3BvbnNlc0JvZHkoW2ZuQ2FsbCgiYzEiLCAiYmFzaCIpLCBmbk91dHB1dCgiYzEiLCBiaWcpXSkKICAgIGNvZGV4LmFwcGx5KGJvZHksIGN0eEZvcigicmVzcG9uc2VzIiksIHsgZW5hYmxlZDogdHJ1ZSwgbWF4Q2FuZGlkYXRlQnl0ZXM6IDEwMjQgfSkKICAgIGNoZWNrKCJDLTAzID5tYXhDYW5kaWRhdGVCeXRlc+S4jeWKqCIsIGJvZHkuaW5wdXRbMV0ub3V0cHV0ID09PSBiaWcpCiAgfQoKICB7CiAgICAvLyBDLTA0IOmVv+S6jiBtYXhPdXRwdXRCeXRlcyDkuI3liqgKICAgIGNvbnN0IGJpZyA9IEpTT04uc3RyaW5naWZ5KHsgaXRlbXM6IEFycmF5LmZyb20oeyBsZW5ndGg6IDIwMDAwIH0sIChfLCBpKSA9PiAoeyBpZDogaSwgbmFtZTogYHhgLnJlcGVhdCg1MCkgfSkpIH0pCiAgICBjb25zdCBib2R5ID0gcmVzcG9uc2VzQm9keShbZm5DYWxsKCJjMSIsICJiYXNoIiksIGZuT3V0cHV0KCJjMSIsIGJpZyldKQogICAgY29kZXguYXBwbHkoYm9keSwgY3R4Rm9yKCJyZXNwb25zZXMiKSwgeyBlbmFibGVkOiB0cnVlLCBtYXhPdXRwdXRCeXRlczogMTAyNCB9KQogICAgY2hlY2soIkMtMDQgPm1heE91dHB1dEJ5dGVz5LiN5YqoIiwgYm9keS5pbnB1dFsxXS5vdXRwdXQgPT09IGJpZykKICB9CgogIC8vIOKAlOKAlCBEIOe7hO+8muWNj+iurumXqCAvIOW8gOWFsyDigJTigJQKCiAgewogICAgLy8gRC0wMSDpnZ4gcmVzcG9uc2VzIOWNj+iuruS4jeWKqAogICAgY29uc3QgYm9keSA9IHsgbWVzc2FnZXM6IFt7IHJvbGU6ICJ0b29sIiwgY29udGVudDogSlNPTl9PQkogfV0gfQogICAgY29kZXguYXBwbHkoYm9keSwgY3R4Rm9yKCJjaGF0IiksIHsgZW5hYmxlZDogdHJ1ZSB9KQogICAgY2hlY2soIkQtMDEgY2hhdOWNj+iuruS4jeWKqCIsIGJvZHkubWVzc2FnZXNbMF0uY29udGVudCA9PT0gSlNPTl9PQkopCiAgfQoKICB7CiAgICAvLyBELTAyIGVuYWJsZWQ6ZmFsc2Ug5LiN5YqoCiAgICBjb25zdCBib2R5ID0gcmVzcG9uc2VzQm9keShbZm5DYWxsKCJjMSIsICJiYXNoIiksIGZuT3V0cHV0KCJjMSIsIEpTT05fT0JKKV0pCiAgICBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IGZhbHNlIH0pCiAgICBjaGVjaygiRC0wMiBlbmFibGVkOmZhbHNl5LiN5YqoIiwgYm9keS5pbnB1dFsxXS5vdXRwdXQgPT09IEpTT05fT0JKKQogIH0KCiAgewogICAgLy8gRC0wMyDnqbogaW5wdXQg5LiN5YqoCiAgICBjb25zdCBib2R5ID0geyBtb2RlbDogImdwdC01LWNvZGV4IiwgaW5wdXQ6IFtdIH0KICAgIGNvbnN0IHIgPSBjb2RleC5hcHBseShib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIpLCB7IGVuYWJsZWQ6IHRydWUgfSkKICAgIGNoZWNrKCJELTAzIOepumlucHV06L+UZmFsc2UiLCByID09PSBmYWxzZSkKICB9CgogIHsKICAgIC8vIEQtMDQg5pegIGlucHV0IOS4jeWKqAogICAgY29uc3QgYm9keSA9IHsgbW9kZWw6ICJncHQtNS1jb2RleCIgfQogICAgY29uc3QgciA9IGNvZGV4LmFwcGx5KGJvZHksIGN0eEZvcigicmVzcG9uc2VzIiksIHsgZW5hYmxlZDogdHJ1ZSB9KQogICAgY2hlY2soIkQtMDQg5pegaW5wdXTov5RmYWxzZSIsIHIgPT09IGZhbHNlKQogIH0KCiAgLy8g4oCU4oCUIEUg57uE77yac3RhdGUg55WZ55eVIOKAlOKAlAoKICB7CiAgICBjb25zdCBib2R5ID0gcmVzcG9uc2VzQm9keShbZm5DYWxsKCJjMSIsICJiYXNoIiksIGZuT3V0cHV0KCJjMSIsIEpTT05fT0JKKV0pCiAgICBjb25zdCBjdHggPSBjdHhGb3IoInJlc3BvbnNlcyIpCiAgICBjb2RleC5hcHBseShib2R5LCBjdHgsIHsgZW5hYmxlZDogdHJ1ZSB9KQogICAgY2hlY2soIkUtMDEgY3R4LnN0YXRlLmNvZGV4UmVzcG9uc2VzIiwgY3R4LnN0YXRlLmNvZGV4UmVzcG9uc2VzICYmIGN0eC5zdGF0ZS5jb2RleFJlc3BvbnNlcy5jb21wcmVzc2VkQ291bnQgPT09IDEpCiAgfQoKICAvLyDigJTigJQgRiDnu4TvvJrnu48gbWlkZGxld2FyZSDnq6/liLDnq68g4oCU4oCUCgogIHsKICAgIGNvbnN0IGJvZHkgPSByZXNwb25zZXNCb2R5KFtmbkNhbGwoImMxIiwgImJhc2giKSwgZm5PdXRwdXQoImMxIiwgSlNPTl9PQkopXSkKICAgIG1pZGRsZXdhcmUub25SZXF1ZXN0KGJvZHksIGN0eEZvcigicmVzcG9uc2VzIiwgewogICAgICBzdHJhdGVnaWVzOiB7IGxpdGU6IGZhbHNlLCAic2Vzc2lvbi1kZWR1cCI6IGZhbHNlLCBoZWFkcm9vbTogZmFsc2UsICJjb2RleC1yZXNwb25zZXMiOiB0cnVlIH0sCiAgICB9KSkKICAgIGNoZWNrKCJGLTAxIOe7j21pZGRsZXdhcmXljosiLCBib2R5LmlucHV0WzFdLm91dHB1dCAhPT0gSlNPTl9PQkopCiAgfQoKICB7CiAgICAvLyBGLTAyIOaYvuW8j+WFs+mXreS7jeS/neaMgeWOn+aWh++8iOaWsOm7mOiupOeUsSBERUZBVUxUX1NUUkFURUdJRVMg5byA5ZCv77yJCiAgICBjb25zdCBib2R5ID0gcmVzcG9uc2VzQm9keShbZm5DYWxsKCJjMSIsICJiYXNoIiksIGZuT3V0cHV0KCJjMSIsIEpTT05fT0JKKV0pCiAgICBtaWRkbGV3YXJlLm9uUmVxdWVzdChib2R5LCBjdHhGb3IoInJlc3BvbnNlcyIsIHsgc3RyYXRlZ2llczogeyAiY29kZXgtcmVzcG9uc2VzIjogZmFsc2UgfSB9KSkKICAgIGNoZWNrKCJGLTAyIOaYvuW8j+WFs+mXrSIsIGJvZHkuaW5wdXRbMV0ub3V0cHV0ID09PSBKU09OX09CSikKICB9Cn0K
+// test/codex-responses.test.mjs — codexResponses 引擎移植的验证
+// 范围：四种压缩器（minifyJson/compactDiff/compactSearch/collapseLines）、
+// eligibility（保护工具名、local_shell 有损候选跳过、call_id 反查）、
+// 配置合并、协议门（responses-only）、token 单调性。
+
+import assert from "node:assert"
+import { check, ctxFor } from "./helpers.mjs"
+import * as middleware from "../compress-core.middleware.js"
+import * as codex from "../engines/codex-responses.js"
+
+export const name = "codex-responses"
+
+// ─── 测试语料 ───────────────────────────────────────────────────────────
+
+// minifyJson：pretty-print 的 JSON 对象
+const JSON_OBJ = JSON.stringify(
+  { status: "ok", items: Array.from({ length: 20 }, (_, i) => ({ id: i, name: `item-${i}`, value: i * 10 })) },
+  null,
+  2
+)
+
+// compactDiff：长 diff，含 context 行
+function makeDiff() {
+  const lines = ["diff --git a/foo.ts b/foo.ts", "--- a/foo.ts", "+++ b/foo.ts"]
+  for (let h = 0; h < 5; h++) {
+    lines.push(`@@ -${h * 20},10 +${h * 20},12 @@`)
+    for (let i = 0; i < 8; i++) lines.push(` context line ${i} of hunk ${h}`)
+    lines.push(`-removed line ${h}`)
+    lines.push(`+added line ${h}`)
+  }
+  return lines.join("\n")
+}
+const DIFF = makeDiff()
+
+// compactSearch：grep 输出
+function makeSearch() {
+  const lines = []
+  for (let f = 0; f < 5; f++) {
+    for (let m = 0; m < 10; m++) {
+      lines.push(`src/file${f}.ts:${m * 10}:5: const match${f}_${m} = findTarget(pattern)`)
+    }
+  }
+  return lines.join("\n")
+}
+const SEARCH = makeSearch()
+
+// collapseLines：长 build 日志
+function makeLog() {
+  const lines = []
+  lines.push("npm run build started")
+  for (let i = 0; i < 30; i++) lines.push(`[info] compiling module ${i}`)
+  lines.push("ERROR: type check failed in src/foo.ts:42")
+  for (let i = 30; i < 60; i++) lines.push(`[info] more output ${i}`)
+  lines.push("error TS2322: Type 'string' is not assignable to type 'number'")
+  for (let i = 60; i < 90; i++) lines.push(`[info] trailing ${i}`)
+  lines.push("Build completed with 2 errors")
+  return lines.join("\n")
+}
+const LOG = makeLog()
+
+// ─── 构造 responses body ────────────────────────────────────────────────
+
+function responsesBody(items) {
+  return { model: "gpt-5-codex", input: items }
+}
+
+function fnCall(callId, name) {
+  return { type: "function_call", call_id: callId, name, arguments: "{}", id: `fc-${callId}` }
+}
+
+function fnOutput(callId, output) {
+  return { type: "function_call_output", call_id: callId, output }
+}
+
+// ─── 测试 ───────────────────────────────────────────────────────────────
+
+export function run() {
+  // —— A 组：压缩器单元 ——
+
+  {
+    // A-01 minifyJson 更短
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", JSON_OBJ)])
+    const before = JSON_OBJ.length
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    const after = body.input[1].output
+    check("A-01 minifyJson 压缩", after.length < before && JSON.parse(after).items.length === 20)
+  }
+
+  {
+    // A-02 compactDiff 去 context
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", DIFF)])
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    const out = body.input[1].output
+    check("A-02 compactDiff 更短", out.length < DIFF.length)
+    check("A-02 compactDiff 保 +/-/@@", out.includes("+added line") && out.includes("@@"))
+  }
+
+  {
+    // A-03 compactSearch 按路径分组
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", SEARCH)])
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    const out = body.input[1].output
+    check("A-03 compactSearch 更短", out.length < SEARCH.length)
+    check("A-03 compactSearch 每路径≤3", (out.match(/file0\.ts/g) || []).length <= 3 + 1) // +1 for path header
+  }
+
+  {
+    // A-04 collapseLines 保 error + 前后8行
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", LOG)])
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    const out = body.input[1].output
+    check("A-04 collapseLines 更短", out.length < LOG.length)
+    check("A-04 collapseLines 保 error", out.includes("ERROR: type check failed"))
+    check("A-04 collapseLines 保 头部", out.includes("npm run build started"))
+    check("A-04 collapseLines 保 尾部", out.includes("Build completed"))
+  }
+
+  // —— B 组：eligibility 门 ——
+
+  {
+    // B-01 保护工具不动（read 在保护列表）
+    const body = responsesBody([fnCall("c1", "read"), fnOutput("c1", JSON_OBJ)])
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    check("B-01 read 保护", body.input[1].output === JSON_OBJ)
+  }
+
+  {
+    // B-02 非保护工具可动（bash 不在保护列表）
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", JSON_OBJ)])
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    check("B-02 bash 可动", body.input[1].output !== JSON_OBJ)
+  }
+
+  {
+    // B-03 call_id 不在 functionCalls → 不动
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c-unknown", JSON_OBJ)])
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    check("B-03 孤儿call_id不动", body.input[1].output === JSON_OBJ)
+  }
+
+  {
+    // B-04 local_shell_call_output 恒 eligible
+    const body = responsesBody([
+      { type: "local_shell_call_output", call_id: "s1", output: LOG },
+    ])
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    // LOG 有 collapseLines 候选 → 但有损候选会让 local_shell 跳过
+    check("B-04 local_shell 有损候选跳过", body.input[0].output === LOG)
+  }
+
+  {
+    // B-05 local_shell 纯 JSON（无有损候选）→ 可 minifyJson
+    const body = responsesBody([
+      { type: "local_shell_call_output", call_id: "s1", output: JSON_OBJ },
+    ])
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    check("B-05 local_shell 无损minify", body.input[0].output !== JSON_OBJ && JSON.parse(body.input[0].output).items.length === 20)
+  }
+
+  {
+    // B-06 apply_patch_call_output 恒 eligible
+    const body = responsesBody([
+      { type: "apply_patch_call_output", call_id: "p1", output: JSON_OBJ },
+    ])
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    check("B-06 apply_patch 可动", body.input[0].output !== JSON_OBJ)
+  }
+
+  {
+    // B-07 preserveToolNames 自定义保护
+    const body = responsesBody([fnCall("c1", "mytool"), fnOutput("c1", JSON_OBJ)])
+    codex.apply(body, ctxFor("responses"), { enabled: true, preserveToolNames: ["mytool"] })
+    check("B-07 preserveToolNames", body.input[1].output === JSON_OBJ)
+  }
+
+  {
+    // B-08 headless_retrieval 后缀保护
+    const body = responsesBody([fnCall("c1", "mcp__headless_retrieval"), fnOutput("c1", JSON_OBJ)])
+    codex.apply(body, ctxFor("responses"), { enabled: true })
+    check("B-08 __headless_retrieval保护", body.input[1].output === JSON_OBJ)
+  }
+
+  // —— C 组：字节/token 门禁 ——
+
+  {
+    // C-01 短于 minBytes 不动
+    const short = JSON.stringify({ a: 1 })
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", short)])
+    codex.apply(body, ctxFor("responses"), { enabled: true, minBytes: 512 })
+    check("C-01 <minBytes不动", body.input[1].output === short)
+  }
+
+  {
+    // C-02 minBytes=0 短 JSON 也可动
+    const short = JSON.stringify({ a: 1, b: 2, c: 3 }, null, 2)
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", short)])
+    codex.apply(body, ctxFor("responses"), { enabled: true, minBytes: 0 })
+    check("C-02 minBytes=0可动", body.input[1].output !== short)
+  }
+
+  {
+    // C-03 长于 maxCandidateBytes 不动
+    const big = JSON.stringify({ items: Array.from({ length: 20000 }, (_, i) => ({ id: i, name: `x`.repeat(50) })) })
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", big)])
+    codex.apply(body, ctxFor("responses"), { enabled: true, maxCandidateBytes: 1024 })
+    check("C-03 >maxCandidateBytes不动", body.input[1].output === big)
+  }
+
+  {
+    // C-04 长于 maxOutputBytes 不动
+    const big = JSON.stringify({ items: Array.from({ length: 20000 }, (_, i) => ({ id: i, name: `x`.repeat(50) })) })
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", big)])
+    codex.apply(body, ctxFor("responses"), { enabled: true, maxOutputBytes: 1024 })
+    check("C-04 >maxOutputBytes不动", body.input[1].output === big)
+  }
+
+  // —— D 组：协议门 / 开关 ——
+
+  {
+    // D-01 非 responses 协议不动
+    const body = { messages: [{ role: "tool", content: JSON_OBJ }] }
+    codex.apply(body, ctxFor("chat"), { enabled: true })
+    check("D-01 chat协议不动", body.messages[0].content === JSON_OBJ)
+  }
+
+  {
+    // D-02 enabled:false 不动
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", JSON_OBJ)])
+    codex.apply(body, ctxFor("responses"), { enabled: false })
+    check("D-02 enabled:false不动", body.input[1].output === JSON_OBJ)
+  }
+
+  {
+    // D-03 空 input 不动
+    const body = { model: "gpt-5-codex", input: [] }
+    const r = codex.apply(body, ctxFor("responses"), { enabled: true })
+    check("D-03 空input返false", r === false)
+  }
+
+  {
+    // D-04 无 input 不动
+    const body = { model: "gpt-5-codex" }
+    const r = codex.apply(body, ctxFor("responses"), { enabled: true })
+    check("D-04 无input返false", r === false)
+  }
+
+  // —— E 组：state 留痕 ——
+
+  {
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", JSON_OBJ)])
+    const ctx = ctxFor("responses")
+    codex.apply(body, ctx, { enabled: true })
+    check("E-01 ctx.state.codexResponses", ctx.state.codexResponses && ctx.state.codexResponses.compressedCount === 1)
+  }
+
+  // —— F 组：经 middleware 端到端 ——
+
+  {
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", JSON_OBJ)])
+    middleware.onRequest(body, ctxFor("responses", {
+      strategies: { lite: false, "session-dedup": false, headroom: false, "codex-responses": true },
+    }))
+    check("F-01 经middleware压", body.input[1].output !== JSON_OBJ)
+  }
+
+  {
+    // F-02 显式关闭仍保持原文（新默认由 DEFAULT_STRATEGIES 开启）
+    const body = responsesBody([fnCall("c1", "bash"), fnOutput("c1", JSON_OBJ)])
+    middleware.onRequest(body, ctxFor("responses", { strategies: { "codex-responses": false } }))
+    check("F-02 显式关闭", body.input[1].output === JSON_OBJ)
+  }
+}

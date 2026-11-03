@@ -1,1 +1,456 @@
-Ly8gZW5naW5lcy9sbG0uanMg4oCUIExMTSBDb21wcmVzc29y77ya55So5aSW6YOo5qih5Z6L5Y6L57yp5pWj5paH5q6177yI5Y2g5L2N5a6e546w77yM6buY6K6k5LiN5Y+v55So77yJ44CCCi8vCi8vIOadpea6kO+8iE9tbmlSb3V0ZUBmZjY3OWFiODZlMDExM2EwMDlkOGFlZWVlZTQ2NDEzOWJkMDkwODc0IG9wZW4tc3NlL3NlcnZpY2VzL2NvbXByZXNzaW9uL++8ie+8mgovLyAgIC0gZW5naW5lc1xsbG1caW5kZXgudHMgICgzNDYg6KGMKSAgTGxtQ29tcHJlc3NvckJhY2tlbmQg5aWR57qmIC8gc2V0TGxtQ29tcHJlc3NvckJhY2tlbmQgLwovLyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBwcm9jZXNzTWVzc2FnZXMgLyBtaW5Ub2tlbnMg6Zeo5qebIC8gTExNX0NPTVBSRVNTT1JfU0NIRU1BCi8vICAgLSBwcmVzZXJ2YXRpb24udHMgICAgICAgKDI1MyDooYwpICBleHRyYWN0UHJlc2VydmVkQmxvY2tzIOetieWik+eikeWMluW3peWFt++8iOingeS4i++8iQovLwovLyDilIDilIAg6L+Z5piv5LiA5LiqKirmnInmhI/nmoTljaDkvY3lrp7njrDvvIzkuI3mmK/mvI/mkKwqKiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKLy8g5LiK5ri4IGxsbS9pbmRleC50cyDlpLTpg6jms6jph4rlhpnlvpflvojmuIXmpZrvvJpERUZBVUxUIGJhY2tlbmQg5pivIG5vLW9w77yIYGNvbnN0IG5vb3BCYWNrZW5kID0KLy8gYXN5bmMgKHRleHQpID0+IHRleHRg77yJ77yM5byA566x5Y2z55SoKirnu53kuI3mlLnliqggcGF5bG9hZCoq77yM5rC46L+c6L+U5ZueIGBjb21wcmVzc2VkOmZhbHNlYO+8mwovLyDnnJ/mraPnmoTmqKHlnovopoHnlLHov5Dnu7TpgJrov4cgYHNldExsbUNvbXByZXNzb3JCYWNrZW5kKClgIOazqOWFpeOAguacrOaPkuS7tu+8iG1vZWpzIOi/kOihjOaXtu+8ieayoeaciQovLyBmZXRjaOOAgeayoeacieWklumDqOe9kee7nOOAgeS5n+ayoeaciSBjaGF0LWNvbXBsZXRpb24g5ZCO56uv77yM5Zug5q2k6L+Z6YeM5oqK44CM5pegIGJhY2tlbmQgPSBuby1vcOOAjei/meadoQovLyDkuIrmuLjor63kuYnljp/moLfkv53nlZnvvIzlubbmioogYGF2YWlsYWJsZWAg5qCH5oiQIGZhbHNl77ya6Z2i5p2/5LiK5Lya5pi+56S644CM6ZyA6KaB5aSW6YOo5qih5Z6L5ZCO56uv44CN5bm2572u54Gw44CCCi8vIOWlkee6pumdou+8iGJhY2tlbmQg57G75Z6L44CB5rOo5YWl57yd44CB6YWN572u5qCh6aqM44CB5aKT56KR5YyW44CBZmFpbC1vcGVu77yJ5YWo6YOo54Wn5pCs77yM5bCG5p2l5pyJ5Lq65o6l5ZCO56uvCi8vIOWPqumcgOimgeiwg+S4gOasoSBzZXRMbG1Db21wcmVzc29yQmFja2VuZO+8jOS4jeW/hemHjeWGmeacrOaWh+S7tuOAggovLwovLyDilIDilIAg5LiO5LiK5ri455qE5beu5byC77yI5LuF546v5aKD6YCC6YWN77yJ4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACi8vICAgMS4g6YGN5Y6G5pa55byP77ya5LiK5ri455u05o6l6YGN5Y6GIGJvZHkubWVzc2FnZXMg5bm25aSE55CGIHN0cmluZyAvIGNvbnRlbnQtYmxvY2sg5Lik56eN5b2i54q277yb6L+Z6YeM6LWwCi8vICAgICAgYWRhcHRlci5jb252ZXJzYXRpb25WaWV3KGJvZHksIHByb3RvY29sKSDnmoQgc2VnbWVudHPvvIjlm5vljY/orq7vvInjgIJzeXN0ZW0g5q615LiA5b6L5LiN5YqoCi8vICAgICAg77yI5LiK5ri4IGxpbmUgMTQ3IOWQjO+8ieOAggovLyAgIDIuIOWQjOatpSBhcHBseSDmmK8gcGFzcy10aHJvdWdo77yI5LiK5ri4IGxpbmUgMjY5LTI3Me+8mmByZXR1cm4geyBib2R5LCBjb21wcmVzc2VkOmZhbHNlIH1g77yJ44CCCi8vICAgICAg5Lit6Ze05Lu25aWR57qm5Y+q6K6k5biD5bCU77yM5LiUIFByb21pc2Ug57uT5p6c5ZCM5q2l5ou/5LiN5Yiw77yM5Zug5q2kIGFwcGx5IOaBkui/lOWbniBmYWxzZe+8m+ecn+ato+eahOW3peS9nAovLyAgICAgIOWcqOWvvOWHuueahCBgYXBwbHlBc3luYygpYCDph4zvvIjkuI7kuIrmuLggYXBwbHlBc3luYyDkuIDkuIDlr7nlupTvvInjgIIKLy8gICAzLiBwcmVzZXJ2YXRpb24udHMg55qE6ZqP5py6IHNlbnRpbmVsIOaUueaIkOaooeWdl+WGheWNleiwg+iuoeaVsOWZqO+8mm1vZWpzIOayoeaciSBjcnlwdG/vvIzogIwKLy8gICAgICBNYXRoLnJhbmRvbSDkvJrorqnlkIzkuIDovpPlhaXkuqfnlJ/kuI3lkIzljaDkvY3nrKbjgILljaDkvY3nrKbkuI3kvJrlpJbms4TvvIjov5Tlm57liY3lhajpg6jov5jljp/vvInvvIzmiYDku6XovpPlh7oKLy8gICAgICDkuI7kuIrmuLjkuIDoh7TvvIzkuJTlr7kgcHJvbXB0IGNhY2hlIOabtOeos+OAguWik+eikeWMlueahOaooeW8j+ihqOmAkOWtl+aQrO+8iHN5c3RlbS1yZW1pbmRlciAvCi8vICAgICAgaW5zdHJ1Y3Rpb25zIOS/oeWwgeOAgWZyb250bWF0dGVy44CB5Zu05qCP5Luj56CB44CB6KGM5YaF5Luj56CB44CBVVJM44CB5paH5Lu26Lev5b6E44CB6ZSZ6K+v6KGM44CB546v5aKD5Y+Y6YeP44CBCi8vICAgICAgQ09OU1RfQ0FTReOAgeeJiOacrOWPt+OAgeWHveaVsOiwg+eUqOOAgeeCueWPt+agh+ivhuespuOAgW1hcmtkb3duIOagh+mimC/ooajmoLwv6ZO+5o6l44CB5pWw5a2m5Z2X44CBdHlwc3TvvInjgIIKLy8gICA0LiBwZXJmb3JtYW5jZS5ub3coKSAvIGNyZWF0ZUNvbXByZXNzaW9uU3RhdHMg5LiN56e75qSN77yI5Lit6Ze05Lu25aWR57qm5Y+q6L+U5Zue5biD5bCU77yM57uf6K6h55SxCi8vICAgICAgc3RhdHMtd3JpdGVyLmpzIOi0n+i0o++8ie+8m2VzdGltYXRlQ29tcHJlc3Npb25Ub2tlbnMg5YaF6IGU5Li6IGNlaWwobGVuLzQp77yI5LiK5ri4IHN0YXRzLnRz77yJ44CCCi8vICAgNS4g6YWN572u6Z2i77ya5LiK5ri4IHNjaGVtYSDmmK8ge2VuYWJsZWQsIG1vZGVsLCBtaW5Ub2tlbnMsIGNvbXByZXNzaW9uUmF0ZX3vvIzpnaLmnb8KLy8gICAgICDvvIhjYXRhbG9nLmpz77yJ5Y+q5pq06ZyyIHttYXhDaGFyc33jgILmmKDlsITvvJptaW5Ub2tlbnMg5Zu65a6aIDIwMDDvvIjkuIrmuLjpu5jorqTvvIzpl6jmp5vnhafml6fnlJ/mlYjvvInjgIEKLy8gICAgICBjb21wcmVzc2lvblJhdGUg5Zu65a6aIDAuNeOAgW1vZGVsIOWbuuWumiAiIu+8m21heENoYXJzIOS9nOS4uuOAjOWNleS4quaVo+aWh+eql+WPo+WkluWPkeS4iumZkOOAjeKAlOKAlAovLyAgICAgIOi2hei/hyBtYXhDaGFycyDnmoTmlaPmlofmjInmjaLooYzovrnnlYzliIfmiJDlpJrkuKrnqpflj6PliIbliKvlpJblj5Hlho3mi7zlm57vvIjkuIrmuLjmiormlbTmrrXkuIDmrKHlpJblj5HvvIwKLy8gICAgICDov5nph4zliqDnqpflj6PmmK/kuLrkuoblrojkvY/pnaLmnb/or63kuYnvvJvkuI3mlLnliqjku7vkvZUgcHJlc2VydmVkIOaute+8ieOAggovLyAgIDYuIOOAjOaYr+WQpuWQr+eUqOOAje+8muS4iua4uOimgeaxgiBzdGVwQ29uZmlnLmVuYWJsZWQgPT09IHRydWXvvJvpnaLmnb/msqHmnIkgZW5hYmxlZCDlvIDlhbPvvIzmnKznp7vmpI3miooKLy8gICAgICDjgIzms6jlhaXkuoYgYmFja2VuZOOAjeW9k+S9nOWQr+eUqOS/oeWPt++8jOS4pOiAhemDveW/hemhu+a7oei2s+aJjeS8muecn+ato+WOi+e8qeOAggovLyAgIDcuIOmbtuS+nei1lu+8muWPqueUqOebuOWvuSBpbXBvcnTvvIzml6AgTm9kZSBBUEnjgIHml6AgZmV0Y2jjgIHml6Dlrprml7blmajvvJthcHBseSDkuI4gYXBwbHlBc3luYyDlhajnqIsKLy8gICAgICB0cnkvY2F0Y2ggZmFpbC1vcGVu44CCCgppbXBvcnQgeyBjb252ZXJzYXRpb25WaWV3IH0gZnJvbSAiLi4vYWRhcHRlci5qcyIKCi8vIOKUgOKUgOKUgCDlhYPmlbDmja7vvIhjYXRhbG9nLmpzIOaYr+mdouadv+ecn+a6kO+8m3N0YWNrUHJpb3JpdHkg5Y+W5rqQ56CB5piO56Gu5YC8IDM477yJ4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmV4cG9ydCBjb25zdCBpZCA9ICJsbG0iCmV4cG9ydCBjb25zdCBsYWJlbCA9ICJMTE0gQ29tcHJlc3NvciIKZXhwb3J0IGNvbnN0IHdoeSA9ICLnlKjkuIDkuKogTExNIOWOi+e8qeaVo+aWh++8iOmcgOimgeWklumDqOaooeWei+WQjuerr++8jOacrOaPkuS7tuWGheaXoOazleaPkOS+m++8jOWboOatpOm7mOiupOS4jeWPr+eUqO+8ieOAgiIKZXhwb3J0IGNvbnN0IGxvc3N5ID0gdHJ1ZQpleHBvcnQgY29uc3QgY2FjaGVJbXBhY3QgPSAiaGlnaCIKCmV4cG9ydCBjb25zdCBkZWZhdWx0T24gPSBmYWxzZQpleHBvcnQgY29uc3Qgc3RhY2tQcmlvcml0eSA9IDM4CmV4cG9ydCBjb25zdCBpc1NpbmdsZU1vZGUgPSBmYWxzZQpleHBvcnQgY29uc3QgbGV2ZWxzID0gdW5kZWZpbmVkCi8vIOayoeacieaYvuW8j+mFjee9ruWQjuerr+aXtuS4jeWPr+eUqO+8m+mFjee9rueUseWPr+S/oSBCdW4g5a6/5Li75rOo5YWl77yMbW9lanMg5LiN5YGa572R57uc6K+35rGC44CCCmV4cG9ydCBjb25zdCBhdmFpbGFibGUgPSB0cnVlCgovLyBjb25maWdTY2hlbWEg6YCQ5a2X5Y+W6IeqIGNhdGFsb2cuanM6MjY5LTI4N+OAguS4iua4uCBMTE1fQ09NUFJFU1NPUl9TQ0hFTUEg55qECi8vIHtlbmFibGVkLCBtb2RlbCwgbWluVG9rZW5zLCBjb21wcmVzc2lvblJhdGV9IOW3ruW8guingeaWh+S7tuWktOesrCA1IOadoeOAggpleHBvcnQgY29uc3QgY29uZmlnU2NoZW1hID0gWwogIHsKICAgIGtleTogIm1vZGVsIiwKICAgIHR5cGU6ICJzZWxlY3QiLAogICAgbGFiZWw6ICLlkI7nq6/mqKHlnosiLAogICAgZGVzY3JpcHRpb246ICLku4XlnKjlj6/kv6EgQnVuIOWuv+S4u+S4reS9v+eUqO+8m+mAieaLqeeOsOaciee9keWFs+eahCBwcm92aWRlci9tb2RlbOOAguacqumFjee9ruaXtiBuby1vcOOAgiIsCiAgICBkZWZhdWx0VmFsdWU6ICIiLAogICAgb3B0aW9uczogW10sCiAgfSwKICB7CiAgICBrZXk6ICJiYXNlVXJsIiwKICAgIHR5cGU6ICJzZWxlY3QiLAogICAgbGFiZWw6ICLlkI7nq6/lnLDlnYAiLAogICAgZGVzY3JpcHRpb246ICJPcGVuQUkg5YW85a65IC92MSDlnLDlnYDvvIzpu5jorqTmnKzmnLogTWFncGll77yb5LiN6KaB5Zyo6L+Z6YeM57KY6LS05a+G6ZKl44CCIiwKICAgIGRlZmF1bHRWYWx1ZTogImh0dHA6Ly8xMjcuMC4wLjE6MzQyNS92MSIsCiAgICBvcHRpb25zOiBbeyB2YWx1ZTogImh0dHA6Ly8xMjcuMC4wLjE6MzQyNS92MSIsIGxhYmVsOiAi5pys5py6IE1hZ3BpZSIgfV0sCiAgfSwKICB7CiAgICBrZXk6ICJ0aW1lb3V0TXMiLAogICAgdHlwZTogIm51bWJlciIsCiAgICBsYWJlbDogIuWNleasoeWQjuerr+i2heaXtuavq+enkiIsCiAgICBkZXNjcmlwdGlvbjogIui2heaXtuWQjuivpeauteS/neaMgeWOn+aWh++8jOS4jemYu+Whnuato+W4uOivt+axguOAgiIsCiAgICBkZWZhdWx0VmFsdWU6IDEyMDAwLAogICAgbWluOiAxMDAwLAogICAgbWF4OiAzMDAwMCwKICB9LAogIHsKICAgIGtleTogIm1heENoYXJzIiwKICAgIHR5cGU6ICJudW1iZXIiLAogICAgbGFiZWw6ICLljZXmrrXkuIrpmZAiLAogICAgZGVzY3JpcHRpb246ICLkuqTnu5nlkI7nq6/ljovnvKnnmoTmlofmnKzplb/luqbkuIrpmZAiLAogICAgZGVmYXVsdFZhbHVlOiA0MDAwLAogICAgbWluOiA1MDAsCiAgICBtYXg6IDIwMDAwLAogIH0sCl0KCi8vIOKUgOKUgOKUgCBiYWNrZW5kIOaKveixoe+8iOS4iua4uCBpbmRleC50czozNy02NiDpgJDlrZfor63kuYnvvInilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKLy8gTGxtQ29tcHJlc3NvckJhY2tlbmQgPSAodGV4dCwgb3B0cz86IHsgbW9kZWw/LCBjb21wcmVzc2lvblJhdGU/IH0pID0+IFByb21pc2U8c3RyaW5nPgpjb25zdCBub29wQmFja2VuZCA9IGFzeW5jICh0ZXh0KSA9PiB0ZXh0CgovKiog5qih5Z2X57qn5Y+v5rOo5YWlIGJhY2tlbmTvvIhudWxsID0g55SoIG5vLW9wIOm7mOiupOWAvO+8ieOAgiAqLwpsZXQgX2JhY2tlbmQgPSBudWxsCgovKiog6KaG55uWIGJhY2tlbmQg4oCU4oCUIOS+m+a1i+ivleS4juWwhuadpeaOpeecn+aooeWei+S9v+eUqOOAguS8oCBudWxsIOaBouWkjSBuby1vcOOAgiAqLwpleHBvcnQgZnVuY3Rpb24gc2V0TGxtQ29tcHJlc3NvckJhY2tlbmQoYikgewogIF9iYWNrZW5kID0gdHlwZW9mIGIgPT09ICJmdW5jdGlvbiIgPyBiIDogbnVsbAp9CgpleHBvcnQgZnVuY3Rpb24gZ2V0TGxtQ29tcHJlc3NvckJhY2tlbmQoKSB7CiAgcmV0dXJuIF9iYWNrZW5kCn0KCmV4cG9ydCBmdW5jdGlvbiBoYXNMbG1Db21wcmVzc29yQmFja2VuZCgpIHsKICByZXR1cm4gX2JhY2tlbmQgIT09IG51bGwKfQoKZnVuY3Rpb24gcmVzb2x2ZUJhY2tlbmQoKSB7CiAgcmV0dXJuIF9iYWNrZW5kID09PSBudWxsID8gbm9vcEJhY2tlbmQgOiBfYmFja2VuZAp9Cgpjb25zdCBERUZBVUxUX01JTl9UT0tFTlMgPSAyMDAwCmNvbnN0IERFRkFVTFRfQ09NUFJFU1NJT05fUkFURSA9IDAuNQpjb25zdCBERUZBVUxUX01BWF9DSEFSUyA9IDQwMDAKY29uc3QgTUFYX0NIQVJTX0ZMT09SID0gNTAwCmNvbnN0IE1BWF9DSEFSU19DRUlMID0gMjAwMDAKCmZ1bmN0aW9uIGVzdGltYXRlVG9rZW5zKHRleHQpIHsKICByZXR1cm4gTWF0aC5jZWlsKHRleHQubGVuZ3RoIC8gNCkKfQoKZnVuY3Rpb24gY2xhbXBJbnQodmFsdWUsIGZhbGxiYWNrLCBtaW4sIG1heCkgewogIGNvbnN0IG4gPSB0eXBlb2YgdmFsdWUgPT09ICJudW1iZXIiICYmIE51bWJlci5pc0Zpbml0ZSh2YWx1ZSkgPyBNYXRoLmZsb29yKHZhbHVlKSA6IGZhbGxiYWNrCiAgaWYgKG4gPCBtaW4pIHJldHVybiBtaW4KICBpZiAobiA+IG1heCkgcmV0dXJuIG1heAogIHJldHVybiBuCn0KCi8vIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQovLyDlopPnopHljJbvvIhwcmVzZXJ2YXRpb24udHMg56e75qSN77yJ77ya5Luj56CBIC8g5oyH5Luk5L+h5bCBIC8g6Lev5b6EIC8g6ZSZ6K+v6KGM562J57ud5LiN5aSW5Y+R44CCCi8vIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKY29uc3QgU0VOVElORUxfUFJFRklYID0gIlx1MDAwME1BR1BJRV9MTE0iCgovLyDlt67lvIIgM++8muS4iua4uOeUqCBjcnlwdG8uZ2V0UmFuZG9tVmFsdWVzIOeUn+aIkOmaj+acuuenjeWtkO+8m+i/memHjOeUqOaooeWdl+WGheWNleiwg+iuoeaVsOWZqO+8jAovLyDkv53or4HlkIzkuIDov5vnqIvlhoXlj6/lpI3njrDjgIHkuJTkuI3kvp3otZYgY3J5cHRvIC8gTWF0aC5yYW5kb23jgIIKbGV0IHNlbnRpbmVsQ291bnRlciA9IDAKCmZ1bmN0aW9uIG5leHRTZW50aW5lbFNlZWQoKSB7CiAgc2VudGluZWxDb3VudGVyID0gKHNlbnRpbmVsQ291bnRlciArIDEpID4+PiAwCiAgcmV0dXJuICJkIiArIHNlbnRpbmVsQ291bnRlcgp9CgpmdW5jdGlvbiBlbnN1cmVHbG9iYWwocGF0dGVybikgewogIGNvbnN0IGZsYWdzID0gcGF0dGVybi5mbGFncy5pbmRleE9mKCJnIikgPT09IC0xID8gcGF0dGVybi5mbGFncyArICJnIiA6IHBhdHRlcm4uZmxhZ3MKICByZXR1cm4gbmV3IFJlZ0V4cChwYXR0ZXJuLnNvdXJjZSwgZmxhZ3MpCn0KCmZ1bmN0aW9uIHJlcGxhY2VQYXR0ZXJuKHRleHQsIHBhdHRlcm4sIGtpbmQsIGFkZEJsb2NrKSB7CiAgcGF0dGVybi5sYXN0SW5kZXggPSAwCiAgcmV0dXJuIHRleHQucmVwbGFjZShwYXR0ZXJuLCAobWF0Y2gpID0+IHsKICAgIGlmICghbWF0Y2gpIHJldHVybiBtYXRjaAogICAgaWYgKG1hdGNoLmluZGV4T2YoU0VOVElORUxfUFJFRklYKSAhPT0gLTEpIHJldHVybiBtYXRjaAogICAgcmV0dXJuIGFkZEJsb2NrKG1hdGNoLCBraW5kKQogIH0pCn0KCmZ1bmN0aW9uIGV4dHJhY3RGcm9udG1hdHRlcih0ZXh0LCBhZGRCbG9jaykgewogIGlmICh0ZXh0LmluZGV4T2YoIi0tLVxuIikgIT09IDApIHJldHVybiB0ZXh0CiAgY29uc3QgY2xvc2UgPSB0ZXh0LmluZGV4T2YoIlxuLS0tIiwgNCkKICBpZiAoY2xvc2UgPT09IC0xKSByZXR1cm4gdGV4dAogIGNvbnN0IGNsb3NlRW5kID0gdGV4dC5pbmRleE9mKCJcbiIsIGNsb3NlICsgNCkKICBjb25zdCBlbmQgPSBjbG9zZUVuZCA9PT0gLTEgPyB0ZXh0Lmxlbmd0aCA6IGNsb3NlRW5kICsgMQogIHJldHVybiBhZGRCbG9jayh0ZXh0LnNsaWNlKDAsIGVuZCksICJmcm9udG1hdHRlciIpICsgdGV4dC5zbGljZShlbmQpCn0KCmZ1bmN0aW9uIGV4dHJhY3RGZW5jZWRDb2RlQmxvY2tzKHRleHQsIGFkZEJsb2NrKSB7CiAgY29uc3QgbGluZXMgPSB0ZXh0Lm1hdGNoKC9bXlxuXSooPzpcbnwkKS9nKSB8fCBbdGV4dF0KICBsZXQgb3V0cHV0ID0gIiIKICBsZXQgaSA9IDAKCiAgd2hpbGUgKGkgPCBsaW5lcy5sZW5ndGgpIHsKICAgIGNvbnN0IGxpbmUgPSBsaW5lc1tpXQogICAgaWYgKGxpbmUgPT09ICIiICYmIGkgPT09IGxpbmVzLmxlbmd0aCAtIDEpIGJyZWFrCiAgICBjb25zdCBvcGVuaW5nID0gbGluZS5tYXRjaCgvXihbIFx0XXswLDN9KShgezMsfXx+ezMsfSlbXlxuXSooPzpcbnwkKS8pCiAgICBpZiAoIW9wZW5pbmcpIHsKICAgICAgb3V0cHV0ICs9IGxpbmUKICAgICAgaSsrCiAgICAgIGNvbnRpbnVlCiAgICB9CgogICAgY29uc3QgZmVuY2UgPSBvcGVuaW5nWzJdCiAgICBjb25zdCBmZW5jZUNoYXIgPSBmZW5jZVswXQogICAgY29uc3QgbWluTGVuID0gZmVuY2UubGVuZ3RoCiAgICBsZXQgYmxvY2sgPSBsaW5lCiAgICBsZXQgaiA9IGkgKyAxCiAgICBsZXQgY2xvc2VkID0gZmFsc2UKCiAgICB3aGlsZSAoaiA8IGxpbmVzLmxlbmd0aCkgewogICAgICBjb25zdCBjYW5kaWRhdGUgPSBsaW5lc1tqXQogICAgICBibG9jayArPSBjYW5kaWRhdGUKICAgICAgY29uc3QgY2xvc2VNYXRjaCA9IGNhbmRpZGF0ZS5tYXRjaCgvXihbIFx0XXswLDN9KShgezMsfXx+ezMsfSlccyooPzpcbnwkKS8pCiAgICAgIGlmIChjbG9zZU1hdGNoICYmIGNsb3NlTWF0Y2hbMl1bMF0gPT09IGZlbmNlQ2hhciAmJiBjbG9zZU1hdGNoWzJdLmxlbmd0aCA+PSBtaW5MZW4pIHsKICAgICAgICBjbG9zZWQgPSB0cnVlCiAgICAgICAgYnJlYWsKICAgICAgfQogICAgICBqKysKICAgIH0KCiAgICBpZiAoIWNsb3NlZCkgewogICAgICBvdXRwdXQgKz0gbGluZQogICAgICBpKysKICAgICAgY29udGludWUKICAgIH0KCiAgICBvdXRwdXQgKz0gYWRkQmxvY2soYmxvY2ssICJmZW5jZWRfY29kZSIpCiAgICBpID0gaiArIDEKICB9CgogIHJldHVybiBvdXRwdXQKfQoKLyoqIOaVtOauteWMuuWfn+aooeW8j++8iOaMh+S7pOS/oeWwge+8ieWFiOi3ke+8muWug+S7rOWGhemDqOWPr+iDveWGjeiiq+WbtOagjy/ooYzlhoXmqKHlvI/lkb3kuK3vvIxzZW50aW5lbCDkvJrooqvot7Pov4fjgIIgKi8KY29uc3QgUkVHSU9OX1BBVFRFUk5TID0gWwogIHsgcGF0dGVybjogLzxzeXN0ZW0tcmVtaW5kZXI+W1xzXFNdKj88XC9zeXN0ZW0tcmVtaW5kZXI+L2csIGtpbmQ6ICJzeXN0ZW1faW5zdHJ1Y3Rpb24iIH0sCiAgeyBwYXR0ZXJuOiAvPGluc3RydWN0aW9ucz8+W1xzXFNdKj88XC9pbnN0cnVjdGlvbnM/Pi9nLCBraW5kOiAic3lzdGVtX2luc3RydWN0aW9uIiB9LAogIHsKICAgIHBhdHRlcm46IC88cHJvamVjdFstIF1pbnN0cnVjdGlvbnM/Pltcc1xTXSo/PFwvcHJvamVjdFstIF1pbnN0cnVjdGlvbnM/Pi9nLAogICAga2luZDogInN5c3RlbV9pbnN0cnVjdGlvbiIsCiAgfSwKXQoKLyoqIOihjOWGhS/lnZfnuqflhoXnva7mqKHlvI/ooajvvIjpgJDlrZfmkKwgcHJlc2VydmF0aW9uLnRzOjExMS0xNDXvvInjgIIgKi8KY29uc3QgQlVJTFRJTl9QQVRURVJOUyA9IFsKICB7IHBhdHRlcm46IC9cJFwkW1xzXFNdKj9cJFwkL2csIGtpbmQ6ICJtYXRoX2Jsb2NrIiB9LAogIHsgcGF0dGVybjogL1xcXFtbXHNcU10qP1xcXF0vZywga2luZDogIm1hdGhfYmxvY2siIH0sCiAgewogICAgcGF0dGVybjogLyg/PCFcJClcJCg/IVtccyRcZF0pKD86XFwufFteJFxuXFxdKXsxLDE2MH0/KD88IVxzKVwkKD8hXCQpL2csCiAgICBraW5kOiAibWF0aF9pbmxpbmUiLAogIH0sCiAgeyBwYXR0ZXJuOiAvXFxiZWdpblx7W0EtWmEteipdK1x9W1xzXFNdKj9cXGVuZFx7W0EtWmEteipdK1x9L2csIGtpbmQ6ICJsYXRleF9ibG9jayIgfSwKICB7IHBhdHRlcm46IC9eI3sxLDZ9XHMrLiskL2dtLCBraW5kOiAibWFya2Rvd25faGVhZGluZyIgfSwKICB7IHBhdHRlcm46IC9eWyBcdF0qXHxbXlxuXSpcfFsgXHRdKiQvZ20sIGtpbmQ6ICJtYXJrZG93bl90YWJsZSIgfSwKICB7IHBhdHRlcm46IC9eWyBcdF0qKD86XHxbIFx0XSopPzo/LXszLH06P1sgXHRdKig/Olx8WyBcdF0qOj8tezMsfTo/WyBcdF0qKStcfD9bIFx0XSokL2dtLCBraW5kOiAibWFya2Rvd25fdGFibGUiIH0sCiAgeyBwYXR0ZXJuOiAvXlsgXHRdKiMoPzpzZXR8c2hvd3xsZXR8aW1wb3J0fGluY2x1ZGUpXGJbXlxuXSokL2dtLCBraW5kOiAidHlwc3RfZGlyZWN0aXZlIiB9LAogIHsgcGF0dGVybjogL2BbXmBcbl0rYC9nLCBraW5kOiAiaW5saW5lX2NvZGUiIH0sCiAgeyBwYXR0ZXJuOiAvXFtbXlxdXG5dezEsMTAwMH1cXVwoW14pIFxuXXsxLDIwMDB9KD86XHMrIlteIl17MCwxMDAwfSIpP1wpL2csIGtpbmQ6ICJtYXJrZG93bl9saW5rIiB9LAogIHsgcGF0dGVybjogL1xiaHR0cHM/OlwvXC9bXlxzKVxdIic+XSsvZ2ksIGtpbmQ6ICJ1cmwiIH0sCiAgeyBwYXR0ZXJuOiAvXGJbQS1aXVtBLVowLTldKig/Ol9bQS1aMC05XSspK1xiL2csIGtpbmQ6ICJjb25zdF9jYXNlIiB9LAogIHsgcGF0dGVybjogL1xicHJvY2Vzc1wuZW52XC5bQS1aYS16X11bQS1aYS16MC05X10qXGIvZywga2luZDogImVudl92YXIiIH0sCiAgeyBwYXR0ZXJuOiAvXCRbQS1aX11bQS1aMC05X10qXGIvZywga2luZDogImVudl92YXIiIH0sCiAgeyBwYXR0ZXJuOiAvXGJcZCsoPzpcLlxkKyl7MSwzfSg/OlstK11bQS1aYS16MC05Li1dKyk/XGIvZywga2luZDogInZlcnNpb24iIH0sCiAgeyBwYXR0ZXJuOiAvXGJbYS16QS1aXyRdW1x3JF0qKD86XC5bYS16QS1aXyRdW1x3JF0qKXsxLDh9KD86XChcKSk/L2csIGtpbmQ6ICJkb3R0ZWRfaWRlbnRpZmllciIgfSwKICB7IHBhdHRlcm46IC9cYltBLVphLXpfJF1bXHckXSpccypcKFteKClcbl0qXCkvZywga2luZDogImZ1bmN0aW9uX2NhbGwiIH0sCiAgewogICAgcGF0dGVybjogLyg/Ol58XHMpKD86XC57MCwyfVwvW0EtWmEtejAtOV9ALi8tXSt8W0EtWmEtel06XFxbQS1aYS16MC05Xy5cXC8tXSspL2csCiAgICBraW5kOiAiZmlsZV9wYXRoIiwKICB9LAogIHsKICAgIHBhdHRlcm46CiAgICAgIC9cYig/OlR5cGVFcnJvcnxSZWZlcmVuY2VFcnJvcnxTeW50YXhFcnJvcnxSYW5nZUVycm9yfFVSSUVycm9yfEV2YWxFcnJvcnxFcnJvcnxFeGNlcHRpb24pOlteXG5dKy9nLAogICAga2luZDogImVycm9yX21lc3NhZ2UiLAogIH0sCl0KCi8qKiDmiorku6PnoIEv5oyH5Luk562J5LiN5Y+v5Y6L57yp5p6E6YCg5pu/5o2i5oiQ5Y2g5L2N56ym77yM6L+U5ZueIHsgdGV4dCwgYmxvY2tzIH3jgIIgKi8KZXhwb3J0IGZ1bmN0aW9uIGV4dHJhY3RQcmVzZXJ2ZWRCbG9ja3ModGV4dCkgewogIGNvbnN0IGJsb2NrcyA9IFtdCiAgY29uc3Qgc2VlZCA9IG5leHRTZW50aW5lbFNlZWQoKQogIGxldCBjb3VudGVyID0gMAoKICBjb25zdCBhZGRCbG9jayA9IChjb250ZW50LCBraW5kKSA9PiB7CiAgICBjb25zdCBwbGFjZWhvbGRlciA9IFNFTlRJTkVMX1BSRUZJWCArICJfIiArIHNlZWQgKyAiXyIgKyBjb3VudGVyICsgIlx1MDAwMCIKICAgIGJsb2Nrcy5wdXNoKHsgcGxhY2Vob2xkZXIsIGNvbnRlbnQsIGtpbmQgfSkKICAgIGNvdW50ZXIrKwogICAgcmV0dXJuIHBsYWNlaG9sZGVyCiAgfQoKICBsZXQgcmVzdWx0ID0gdGV4dAogIHJlc3VsdCA9IGV4dHJhY3RGcm9udG1hdHRlcihyZXN1bHQsIGFkZEJsb2NrKQogIGZvciAoY29uc3QgZW50cnkgb2YgUkVHSU9OX1BBVFRFUk5TKSB7CiAgICByZXN1bHQgPSByZXBsYWNlUGF0dGVybihyZXN1bHQsIGVuc3VyZUdsb2JhbChlbnRyeS5wYXR0ZXJuKSwgZW50cnkua2luZCwgYWRkQmxvY2spCiAgfQogIHJlc3VsdCA9IGV4dHJhY3RGZW5jZWRDb2RlQmxvY2tzKHJlc3VsdCwgYWRkQmxvY2spCiAgZm9yIChjb25zdCBlbnRyeSBvZiBCVUlMVElOX1BBVFRFUk5TKSB7CiAgICByZXN1bHQgPSByZXBsYWNlUGF0dGVybihyZXN1bHQsIGVuc3VyZUdsb2JhbChlbnRyeS5wYXR0ZXJuKSwgZW50cnkua2luZCwgYWRkQmxvY2spCiAgfQogIHJldHVybiB7IHRleHQ6IHJlc3VsdCwgYmxvY2tzIH0KfQoKLyoqIOaKiuWNoOS9jeespui/mOWOn+aIkOWOn+aWh++8iOS4juS4iua4uCByZXN0b3JlUHJlc2VydmVkQmxvY2tzIOetieS7t++8ieOAgiAqLwpleHBvcnQgZnVuY3Rpb24gcmVzdG9yZVByZXNlcnZlZEJsb2Nrcyh0ZXh0LCBibG9ja3MpIHsKICBsZXQgcmVzdWx0ID0gdGV4dAogIGZvciAoY29uc3QgYmxvY2sgb2YgYmxvY2tzKSB7CiAgICByZXN1bHQgPSByZXN1bHQuc3BsaXQoYmxvY2sucGxhY2Vob2xkZXIpLmpvaW4oYmxvY2suY29udGVudCkKICB9CiAgcmV0dXJuIHJlc3VsdAp9CgpleHBvcnQgZnVuY3Rpb24gZmluZEZlbmNlZENvZGVCbG9ja3ModGV4dCkgewogIGNvbnN0IGZvdW5kID0gW10KICBleHRyYWN0RmVuY2VkQ29kZUJsb2Nrcyh0ZXh0LCAoY29udGVudCkgPT4gewogICAgZm91bmQucHVzaChjb250ZW50KQogICAgcmV0dXJuIGNvbnRlbnQKICB9KQogIHJldHVybiBmb3VuZAp9CgovLyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KLy8g5pWj5paHIC8gcHJlc2VydmVkIOaLhuWIhiArIOWkluWPkeWOi+e8qQovLyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCmZ1bmN0aW9uIGVzY2FwZVJlZ0V4cCh2YWx1ZSkgewogIHJldHVybiB2YWx1ZS5yZXBsYWNlKC9bLiorP14ke30oKXxbXF1cXF0vZywgIlxcJCYiKQp9CgpmdW5jdGlvbiBzcGxpdFByb3NlQW5kUHJlc2VydmVkKHRleHQpIHsKICBjb25zdCB7IHRleHQ6IHdpdGhQbGFjZWhvbGRlcnMsIGJsb2NrcyB9ID0gZXh0cmFjdFByZXNlcnZlZEJsb2Nrcyh0ZXh0KQogIGlmIChibG9ja3MubGVuZ3RoID09PSAwKSByZXR1cm4gW3sga2luZDogInByb3NlIiwgdGV4dCB9XQoKICBjb25zdCBwbGFjZWhvbGRlclRvT3JpZ2luYWwgPSBuZXcgTWFwKCkKICBmb3IgKGNvbnN0IGJsb2NrIG9mIGJsb2NrcykgcGxhY2Vob2xkZXJUb09yaWdpbmFsLnNldChibG9jay5wbGFjZWhvbGRlciwgYmxvY2suY29udGVudCkKICBjb25zdCBlc2NhcGVkID0gYmxvY2tzLm1hcCgoYikgPT4gZXNjYXBlUmVnRXhwKGIucGxhY2Vob2xkZXIpKQogIGNvbnN0IHNwbGl0UmUgPSBuZXcgUmVnRXhwKCIoIiArIGVzY2FwZWQuam9pbigifCIpICsgIikiLCAiZyIpCgogIGNvbnN0IHNlZ21lbnRzID0gW10KICBmb3IgKGNvbnN0IHBhcnQgb2Ygd2l0aFBsYWNlaG9sZGVycy5zcGxpdChzcGxpdFJlKSkgewogICAgaWYgKCFwYXJ0KSBjb250aW51ZQogICAgY29uc3Qgb3JpZ2luYWwgPSBwbGFjZWhvbGRlclRvT3JpZ2luYWwuZ2V0KHBhcnQpCiAgICBpZiAob3JpZ2luYWwgIT09IHVuZGVmaW5lZCkgewogICAgICBzZWdtZW50cy5wdXNoKHsga2luZDogInByZXNlcnZlZCIsIHRleHQ6IG9yaWdpbmFsIH0pCiAgICB9IGVsc2UgewogICAgICBzZWdtZW50cy5wdXNoKHsga2luZDogInByb3NlIiwgdGV4dDogcGFydCB9KQogICAgfQogIH0KICByZXR1cm4gc2VnbWVudHMKfQoKLyoqIOW3ruW8giA177ya5oyJIG1heENoYXJzIOWcqOaNouihjOi+ueeVjOWIh+eql+WPo++8jOmBv+WFjeS4gOasoeWkluWPkei/h+mVv+aVo+aWh+OAgiAqLwpmdW5jdGlvbiBzcGxpdEJ5TWF4Q2hhcnModGV4dCwgbWF4Q2hhcnMpIHsKICBpZiAobWF4Q2hhcnMgPD0gMCB8fCB0ZXh0Lmxlbmd0aCA8PSBtYXhDaGFycykgcmV0dXJuIFt0ZXh0XQogIGNvbnN0IGNodW5rcyA9IFtdCiAgbGV0IHJlc3QgPSB0ZXh0CiAgd2hpbGUgKHJlc3QubGVuZ3RoID4gbWF4Q2hhcnMpIHsKICAgIGxldCBjdXQgPSByZXN0Lmxhc3RJbmRleE9mKCJcbiIsIG1heENoYXJzKQogICAgaWYgKGN1dCA8PSAwKSBjdXQgPSBtYXhDaGFycwogICAgY2h1bmtzLnB1c2gocmVzdC5zbGljZSgwLCBjdXQpKQogICAgcmVzdCA9IHJlc3Quc2xpY2UoY3V0KQogIH0KICBpZiAocmVzdC5sZW5ndGggPiAwKSBjaHVua3MucHVzaChyZXN0KQogIHJldHVybiBjaHVua3MKfQoKYXN5bmMgZnVuY3Rpb24gY29tcHJlc3NQcm9zZVRleHQodGV4dCwgYmFja2VuZCwgb3B0cykgewogIGlmICghdGV4dC50cmltKCkpIHJldHVybiB7IHRleHQsIGRpZENvbXByZXNzOiBmYWxzZSB9CiAgdHJ5IHsKICAgIGNvbnN0IGNvbXByZXNzZWQgPSBhd2FpdCBiYWNrZW5kKHRleHQsIG9wdHMpCiAgICAvLyDkuIrmuLggbGluZSAxMTDvvJrlj6rmnInov5Tlm57lrZfnrKbkuLLkuJTnoa7lrp7mm7Tnn63miY3nrpfljovnvKnmiJDlip/jgIIKICAgIGlmICh0eXBlb2YgY29tcHJlc3NlZCA9PT0gInN0cmluZyIgJiYgY29tcHJlc3NlZC5sZW5ndGggPCB0ZXh0Lmxlbmd0aCkgewogICAgICByZXR1cm4geyB0ZXh0OiBjb21wcmVzc2VkLCBkaWRDb21wcmVzczogdHJ1ZSB9CiAgICB9CiAgICByZXR1cm4geyB0ZXh0LCBkaWRDb21wcmVzczogZmFsc2UgfQogIH0gY2F0Y2ggewogICAgcmV0dXJuIHsgdGV4dCwgZGlkQ29tcHJlc3M6IGZhbHNlIH0KICB9Cn0KCmFzeW5jIGZ1bmN0aW9uIGNvbXByZXNzTWVzc2FnZVRleHQodGV4dCwgYmFja2VuZCwgb3B0cywgbWF4Q2hhcnMpIHsKICBjb25zdCBzZWdtZW50cyA9IHNwbGl0UHJvc2VBbmRQcmVzZXJ2ZWQodGV4dCkKICBsZXQgYW55Q29tcHJlc3NlZCA9IGZhbHNlCiAgY29uc3QgcGFydHMgPSBbXQogIGZvciAoY29uc3Qgc2VnIG9mIHNlZ21lbnRzKSB7CiAgICBpZiAoc2VnLmtpbmQgPT09ICJwcmVzZXJ2ZWQiKSB7CiAgICAgIC8vIOS7o+eggSAvIOaMh+S7pOS/oeWwgSAvIOi3r+W+hO+8muWOn+agt+aLvOWbnu+8jOeJqeeQhuS4iuS4jeWkluWPkeOAggogICAgICBwYXJ0cy5wdXNoKHNlZy50ZXh0KQogICAgICBjb250aW51ZQogICAgfQogICAgbGV0IHByb3NlT3V0ID0gIiIKICAgIGZvciAoY29uc3QgY2h1bmsgb2Ygc3BsaXRCeU1heENoYXJzKHNlZy50ZXh0LCBtYXhDaGFycykpIHsKICAgICAgY29uc3QgciA9IGF3YWl0IGNvbXByZXNzUHJvc2VUZXh0KGNodW5rLCBiYWNrZW5kLCBvcHRzKQogICAgICBwcm9zZU91dCArPSByLnRleHQKICAgICAgaWYgKHIuZGlkQ29tcHJlc3MpIGFueUNvbXByZXNzZWQgPSB0cnVlCiAgICB9CiAgICBwYXJ0cy5wdXNoKHByb3NlT3V0KQogIH0KICByZXR1cm4geyB0ZXh0OiBwYXJ0cy5qb2luKCIiKSwgZGlkQ29tcHJlc3M6IGFueUNvbXByZXNzZWQgfQp9CgovLyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KLy8g5Lit6Ze05Lu25YWl5Y+jCi8vIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIGFwcGx5KGJvZHksIGN0eCwgY2ZnKSB7CiAgY29uc3QgcmVzdWx0ID0gYXdhaXQgYXBwbHlBc3luYyhib2R5LCBjdHgsIGNmZykKICByZXR1cm4gcmVzdWx0LmNvbXByZXNzZWQgPT09IHRydWUKfQoKLyoqCiAqIOW8guatpei3r+W+hO+8iOS4iua4uCBhcHBseUFzeW5jIOeahOWvueW6lOeJqe+8ie+8muazqOWFpSBiYWNrZW5kIOWQjuaJjeS8muecn+ato+WOi+e8qeaVo+aWh+OAggogKiDov5Tlm54geyBib2R5LCBjb21wcmVzc2VkLCBzdGF0cyB977yb5Lu75L2V5byC5bi46YO95Y6f5qC36L+U5ZueIGJvZHkg5LiUIGNvbXByZXNzZWQ6ZmFsc2XjgIIKICovCmV4cG9ydCBhc3luYyBmdW5jdGlvbiBhcHBseUFzeW5jKGJvZHksIGN0eCwgY2ZnKSB7CiAgY29uc3QgdW50b3VjaGVkID0geyBib2R5LCBjb21wcmVzc2VkOiBmYWxzZSwgc3RhdHM6IG51bGwgfQogIHRyeSB7CiAgICBpZiAoIWJvZHkgfHwgdHlwZW9mIGJvZHkgIT09ICJvYmplY3QiKSByZXR1cm4gdW50b3VjaGVkCgogICAgLy8g5beu5byCIDbvvJrpnaLmnb/msqHmnIkgZW5hYmxlZCDlvIDlhbPvvIwi5rOo5YWl5LqGIGJhY2tlbmQiIOWNs+inhuS4uuWQr+eUqOOAggogICAgaWYgKF9iYWNrZW5kID09PSBudWxsKSByZXR1cm4gdW50b3VjaGVkCgogICAgY29uc3QgdmlldyA9IGNvbnZlcnNhdGlvblZpZXcoYm9keSwgY3R4ICYmIGN0eC5wcm90b2NvbCkKICAgIGlmICghdmlldykgcmV0dXJuIHVudG91Y2hlZAogICAgY29uc3Qgc2VnbWVudHMgPSB2aWV3LnNlZ21lbnRzCiAgICBpZiAoIUFycmF5LmlzQXJyYXkoc2VnbWVudHMpIHx8IHNlZ21lbnRzLmxlbmd0aCA9PT0gMCkgcmV0dXJuIHVudG91Y2hlZAoKICAgIGNvbnN0IG1heENoYXJzID0gY2xhbXBJbnQoCiAgICAgIGNmZyA/IGNmZy5tYXhDaGFycyA6IHVuZGVmaW5lZCwKICAgICAgREVGQVVMVF9NQVhfQ0hBUlMsCiAgICAgIE1BWF9DSEFSU19GTE9PUiwKICAgICAgTUFYX0NIQVJTX0NFSUwKICAgICkKCiAgICAvLyDkuIrmuLggbWluVG9rZW5zIOmXqOanm++8mumdniBzeXN0ZW0g5paH5pys5oC7IHRva2VuIOS4jeWIsOmXqOanm+WwseaVtOS9k+i3s+i/h+OAggogICAgbGV0IG5vblN5c3RlbVRleHQgPSAiIgogICAgZm9yIChjb25zdCBzZWcgb2Ygc2VnbWVudHMpIHsKICAgICAgaWYgKHNlZy5yb2xlID09PSAic3lzdGVtIikgY29udGludWUKICAgICAgaWYgKHR5cGVvZiBzZWcudGV4dCA9PT0gInN0cmluZyIpIG5vblN5c3RlbVRleHQgKz0gc2VnLnRleHQgKyAiXG4iCiAgICB9CiAgICBpZiAoREVGQVVMVF9NSU5fVE9LRU5TID4gMCAmJiBlc3RpbWF0ZVRva2Vucyhub25TeXN0ZW1UZXh0KSA8IERFRkFVTFRfTUlOX1RPS0VOUykgewogICAgICByZXR1cm4gdW50b3VjaGVkCiAgICB9CgogICAgY29uc3QgYmFja2VuZCA9IHJlc29sdmVCYWNrZW5kKCkKICBjb25zdCBiYXNlVXJsID0gdHlwZW9mIGNmZz8uYmFzZVVybCA9PT0gInN0cmluZyIgPyBjZmcuYmFzZVVybCA6IHVuZGVmaW5lZAogIGNvbnN0IHRpbWVvdXRNcyA9IHR5cGVvZiBjZmc/LnRpbWVvdXRNcyA9PT0gIm51bWJlciIgPyBjZmcudGltZW91dE1zIDogdW5kZWZpbmVkCiAgY29uc3QgYmFja2VuZE9wdHMgPSB7IG1vZGVsOiBjZmc/Lm1vZGVsIHx8IHVuZGVmaW5lZCwgYmFzZVVybCwgdGltZW91dE1zLCBjb21wcmVzc2lvblJhdGU6IHR5cGVvZiBjZmc/LmNvbXByZXNzaW9uUmF0ZSA9PT0gIm51bWJlciIgPyBjZmcuY29tcHJlc3Npb25SYXRlIDogREVGQVVMVF9DT01QUkVTU0lPTl9SQVRFIH0KCiAgICBsZXQgY29tcHJlc3NlZENvdW50ID0gMAogICAgZm9yIChjb25zdCBzZWcgb2Ygc2VnbWVudHMpIHsKICAgICAgdHJ5IHsKICAgICAgICBpZiAoc2VnLnJvbGUgPT09ICJzeXN0ZW0iKSBjb250aW51ZQogICAgICAgIGNvbnN0IHRleHQgPSBzZWcudGV4dAogICAgICAgIGlmICh0eXBlb2YgdGV4dCAhPT0gInN0cmluZyIgfHwgdGV4dC5sZW5ndGggPT09IDApIGNvbnRpbnVlCiAgICAgICAgY29uc3QgciA9IGF3YWl0IGNvbXByZXNzTWVzc2FnZVRleHQodGV4dCwgYmFja2VuZCwgYmFja2VuZE9wdHMsIG1heENoYXJzKQogICAgICAgIGlmICghci5kaWRDb21wcmVzcykgY29udGludWUKICAgICAgICBpZiAoci50ZXh0Lmxlbmd0aCA+PSB0ZXh0Lmxlbmd0aCkgY29udGludWUKICAgICAgICBzZWcuc2V0KHIudGV4dCkKICAgICAgICBjb21wcmVzc2VkQ291bnQrKwogICAgICB9IGNhdGNoIHsKICAgICAgICAvLyDljZXniYfmrrXlpLHotKXkuI3lvbHlk43lhbblroPniYfmrrUKICAgICAgfQogICAgfQoKICAgIGlmIChjb21wcmVzc2VkQ291bnQgPT09IDApIHJldHVybiB1bnRvdWNoZWQKICAgIHJldHVybiB7IGJvZHksIGNvbXByZXNzZWQ6IHRydWUsIHN0YXRzOiBudWxsIH0KICB9IGNhdGNoIHsKICAgIHJldHVybiB1bnRvdWNoZWQKICB9Cn0K
+// engines/llm.js — LLM Compressor：用外部模型压缩散文段（占位实现，默认不可用）。
+//
+// 来源（OmniRoute@ff679ab86e0113a009d8aeeeee464139bd090874 open-sse/services/compression/）：
+//   - engines\llm\index.ts  (346 行)  LlmCompressorBackend 契约 / setLlmCompressorBackend /
+//                                     processMessages / minTokens 门槛 / LLM_COMPRESSOR_SCHEMA
+//   - preservation.ts       (253 行)  extractPreservedBlocks 等墓碑化工具（见下）
+//
+// ── 这是一个**有意的占位实现，不是漏搬** ─────────────────────────────────────
+// 上游 llm/index.ts 头部注释写得很清楚：DEFAULT backend 是 no-op（`const noopBackend =
+// async (text) => text`），开箱即用**绝不改动 payload**，永远返回 `compressed:false`；
+// 真正的模型要由运维通过 `setLlmCompressorBackend()` 注入。本插件（moejs 运行时）没有
+// fetch、没有外部网络、也没有 chat-completion 后端，因此这里把「无 backend = no-op」这条
+// 上游语义原样保留，并把 `available` 标成 false：面板上会显示「需要外部模型后端」并置灰。
+// 契约面（backend 类型、注入缝、配置校验、墓碑化、fail-open）全部照搬，将来有人接后端
+// 只需要调一次 setLlmCompressorBackend，不必重写本文件。
+//
+// ── 与上游的差异（仅环境适配）───────────────────────────────────────────────
+//   1. 遍历方式：上游直接遍历 body.messages 并处理 string / content-block 两种形状；这里走
+//      adapter.conversationView(body, protocol) 的 segments（四协议）。system 段一律不动
+//      （上游 line 147 同）。
+//   2. 同步 apply 是 pass-through（上游 line 269-271：`return { body, compressed:false }`）。
+//      中间件契约只认布尔，且 Promise 结果同步拿不到，因此 apply 恒返回 false；真正的工作
+//      在导出的 `applyAsync()` 里（与上游 applyAsync 一一对应）。
+//   3. preservation.ts 的随机 sentinel 改成模块内单调计数器：moejs 没有 crypto，而
+//      Math.random 会让同一输入产生不同占位符。占位符不会外泄（返回前全部还原），所以输出
+//      与上游一致，且对 prompt cache 更稳。墓碑化的模式表逐字搬（system-reminder /
+//      instructions 信封、frontmatter、围栏代码、行内代码、URL、文件路径、错误行、环境变量、
+//      CONST_CASE、版本号、函数调用、点号标识符、markdown 标题/表格/链接、数学块、typst）。
+//   4. performance.now() / createCompressionStats 不移植（中间件契约只返回布尔，统计由
+//      stats-writer.js 负责）；estimateCompressionTokens 内联为 ceil(len/4)（上游 stats.ts）。
+//   5. 配置面：上游 schema 是 {enabled, model, minTokens, compressionRate}，面板
+//      （catalog.js）只暴露 {maxChars}。映射：minTokens 固定 2000（上游默认，门槛照旧生效）、
+//      compressionRate 固定 0.5、model 固定 ""；maxChars 作为「单个散文窗口外发上限」——
+//      超过 maxChars 的散文按换行边界切成多个窗口分别外发再拼回（上游把整段一次外发，
+//      这里加窗口是为了守住面板语义；不改动任何 preserved 段）。
+//   6. 「是否启用」：上游要求 stepConfig.enabled === true；面板没有 enabled 开关，本移植把
+//      「注入了 backend」当作启用信号，两者都必须满足才会真正压缩。
+//   7. 零依赖：只用相对 import，无 Node API、无 fetch、无定时器；apply 与 applyAsync 全程
+//      try/catch fail-open。
+
+import { conversationView } from "../adapter.js"
+
+// ─── 元数据（catalog.js 是面板真源；stackPriority 取源码明确值 38）──────────────
+export const id = "llm"
+export const label = "LLM Compressor"
+export const why = "用一个 LLM 压缩散文（需要外部模型后端，本插件内无法提供，因此默认不可用）。"
+export const lossy = true
+export const cacheImpact = "high"
+
+export const defaultOn = false
+export const stackPriority = 38
+export const isSingleMode = false
+export const levels = undefined
+// 没有显式配置后端时不可用；配置由可信 Bun 宿主注入，moejs 不做网络请求。
+export const available = true
+
+// configSchema 逐字取自 catalog.js:269-287。上游 LLM_COMPRESSOR_SCHEMA 的
+// {enabled, model, minTokens, compressionRate} 差异见文件头第 5 条。
+export const configSchema = [
+  {
+    key: "model",
+    type: "select",
+    label: "后端模型",
+    description: "仅在可信 Bun 宿主中使用；选择现有网关的 provider/model。未配置时 no-op。",
+    defaultValue: "",
+    options: [],
+  },
+  {
+    key: "baseUrl",
+    type: "select",
+    label: "后端地址",
+    description: "OpenAI 兼容 /v1 地址，默认本机 Magpie；不要在这里粘贴密钥。",
+    defaultValue: "http://127.0.0.1:3425/v1",
+    options: [{ value: "http://127.0.0.1:3425/v1", label: "本机 Magpie" }],
+  },
+  {
+    key: "timeoutMs",
+    type: "number",
+    label: "单次后端超时毫秒",
+    description: "超时后该段保持原文，不阻塞正常请求。",
+    defaultValue: 12000,
+    min: 1000,
+    max: 30000,
+  },
+  {
+    key: "maxChars",
+    type: "number",
+    label: "单段上限",
+    description: "交给后端压缩的文本长度上限",
+    defaultValue: 4000,
+    min: 500,
+    max: 20000,
+  },
+]
+
+// ─── backend 抽象（上游 index.ts:37-66 逐字语义）──────────────────────────────
+// LlmCompressorBackend = (text, opts?: { model?, compressionRate? }) => Promise<string>
+const noopBackend = async (text) => text
+
+/** 模块级可注入 backend（null = 用 no-op 默认值）。 */
+let _backend = null
+
+/** 覆盖 backend —— 供测试与将来接真模型使用。传 null 恢复 no-op。 */
+export function setLlmCompressorBackend(b) {
+  _backend = typeof b === "function" ? b : null
+}
+
+export function getLlmCompressorBackend() {
+  return _backend
+}
+
+export function hasLlmCompressorBackend() {
+  return _backend !== null
+}
+
+function resolveBackend() {
+  return _backend === null ? noopBackend : _backend
+}
+
+const DEFAULT_MIN_TOKENS = 2000
+const DEFAULT_COMPRESSION_RATE = 0.5
+const DEFAULT_MAX_CHARS = 4000
+const MAX_CHARS_FLOOR = 500
+const MAX_CHARS_CEIL = 20000
+
+function estimateTokens(text) {
+  return Math.ceil(text.length / 4)
+}
+
+function clampInt(value, fallback, min, max) {
+  const n = typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : fallback
+  if (n < min) return min
+  if (n > max) return max
+  return n
+}
+
+// ---------------------------------------------------------------------------
+// 墓碑化（preservation.ts 移植）：代码 / 指令信封 / 路径 / 错误行等绝不外发。
+// ---------------------------------------------------------------------------
+
+const SENTINEL_PREFIX = "\u0000MAGPIE_LLM"
+
+// 差异 3：上游用 crypto.getRandomValues 生成随机种子；这里用模块内单调计数器，
+// 保证同一进程内可复现、且不依赖 crypto / Math.random。
+let sentinelCounter = 0
+
+function nextSentinelSeed() {
+  sentinelCounter = (sentinelCounter + 1) >>> 0
+  return "d" + sentinelCounter
+}
+
+function ensureGlobal(pattern) {
+  const flags = pattern.flags.indexOf("g") === -1 ? pattern.flags + "g" : pattern.flags
+  return new RegExp(pattern.source, flags)
+}
+
+function replacePattern(text, pattern, kind, addBlock) {
+  pattern.lastIndex = 0
+  return text.replace(pattern, (match) => {
+    if (!match) return match
+    if (match.indexOf(SENTINEL_PREFIX) !== -1) return match
+    return addBlock(match, kind)
+  })
+}
+
+function extractFrontmatter(text, addBlock) {
+  if (text.indexOf("---\n") !== 0) return text
+  const close = text.indexOf("\n---", 4)
+  if (close === -1) return text
+  const closeEnd = text.indexOf("\n", close + 4)
+  const end = closeEnd === -1 ? text.length : closeEnd + 1
+  return addBlock(text.slice(0, end), "frontmatter") + text.slice(end)
+}
+
+function extractFencedCodeBlocks(text, addBlock) {
+  const lines = text.match(/[^\n]*(?:\n|$)/g) || [text]
+  let output = ""
+  let i = 0
+
+  while (i < lines.length) {
+    const line = lines[i]
+    if (line === "" && i === lines.length - 1) break
+    const opening = line.match(/^([ \t]{0,3})(`{3,}|~{3,})[^\n]*(?:\n|$)/)
+    if (!opening) {
+      output += line
+      i++
+      continue
+    }
+
+    const fence = opening[2]
+    const fenceChar = fence[0]
+    const minLen = fence.length
+    let block = line
+    let j = i + 1
+    let closed = false
+
+    while (j < lines.length) {
+      const candidate = lines[j]
+      block += candidate
+      const closeMatch = candidate.match(/^([ \t]{0,3})(`{3,}|~{3,})\s*(?:\n|$)/)
+      if (closeMatch && closeMatch[2][0] === fenceChar && closeMatch[2].length >= minLen) {
+        closed = true
+        break
+      }
+      j++
+    }
+
+    if (!closed) {
+      output += line
+      i++
+      continue
+    }
+
+    output += addBlock(block, "fenced_code")
+    i = j + 1
+  }
+
+  return output
+}
+
+/** 整段区域模式（指令信封）先跑：它们内部可能再被围栏/行内模式命中，sentinel 会被跳过。 */
+const REGION_PATTERNS = [
+  { pattern: /<system-reminder>[\s\S]*?<\/system-reminder>/g, kind: "system_instruction" },
+  { pattern: /<instructions?>[\s\S]*?<\/instructions?>/g, kind: "system_instruction" },
+  {
+    pattern: /<project[- ]instructions?>[\s\S]*?<\/project[- ]instructions?>/g,
+    kind: "system_instruction",
+  },
+]
+
+/** 行内/块级内置模式表（逐字搬 preservation.ts:111-145）。 */
+const BUILTIN_PATTERNS = [
+  { pattern: /\$\$[\s\S]*?\$\$/g, kind: "math_block" },
+  { pattern: /\\\[[\s\S]*?\\\]/g, kind: "math_block" },
+  {
+    pattern: /(?<!\$)\$(?![\s$\d])(?:\\.|[^$\n\\]){1,160}?(?<!\s)\$(?!\$)/g,
+    kind: "math_inline",
+  },
+  { pattern: /\\begin\{[A-Za-z*]+\}[\s\S]*?\\end\{[A-Za-z*]+\}/g, kind: "latex_block" },
+  { pattern: /^#{1,6}\s+.+$/gm, kind: "markdown_heading" },
+  { pattern: /^[ \t]*\|[^\n]*\|[ \t]*$/gm, kind: "markdown_table" },
+  { pattern: /^[ \t]*(?:\|[ \t]*)?:?-{3,}:?[ \t]*(?:\|[ \t]*:?-{3,}:?[ \t]*)+\|?[ \t]*$/gm, kind: "markdown_table" },
+  { pattern: /^[ \t]*#(?:set|show|let|import|include)\b[^\n]*$/gm, kind: "typst_directive" },
+  { pattern: /`[^`\n]+`/g, kind: "inline_code" },
+  { pattern: /\[[^\]\n]{1,1000}\]\([^) \n]{1,2000}(?:\s+"[^"]{0,1000}")?\)/g, kind: "markdown_link" },
+  { pattern: /\bhttps?:\/\/[^\s)\]"'>]+/gi, kind: "url" },
+  { pattern: /\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g, kind: "const_case" },
+  { pattern: /\bprocess\.env\.[A-Za-z_][A-Za-z0-9_]*\b/g, kind: "env_var" },
+  { pattern: /\$[A-Z_][A-Z0-9_]*\b/g, kind: "env_var" },
+  { pattern: /\b\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?\b/g, kind: "version" },
+  { pattern: /\b[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*){1,8}(?:\(\))?/g, kind: "dotted_identifier" },
+  { pattern: /\b[A-Za-z_$][\w$]*\s*\([^()\n]*\)/g, kind: "function_call" },
+  {
+    pattern: /(?:^|\s)(?:\.{0,2}\/[A-Za-z0-9_@./-]+|[A-Za-z]:\\[A-Za-z0-9_.\\/-]+)/g,
+    kind: "file_path",
+  },
+  {
+    pattern:
+      /\b(?:TypeError|ReferenceError|SyntaxError|RangeError|URIError|EvalError|Error|Exception):[^\n]+/g,
+    kind: "error_message",
+  },
+]
+
+/** 把代码/指令等不可压缩构造替换成占位符，返回 { text, blocks }。 */
+export function extractPreservedBlocks(text) {
+  const blocks = []
+  const seed = nextSentinelSeed()
+  let counter = 0
+
+  const addBlock = (content, kind) => {
+    const placeholder = SENTINEL_PREFIX + "_" + seed + "_" + counter + "\u0000"
+    blocks.push({ placeholder, content, kind })
+    counter++
+    return placeholder
+  }
+
+  let result = text
+  result = extractFrontmatter(result, addBlock)
+  for (const entry of REGION_PATTERNS) {
+    result = replacePattern(result, ensureGlobal(entry.pattern), entry.kind, addBlock)
+  }
+  result = extractFencedCodeBlocks(result, addBlock)
+  for (const entry of BUILTIN_PATTERNS) {
+    result = replacePattern(result, ensureGlobal(entry.pattern), entry.kind, addBlock)
+  }
+  return { text: result, blocks }
+}
+
+/** 把占位符还原成原文（与上游 restorePreservedBlocks 等价）。 */
+export function restorePreservedBlocks(text, blocks) {
+  let result = text
+  for (const block of blocks) {
+    result = result.split(block.placeholder).join(block.content)
+  }
+  return result
+}
+
+export function findFencedCodeBlocks(text) {
+  const found = []
+  extractFencedCodeBlocks(text, (content) => {
+    found.push(content)
+    return content
+  })
+  return found
+}
+
+// ---------------------------------------------------------------------------
+// 散文 / preserved 拆分 + 外发压缩
+// ---------------------------------------------------------------------------
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function splitProseAndPreserved(text) {
+  const { text: withPlaceholders, blocks } = extractPreservedBlocks(text)
+  if (blocks.length === 0) return [{ kind: "prose", text }]
+
+  const placeholderToOriginal = new Map()
+  for (const block of blocks) placeholderToOriginal.set(block.placeholder, block.content)
+  const escaped = blocks.map((b) => escapeRegExp(b.placeholder))
+  const splitRe = new RegExp("(" + escaped.join("|") + ")", "g")
+
+  const segments = []
+  for (const part of withPlaceholders.split(splitRe)) {
+    if (!part) continue
+    const original = placeholderToOriginal.get(part)
+    if (original !== undefined) {
+      segments.push({ kind: "preserved", text: original })
+    } else {
+      segments.push({ kind: "prose", text: part })
+    }
+  }
+  return segments
+}
+
+/** 差异 5：按 maxChars 在换行边界切窗口，避免一次外发过长散文。 */
+function splitByMaxChars(text, maxChars) {
+  if (maxChars <= 0 || text.length <= maxChars) return [text]
+  const chunks = []
+  let rest = text
+  while (rest.length > maxChars) {
+    let cut = rest.lastIndexOf("\n", maxChars)
+    if (cut <= 0) cut = maxChars
+    chunks.push(rest.slice(0, cut))
+    rest = rest.slice(cut)
+  }
+  if (rest.length > 0) chunks.push(rest)
+  return chunks
+}
+
+async function compressProseText(text, backend, opts) {
+  if (!text.trim()) return { text, didCompress: false }
+  try {
+    const compressed = await backend(text, opts)
+    // 上游 line 110：只有返回字符串且确实更短才算压缩成功。
+    if (typeof compressed === "string" && compressed.length < text.length) {
+      return { text: compressed, didCompress: true }
+    }
+    return { text, didCompress: false }
+  } catch {
+    return { text, didCompress: false }
+  }
+}
+
+async function compressMessageText(text, backend, opts, maxChars) {
+  const segments = splitProseAndPreserved(text)
+  let anyCompressed = false
+  const parts = []
+  for (const seg of segments) {
+    if (seg.kind === "preserved") {
+      // 代码 / 指令信封 / 路径：原样拼回，物理上不外发。
+      parts.push(seg.text)
+      continue
+    }
+    let proseOut = ""
+    for (const chunk of splitByMaxChars(seg.text, maxChars)) {
+      const r = await compressProseText(chunk, backend, opts)
+      proseOut += r.text
+      if (r.didCompress) anyCompressed = true
+    }
+    parts.push(proseOut)
+  }
+  return { text: parts.join(""), didCompress: anyCompressed }
+}
+
+// ---------------------------------------------------------------------------
+// 中间件入口
+// ---------------------------------------------------------------------------
+
+export async function apply(body, ctx, cfg) {
+  const result = await applyAsync(body, ctx, cfg)
+  return result.compressed === true
+}
+
+/**
+ * 异步路径（上游 applyAsync 的对应物）：注入 backend 后才会真正压缩散文。
+ * 返回 { body, compressed, stats }；任何异常都原样返回 body 且 compressed:false。
+ */
+export async function applyAsync(body, ctx, cfg) {
+  const untouched = { body, compressed: false, stats: null }
+  try {
+    if (!body || typeof body !== "object") return untouched
+
+    // 差异 6：面板没有 enabled 开关，"注入了 backend" 即视为启用。
+    if (_backend === null) return untouched
+
+    const view = conversationView(body, ctx && ctx.protocol)
+    if (!view) return untouched
+    const segments = view.segments
+    if (!Array.isArray(segments) || segments.length === 0) return untouched
+
+    const maxChars = clampInt(
+      cfg ? cfg.maxChars : undefined,
+      DEFAULT_MAX_CHARS,
+      MAX_CHARS_FLOOR,
+      MAX_CHARS_CEIL
+    )
+
+    // 上游 minTokens 门槛：非 system 文本总 token 不到门槛就整体跳过。
+    let nonSystemText = ""
+    for (const seg of segments) {
+      if (seg.role === "system") continue
+      if (typeof seg.text === "string") nonSystemText += seg.text + "\n"
+    }
+    if (DEFAULT_MIN_TOKENS > 0 && estimateTokens(nonSystemText) < DEFAULT_MIN_TOKENS) {
+      return untouched
+    }
+
+    const backend = resolveBackend()
+  const baseUrl = typeof cfg?.baseUrl === "string" ? cfg.baseUrl : undefined
+  const timeoutMs = typeof cfg?.timeoutMs === "number" ? cfg.timeoutMs : undefined
+  const backendOpts = { model: cfg?.model || undefined, baseUrl, timeoutMs, compressionRate: typeof cfg?.compressionRate === "number" ? cfg.compressionRate : DEFAULT_COMPRESSION_RATE }
+
+    let compressedCount = 0
+    for (const seg of segments) {
+      try {
+        if (seg.role === "system") continue
+        const text = seg.text
+        if (typeof text !== "string" || text.length === 0) continue
+        const r = await compressMessageText(text, backend, backendOpts, maxChars)
+        if (!r.didCompress) continue
+        if (r.text.length >= text.length) continue
+        seg.set(r.text)
+        compressedCount++
+      } catch {
+        // 单片段失败不影响其它片段
+      }
+    }
+
+    if (compressedCount === 0) return untouched
+    return { body, compressed: true, stats: null }
+  } catch {
+    return untouched
+  }
+}
