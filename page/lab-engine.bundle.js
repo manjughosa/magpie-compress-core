@@ -9210,8 +9210,8 @@ ${GCF_FENCE_CLOSE}`;
         { key: "maxToolLength", type: "number", label: "\u5DE5\u5177\u8F93\u51FA\u4E0A\u9650", description: "\u8D85\u8FC7\u8FD9\u4E2A\u5B57\u7B26\u6570\u7684\u5DE5\u5177\u8F93\u51FA\u4F1A\u88AB\u622A\u65AD", defaultValue: 2e3, min: 200, max: 2e4 }
       ],
       label: "Lite Cleanup",
-      description: "Safest mode (~15% savings, <1ms latency): whitespace/dedup/formatting cleanup only, zero semantic change. Always safe to leave on.",
-      why: "\u53EA\u6E05\u7A7A\u767D\u3001\u91CD\u590D\u884C\u548C\u683C\u5F0F\uFF0C\u96F6\u8BED\u4E49\u6539\u52A8\uFF0C\u6C38\u8FDC\u53EF\u4EE5\u5F00\u7740\uFF08\u7EA6 15%\uFF09\u3002",
+      description: "Safest mode (~15% savings, <1ms latency): whitespace/dedup/formatting cleanup only, zero semantic change. Always safe to leave on. Turning on 'Compress tool results' makes it lossy: tool output over maxToolLength is cut to its head and marked truncated.",
+      why: "\u53EA\u6E05\u7A7A\u767D\u3001\u91CD\u590D\u884C\u548C\u683C\u5F0F\uFF0C\u96F6\u8BED\u4E49\u6539\u52A8\uFF0C\u6C38\u8FDC\u53EF\u4EE5\u5F00\u7740\uFF08\u7EA6 15%\uFF09\u3002\u5F00\u300C\u538B\u7F29\u5DE5\u5177\u8F93\u51FA\u300D\u540E\u4E0D\u518D\u65E0\u635F\uFF1A\u8D85\u8FC7 maxToolLength \u7684\u5DE5\u5177\u8F93\u51FA\u53EA\u7559\u5934\u90E8\u5E76\u6807\u622A\u65AD\u3002",
       stackPriority: 5,
       lossy: false,
       cacheImpact: "none",

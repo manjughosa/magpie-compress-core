@@ -87,8 +87,8 @@ export const ENGINES = [
     ],
     label: "Lite Cleanup",
     description:
-      "Safest mode (~15% savings, <1ms latency): whitespace/dedup/formatting cleanup only, zero semantic change. Always safe to leave on.",
-    why: "只清空白、重复行和格式，零语义改动，永远可以开着（约 15%）。",
+      "Safest mode (~15% savings, <1ms latency): whitespace/dedup/formatting cleanup only, zero semantic change. Always safe to leave on. Turning on 'Compress tool results' makes it lossy: tool output over maxToolLength is cut to its head and marked truncated.",
+    why: "只清空白、重复行和格式，零语义改动，永远可以开着（约 15%）。开「压缩工具输出」后不再无损：超过 maxToolLength 的工具输出只留头部并标截断。",
     stackPriority: 5,
     lossy: false,
     cacheImpact: "none",
