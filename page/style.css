@@ -193,6 +193,18 @@ body.panel { padding: 0 16px 20px; }
   color: var(--fg);
 }
 
+/* 标题行右侧的清除按钮：会话快照与请求日志各一个，两段式确认在 JS 里。 */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.section-head .section-title { margin: 0; }
+.section-actions { display: flex; gap: 6px; }
+.section-actions .save-btn { margin-left: 0; }
+
 .session-list {
   background: var(--card);
   border: 1px solid var(--line);

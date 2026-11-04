@@ -40,6 +40,8 @@ export const suites = [
   "page-save-flow.test.mjs",
   "config-contract.test.mjs",
   "performance.test.mjs",
+  // 清空日志会把共享 stats-writer 的累计计数归零，放最后，别让前面的套件看到被清零的数。
+  "telemetry-command.test.mjs",
 ]
 
 /**

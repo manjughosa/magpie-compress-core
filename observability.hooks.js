@@ -9,7 +9,7 @@ import { conversationView } from "./adapter.js"
 import { persist, redact, redactSecrets } from "./telemetry-store.js"
 import { record as recordCompression, flush as flushStats, snapshot as statsSnapshot } from "./stats-writer.js"
 import { saveCapture, refreshCapturesIndex } from "./capture-store.js"
-import { processCaptureCommand, processCcrCommand, processLabCommand, captureCommandId } from "./options-commands.js"
+import { processCaptureCommand, processCcrCommand, processLabCommand, processTelemetryCommand, captureCommandId } from "./options-commands.js"
 import { createPersistentCcrStore } from "./ccr-store-file.js"
 import { configureLlmBackend } from "./llm-backend.js"
 
@@ -57,6 +57,7 @@ export async function onRequest(body, ctx) {
       }
       await processLabCommand(ctx.options)
       await processCaptureCommand(ctx.options)
+      await processTelemetryCommand(ctx.options)
       await processCcrCommand(ctx.options)
     }
     // Unknown / non-local origins must not export request-derived data.

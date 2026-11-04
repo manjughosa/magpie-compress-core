@@ -1,5 +1,5 @@
 // Persistent telemetry store. Runs only in the trusted Bun/Node host, never moejs.
-import { appendFile, mkdir, readFile, rename, stat } from "node:fs/promises"
+import { appendFile, mkdir, readFile, rename, rm, stat } from "node:fs/promises"
 import { join } from "node:path"
 import { homedir } from "node:os"
 
@@ -25,6 +25,16 @@ async function rotateIfGrown(wrote) {
   if (logBytes < MAX_LOG_BYTES) return
   await rename(file(), file() + ".1").catch(() => {})
   logBytes = 0
+}
+
+// The page's "clear logs" command: both generations go, and the byte counter
+// starts over so the next write measures the file again instead of trusting a
+// size that no longer exists.
+export async function resetRequestLog() {
+  await queue.catch(() => {})
+  await rm(file(), { force: true }).catch(() => {})
+  await rm(file() + ".1", { force: true }).catch(() => {})
+  logBytes = -1
 }
 
 export function persist(event) {

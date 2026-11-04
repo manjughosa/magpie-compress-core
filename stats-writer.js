@@ -58,6 +58,23 @@ let inFlight = false
 // stored list instead of merging into it.
 let capturesCleared = false
 
+// Set by the page's "clear logs" command: the next flush starts the running
+// totals over instead of adding this process's increment to what is on disk.
+// The capture list is a different command's business and stays untouched.
+let totalsCleared = false
+
+export function clearTotals() {
+  summary.requests = 0
+  summary.beforeBytes = 0
+  summary.afterBytes = 0
+  summary.savedBytes = 0
+  summary.savedTokens = 0
+  summary.failOpen = 0
+  summary.strategies = {}
+  summary.recent = []
+  totalsCleared = true
+}
+
 const num = (v) => {
   const n = Number(v)
   return Number.isFinite(n) ? n : 0
@@ -98,7 +115,12 @@ function mergeStrategies(base, delta) {
 // every number already on disk. Flush therefore treats the stored stats as the
 // base and this process's summary as the increment, then clears the increment.
 function merge(base, delta) {
-  const b = base && typeof base === "object" ? base : blank()
+  const stored = base && typeof base === "object" ? base : blank()
+  // A totals clear wins over whatever is on disk, but only for the counters:
+  // the capture list and the lab slot belong to other writers.
+  const b = totalsCleared
+    ? { ...stored, requests: 0, beforeBytes: 0, afterBytes: 0, savedBytes: 0, savedTokens: 0, failOpen: 0, strategies: {}, recent: [] }
+    : stored
   const d = delta && typeof delta === "object" ? delta : blank()
   const captures = capturesCleared
     ? []
@@ -191,7 +213,14 @@ export function record(event) {
 }
 
 export async function flush(force = false) {
-  if (off() || inFlight) return
+  if (off()) return
+  if (inFlight) {
+    if (!force) return
+    // 强制写（清空命令用的那种）不能被一次正在进行的写静默挡掉：等它落地，
+    // 最多 500ms。非强制写维持原语义——直接放弃，下一轮再说。
+    for (let i = 0; i < 50 && inFlight; i++) await new Promise((r) => setTimeout(r, 10))
+    if (inFlight) return
+  }
   const now = Date.now()
   if (!force && now - lastFlushAt < FLUSH_MS) return
   inFlight = true
@@ -199,6 +228,7 @@ export async function flush(force = false) {
   const tmp = path + ".tmp"
   let flushed = null
   let clearedBefore = capturesCleared
+  let totalsBefore = totalsCleared
   let committed = false
   let next = null
   try {
@@ -222,6 +252,7 @@ export async function flush(force = false) {
     flushed = summary
     summary = blank()
     capturesCleared = false
+    totalsCleared = false
     await mkdir(telemetryDir(), { recursive: true })
     await writeFile(tmp, JSON.stringify(next, null, 2) + "\n", "utf8")
     await rename(tmp, path)
@@ -233,6 +264,7 @@ export async function flush(force = false) {
     if (!committed) {
       if (flushed) summary = merge(flushed, summary)
       capturesCleared = clearedBefore
+      totalsCleared = totalsBefore
       try { await unlink(tmp) } catch {}
     }
   } finally {

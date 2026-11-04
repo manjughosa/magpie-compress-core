@@ -46,7 +46,13 @@
 
       <!-- 已处理会话列表 -->
       <section class="session-section">
-        <h3 class="section-title">已处理会话</h3>
+        <div class="section-head">
+          <h3 class="section-title">已处理会话</h3>
+          <div class="section-actions">
+            <button type="button" class="save-btn" id="clearCaptures" title="删掉已处理的会话快照（含对话原文），不可恢复">清空会话</button>
+            <button type="button" class="save-btn" id="clearTelemetry" title="删掉 requests.jsonl 的两代文件，并把累计计数归零">清空日志</button>
+          </div>
+        </div>
         <div class="session-list" id="sessionList"></div>
         <p class="hint" id="sessionHint">暂无记录。打开下面的「记录完整对话快照」后，每条请求都会在这里留一条。</p>
       </section>

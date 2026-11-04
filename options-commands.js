@@ -8,8 +8,8 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { runLab } from "./lab.js"
 import { clearCaptures } from "./capture-store.js"
-import { clearCaptureIndex, flush } from "./stats-writer.js"
-import { redactSecrets, telemetryDir } from "./telemetry-store.js"
+import { clearCaptureIndex, clearTotals, flush } from "./stats-writer.js"
+import { redactSecrets, resetRequestLog, telemetryDir } from "./telemetry-store.js"
 import { publishPageScript } from "./page-publish.js"
 
 // Command results go into this plugin's own file, not magpie's plugins.json:
@@ -82,12 +82,12 @@ async function patch(fields) {
 // options change and `options.captureCommand` still holds the last command it was
 // given — without this record a single "clear" would empty the operator's list on
 // every restart.
-async function alreadyDone(id) {
+async function alreadyDone(key, id) {
   try {
     const text = await readFile(commandsFile(), "utf8")
     if (text.length > LAB_RESULT_LIMIT) return false
     const doc = JSON.parse(text)
-    return doc?.captureCommand?.id === id && doc.captureCommand.status === "done"
+    return doc?.[key]?.id === id && doc[key].status === "done"
   } catch {
     return false
   }
@@ -100,7 +100,7 @@ export function processCaptureCommand(options) {
   return later(async () => {
     // The journal is the only record that survives a restart: a command already
     // marked done must not run again, or a clear replays forever.
-    if (await alreadyDone(command.id)) return true
+    if (await alreadyDone("captureCommand", command.id)) return true
     let success = false
     try {
       await flush(true)
@@ -137,6 +137,38 @@ export function processLabCommand(options) {
 }
 
 export function captureCommandId() { return `capture-${randomUUID()}` }
+export function telemetryCommandId() { return `telemetry-${randomUUID()}` }
+
+// ── telemetryCommand：清空请求日志与累计计数 ─────────────────────────────
+// 与 captureCommand 分开：那份数据是对话原文，这份是字节数。一次点击只清一类，
+// 免得想清计数的人顺手把对话也删了。
+export function processTelemetryCommand(options) {
+  const command = options?.telemetryCommand
+  if (!command || typeof command.id !== "string" || command.id.length > 80 || completed.has(command.id)) return false
+  remember(command.id)
+  if (command.action !== "clear") return false
+  return later(async () => {
+    if (await alreadyDone("telemetryCommand", command.id)) return true
+    let success = false
+    try {
+      // 先把挂起的增量落盘。反过来做的话，删完文件、下一次 flush 又按内存里的
+      // 旧计数写回去，等于没清。
+      await flush(true)
+      await resetRequestLog()
+      clearTotals()
+      await flush(true)
+      await patch({
+        telemetryCommand: { id: command.id, action: command.action, status: "done", at: new Date().toISOString() },
+      })
+      success = true
+    } catch (error) {
+      await patch({
+        telemetryCommand: { id: command.id, action: command.action, status: "error", error: String(error?.message || error).slice(0, 300) },
+      }).catch(() => {})
+    }
+    return success
+  })
+}
 
 // ── ccrCommand：一键把 retrieve 工具装进调用方 agent ───────────────────────
 // 页面沙箱不能 spawn，也不能写 magpie 的库文件；它把命令写进 options，下一次

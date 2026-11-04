@@ -826,6 +826,62 @@
     return s.byStrategy && s.byStrategy[id] ? s.byStrategy[id] : null
   }
 
+  // ═══ 清空：两条命令，各自独立 ═══
+  // 页面沙箱删不了文件（connect-src 'none'、没有 fs），只能把命令写进 options，
+  // 下一次本地请求时由 hooks host 执行。两段式确认：三秒内再点一次才下单。
+  var armed = {}
+  function armConfirm(btn, run) {
+    if (!btn) return
+    if (!btn.getAttribute("data-label")) btn.setAttribute("data-label", btn.textContent)
+    var label = btn.getAttribute("data-label")
+    if (armed[btn.id]) {
+      clearTimeout(armed[btn.id])
+      delete armed[btn.id]
+      btn.textContent = label
+      run()
+      return
+    }
+    btn.textContent = T.clearConfirm || "再点一次确认"
+    armed[btn.id] = setTimeout(function () {
+      delete armed[btn.id]
+      btn.textContent = label
+    }, 3000)
+  }
+
+  function sendClearCommand(key, id) {
+    return magpie.options
+      .get()
+      .then(function (fresh) {
+        // 与 installCcr 同一原则：以最新 options 为底只叠一个键，不整包盖。
+        var next = Object.assign({}, fresh && typeof fresh === "object" ? fresh : {})
+        next[key] = { id: id, action: "clear" }
+        return magpie.options.set(next)
+      })
+      .then(function () {
+        setMessage(T.clearSent || "已提交，下一次本地请求时执行")
+      })
+      .catch(function () {
+        setMessage(T.failedWrite, "err")
+      })
+  }
+
+  function wireClearButtons() {
+    var capBtn = $("clearCaptures")
+    if (capBtn)
+      capBtn.addEventListener("click", function () {
+        armConfirm(capBtn, function () {
+          sendClearCommand("captureCommand", "capture-" + Date.now() + "-" + Math.random().toString(16).slice(2, 8))
+        })
+      })
+    var logBtn = $("clearTelemetry")
+    if (logBtn)
+      logBtn.addEventListener("click", function () {
+        armConfirm(logBtn, function () {
+          sendClearCommand("telemetryCommand", "telemetry-" + Date.now() + "-" + Math.random().toString(16).slice(2, 8))
+        })
+      })
+  }
+
   // ═══ 初始化 ═══
 
   function init() {
@@ -835,6 +891,7 @@
     if (saveBtn) saveBtn.addEventListener("click", flushNow)
     var ccrBtn = $("installCcr")
     if (ccrBtn) ccrBtn.addEventListener("click", installCcr)
+    wireClearButtons()
     // 防抖内的改动在面板被关掉/切走时会整个丢掉——离开前补一次立即写。
     window.addEventListener("pagehide", flushNow)
     document.addEventListener("visibilitychange", function () {
