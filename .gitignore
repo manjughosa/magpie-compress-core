@@ -19,3 +19,5 @@ backup/
 *.tmp
 *.log
 .DS_Store
+# 本地参考日志：各 harness 的实测存档，只留在本机，供写 skill 与研发对照。
+docs/*.local.md
