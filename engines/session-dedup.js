@@ -31,6 +31,13 @@
 
 import { sha256hex } from "../hash.js"
 import { createCompressionStats } from "./lite.js"
+// 取回能力判定只有一份实现（harness.js）。以前这里抄了一份 ccr 的门控，修分隔符时
+// 两处各改一次，漏一处就变成「这个 harness 好了、那个坏了」。
+import {
+  matchesRetrieveToolName,
+  callerCanRetrieve,
+  callerSupportsDirectRetrieve,
+} from "../harness.js"
 
 const ENGINE_ID = "session-dedup"
 const DEFAULT_MIN_BLOCK_CHARS = 80
@@ -327,8 +334,6 @@ function processMessages(messages, minBlockChars, blockMap, deadline, preserveCu
 // ─── fuzzy（逐字；store 注入，默认关） ───────────────────────────────────────
 
 const MAX_FUZZY_BLOCKS = 200
-const CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve"
-const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":", "-"]
 
 function fnv1a(s) {
   let h = 0x811c9dc5
@@ -385,24 +390,8 @@ function buildCcrMarker(hash, charCount) {
   return `[CCR retrieve hash=${hash} chars=${charCount}]`
 }
 
-function matchesCcrRetrieveToolName(name) {
-  if (typeof name !== "string") return false
-  if (name === CCR_RETRIEVE_TOOL_NAME) return true
-  return CCR_RETRIEVE_TOOL_NAME_SEPARATORS.some((sep) =>
-    name.endsWith(`${sep}${CCR_RETRIEVE_TOOL_NAME}`)
-  )
-}
-
-export function callerSupportsCcrRetrieve(body) {
-  const tools = body["tools"]
-  if (!Array.isArray(tools)) return false
-  return tools.some((tool) => {
-    const flatName = tool && typeof tool.name === "string" ? tool.name : undefined
-    const fn = tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : undefined
-    const mcpName = tool && tool.type === "mcp" && typeof tool.server_label === "string" ? tool.server_label : undefined
-    return matchesCcrRetrieveToolName(flatName) || matchesCcrRetrieveToolName(fn) || (mcpName && matchesCcrRetrieveToolName(`mcp__${mcpName}__omniroute_ccr_retrieve`))
-  })
-}
+export const matchesCcrRetrieveToolName = matchesRetrieveToolName
+export const callerSupportsCcrRetrieve = callerSupportsDirectRetrieve
 
 function applyFuzzyPass(messages, opts, store) {
   try {
@@ -438,11 +427,11 @@ function applyFuzzyPass(messages, opts, store) {
   }
 }
 
-function runFuzzyPass(messages, stepConfig, minBlockChars, callerCanRetrieve, store) {
+function runFuzzyPass(messages, stepConfig, minBlockChars, canRetrieve, store) {
   const raw = stepConfig["fuzzy"]
   const cfg = typeof raw === "boolean" ? { enabled: raw } : raw
   if (!cfg || !cfg.enabled) return { messages, fuzzyCount: 0 }
-  if (!callerCanRetrieve) return { messages, fuzzyCount: 0 }
+  if (!canRetrieve) return { messages, fuzzyCount: 0 }
   return applyFuzzyPass(messages, {
     minJaccard: typeof cfg.minJaccard === "number" ? cfg.minJaccard : 0.85,
     shingleSize: typeof cfg.shingleSize === "number" ? cfg.shingleSize : 3,
@@ -453,7 +442,7 @@ function runFuzzyPass(messages, stepConfig, minBlockChars, callerCanRetrieve, st
 
 // ─── 主编排（对应上游 sessionDedupEngine.apply） ─────────────────────────────
 
-export function applySessionDedup(body, stepConfig) {
+export function applySessionDedup(body, stepConfig, agent) {
   stepConfig = stepConfig || {}
   if (stepConfig["enabled"] === false) return { body, compressed: false, stats: null }
 
@@ -497,7 +486,7 @@ export function applySessionDedup(body, stepConfig) {
     exactMessages,
     stepConfig,
     minBlockChars,
-    callerSupportsCcrRetrieve(body),
+    callerCanRetrieve(body, agent),
     store
   )
 
@@ -566,7 +555,7 @@ export const configSchema = [
 
 export function apply(body, ctx, cfg) {
   if (!body || typeof body !== "object") return false
-  const r = applySessionDedup(body, cfg)
+  const r = applySessionDedup(body, cfg, ctx && ctx.agent)
   if (!r.compressed) return false
   body.messages = r.body.messages
   if (ctx && ctx.state) {

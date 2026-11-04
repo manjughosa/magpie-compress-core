@@ -21,6 +21,7 @@
     "catalog.js",
     "compress-core.middleware.js",
     "engines",
+    "harness.js",
     "hash.js",
     "lab.js",
     "llm-backend.js",

@@ -35,6 +35,12 @@
 
 import { sha256hex } from "../../hash.js"
 import { conversationView } from "../../adapter.js"
+// 取回能力判定只有一份实现（harness.js）。这里 re-export 旧名字，测试与旧调用方不用改。
+import {
+  CCR_RETRIEVE_TOOL_NAME,
+  callerSupportsDirectRetrieve,
+  detectRetrieveCapability,
+} from "../../harness.js"
 
 // ─── 元数据（与 catalog.js 的 ccr 条目逐字一致） ─────────────────────────────
 
@@ -484,15 +490,16 @@ export function handleCcrRetrieve(store, args, callerId) {
 
 // ─── protocolInstruction 移植（#8033 / #7746 follow-up 门控） ────────────────
 
-const CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve"
-const CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":", "-"]
-
-/** 精确名或分隔符边界上的尾段匹配（MCP 网关会加命名空间前缀）。 */
-export function matchesCcrRetrieveToolName(name) {
-  if (typeof name !== "string") return false
-  if (name === CCR_RETRIEVE_TOOL_NAME) return true
-  return CCR_RETRIEVE_TOOL_NAME_SEPARATORS.some((sep) => name.endsWith(`${sep}${CCR_RETRIEVE_TOOL_NAME}`))
-}
+/**
+ * 调用方是否能在任何一条路径上取回原文。
+ * direct（tools[]）→ indirect（code tool + agent 白名单）→ deferred（ToolSearch 清单）。
+ */
+export {
+  matchesRetrieveToolName as matchesCcrRetrieveToolName,
+  callerReachesRetrieveIndirectly,
+  callerAdvertisesDeferredRetrieve,
+  detectRetrieveCapability,
+} from "../../harness.js"
 
 export const CCR_PROTOCOL_MARKER_SENTINEL = "[CCR protocol]"
 export const CCR_PROTOCOL_INSTRUCTION = `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space — call the \`${CCR_RETRIEVE_TOOL_NAME}\` tool with that hash to get the original text back verbatim. Copy the hash EXACTLY as written — all 24 hexadecimal characters, never truncated, abbreviated, or reformatted — a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation — look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME} for a dedup reference.`
@@ -502,49 +509,9 @@ export function buildCcrProtocolInstructionIndirect(callHint) {
   return `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space — ${callHint} to get the original text back verbatim. Copy the hash EXACTLY as written — all 24 hexadecimal characters, never truncated, abbreviated, or reformatted — a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation — look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME} for a dedup reference.`
 }
 
-/** 调用方 tools[] 里是否声明了 CCR retrieve。 */
-export function callerSupportsCcrRetrieve(body) {
-  const tools = body && body["tools"]
-  if (!Array.isArray(tools)) return false
-  return tools.some((tool) => {
-    const flatName = tool && typeof tool.name === "string" ? tool.name : undefined
-    const nestedName =
-      tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : undefined
-    const responsesName = tool && tool.type === "mcp" && typeof tool.server_label === "string" ? tool.server_label : undefined
-    return matchesCcrRetrieveToolName(flatName) || matchesCcrRetrieveToolName(nestedName) || (responsesName && matchesCcrRetrieveToolName(`mcp__${responsesName}__omniroute_ccr_retrieve`))
-  })
-}
-
-/** 各 agent 的 code tool 调用提示词。 */
-const INDIRECT_CALL_HINTS = {
-  omp: 'from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`',
-  opencode: 'from your code tool (e.g. `execute`), call `mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`',
-  codex: 'use `tool_search` to find the `omniroute_ccr_retrieve` tool, then call it with the hash',
-  pi: 'from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`',
-}
-
-/** 有 code tool 的 agent 白名单。 */
-const INDIRECT_CAPABLE_AGENTS = new Set(Object.keys(INDIRECT_CALL_HINTS))
-
-/** 代码执行工具名（出现即认为调用方能间接调 retrieve）。 */
-const CODE_TOOL_NAMES = new Set(['eval', 'execute', 'exec', 'exec_command', 'run_code', 'run_command', 'bash'])
-
-/**
- * 调用方没有直接声明 retrieve 工具，但有代码执行工具且 agent 在白名单里 → 间接可达。
- * 返回 null（不可达）或 { callHint }（可达，附调用提示）。
- */
-export function callerReachesRetrieveIndirectly(body, agent) {
-  const agentName = (agent || '').toLowerCase().trim()
-  if (!INDIRECT_CAPABLE_AGENTS.has(agentName)) return null
-  const tools = body && body["tools"]
-  if (!Array.isArray(tools)) return null
-  const hasCodeTool = tools.some((tool) => {
-    const name = (tool && typeof tool.name === "string" ? tool.name : undefined) || (tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : undefined)
-    return name && CODE_TOOL_NAMES.has(name.toLowerCase())
-  })
-  if (!hasCodeTool) return null
-  return { callHint: INDIRECT_CALL_HINTS[agentName] }
-}
+/** 调用方 tools[] 里是否声明了 CCR retrieve（旧名，实现见 harness.js）。 */
+const callerSupportsCcrRetrieve = callerSupportsDirectRetrieve
+export { callerSupportsCcrRetrieve }
 
 function messageContainsSentinel(message) {
   const content = message && (message.content ?? message.output)
@@ -663,30 +630,25 @@ function makeStats(originalChars, newChars, durationMs, replacedCount) {
 export function applyCcr(body, cfg, opts) {
   cfg = cfg || {}
   opts = opts || {}
-  const empty = { body, compressed: false, stats: null, replacedCount: 0, map: null, store: null }
+  const empty = { body, compressed: false, stats: null, replacedCount: 0, map: null, store: null, retrievalMode: "none" }
 
   if (cfg["enabled"] === false) return empty
   if (!body || typeof body !== "object") return empty
 
   // 上游 #7746 follow-up 门控：调用方无法取回就不压（默认开，见文件头第 5 条）。
-  // 先查直接声明，再查间接可达（code tool + 白名单 agent）。
+  // 判定只有一份（harness.js）：直接声明 → 间接可达 → 延迟工具（ToolSearch 清单）。
+  // 2026-11-04 Claude Code 就是第三种：MCP 工具被延迟加载，tools[] 里没有名字。
   let indirectHint = null
+  let retrievalMode = "gate_off"
   if (cfg["requireRetrieveTool"] !== false) {
-    let callerCanRetrieve = false
-    try {
-      callerCanRetrieve = callerSupportsCcrRetrieve(body)
-    } catch {
-      callerCanRetrieve = false
-    }
-    if (!callerCanRetrieve) {
-      const indirect = callerReachesRetrieveIndirectly(body, opts.agent)
-      if (!indirect) return { ...empty, gateReason: "no_retrieve_tool" }
-      indirectHint = indirect.callHint
-    }
+    const capability = detectRetrieveCapability(body, opts.agent)
+    retrievalMode = capability.mode
+    if (capability.mode === "none") return { ...empty, gateReason: "no_retrieve_tool", retrievalMode }
+    if (capability.mode === "indirect" || capability.mode === "deferred") indirectHint = capability.callHint || null
   }
 
   const view = conversationView(body, opts.protocol)
-  if (!view || view.segments.length === 0) return empty
+  if (!view || view.segments.length === 0) return { ...empty, retrievalMode }
 
   const minChars = typeof cfg["minChars"] === "number" ? cfg["minChars"] : DEFAULT_MIN_CHARS
   const rampFactor =
@@ -732,7 +694,7 @@ export function applyCcr(body, cfg, opts) {
     }
   }
 
-  if (replacedCount === 0) return empty
+  if (replacedCount === 0) return { ...empty, retrievalMode }
 
   // 共享 store 有新条目：通知宿主调度落盘。失败不传染本次替换。
   if (shared && typeof opts.persistStore === "function") {
@@ -750,7 +712,7 @@ export function applyCcr(body, cfg, opts) {
   }
 
   const stats = makeStats(originalChars, newChars, Math.round(Date.now() - start), replacedCount)
-  return { body, compressed: true, stats, replacedCount, map, store }
+  return { body, compressed: true, stats, replacedCount, map, store, retrievalMode }
 }
 
 // ─── 中间件引擎包装 ─────────────────────────────────────────────────────────
@@ -766,6 +728,9 @@ export function apply(body, ctx, cfg) {
       store: ctxObj.ccrStore,
       persistStore: ctxObj.persistCcrStore,
     })
+    // 判定结果写进 state，管线把它带进遥测：direct / indirect / deferred / none。
+    // 以后哪个 harness 的客户端升级把门控掀了，requests.jsonl 里能直接看出来。
+    if (ctxObj.state && r.retrievalMode) ctxObj.state.ccrRetrievalMode = r.retrievalMode
     if (!r.compressed) {
       // 门控原因留给管线当 skip reason（「没声明 retrieve 工具」≠「没有可压内容」）。
       if (r.gateReason && ctxObj.state) ctxObj.state.ccrGateReason = r.gateReason

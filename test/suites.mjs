@@ -31,6 +31,7 @@ export const suites = [
   "ionizer.test.mjs",
   "llm.test.mjs",
   "ccr.test.mjs",
+  "harness-matrix.test.mjs",
   "ccr-persist.test.mjs",
   "active-shapes.test.mjs",
   "read-lifecycle.test.mjs",

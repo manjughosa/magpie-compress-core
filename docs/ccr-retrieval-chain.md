@@ -14,10 +14,12 @@
    │  magpie → Bun 宿主 observability.hooks.js
    ▼
 engines/ccr/index.js  applyCcr()
-   ├─ 门控 callerSupportsCcrRetrieve（上游 #7746，可用 requireRetrieveTool:false 关）
+   ├─ 门控 detectRetrieveCapability（harness.js 唯一实现，上游 #7746；
+   │    direct=tools[] / indirect=code tool+agent / deferred=ToolSearch 清单；
+   │    可用 requireRetrieveTool:false 关）
    ├─ 命中：消息段 → preamble(200字符) + [CCR retrieve hash=<24hex> chars=N]
    ├─ 原文写入共享 store（ctx.ccrStore 注入；未注入=本次请求内存，moejs 语义）
-   └─ 协议指令 [CCR protocol]… 幂等注入 system
+   └─ 协议指令 [CCR protocol]… 幂等注入 system（deferred 走 ToolSearch 变体）
    ▼
 ccr-store-file.js  createPersistentCcrStore()
    └─ 去抖 2s 落盘 <数据目录>/ccr-store.json（>512KB 块只活内存，同上游）
@@ -26,6 +28,20 @@ mcp/ccr-retrieve-server.mjs（stdio MCP，零依赖）
    └─ omniroute_ccr_retrieve(hash, mode=full|head|tail|lines|grep|stats)
       full ≤256KiB；取回计数合并写回文件 → ramp 跨进程生效
 ```
+
+## 门控的三种可达形状（harness.js）
+
+| 模式 | 判据 | 典型调用方 |
+|:--|:--|:--|
+| `direct` | `body.tools[]` 里有以 `omniroute_ccr_retrieve` 结尾的名字（`__ _ . / : -` 分隔符均可） | Claude Code（旧版）、Copilot、codex `type:"mcp"` |
+| `indirect` | 有 code tool（eval/execute/…）且 agent 在 `INDIRECT_CALL_HINTS` 白名单 | omp / pi / opencode / codex |
+| `deferred` | system/instructions 里有“deferred tools / ToolSearch”说明，且工具名**单独成行** | Claude Code 2.1.3xx（MCP 工具延迟加载） |
+| `none` | 以上都不成立 | hindsight、未装 retrieve 的客户端 |
+
+`deferred` 是 2026-11-04 补的：Claude Code 把 MCP 工具从 `tools[]` 移到 system 的
+ToolSearch 清单，只查 `tools[]` 的门控会静默变成 `no_retrieve_tool`。判定只读
+`tools[]` / `system` / `instructions`，**不扫描 messages 正文**——正文里提到工具名
+不代表模型能调用。`test/harness-matrix.test.mjs` 为每种形状钉了夹具。
 
 ## 安装 retrieve 工具（调用方 agent 侧，一次性）
 

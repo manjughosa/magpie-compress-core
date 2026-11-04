@@ -15,6 +15,7 @@
     findNearDuplicates: () => findNearDuplicates,
     id: () => id2,
     jaccard: () => jaccard,
+    matchesCcrRetrieveToolName: () => matchesCcrRetrieveToolName,
     restoreDedup: () => restoreDedup,
     shingles: () => shingles
   });
@@ -716,6 +717,117 @@
     return changed;
   }
 
+  // harness.js
+  var CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve";
+  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":", "-"];
+  function matchesRetrieveToolName(name) {
+    if (typeof name !== "string") return false;
+    if (name === CCR_RETRIEVE_TOOL_NAME) return true;
+    return CCR_RETRIEVE_TOOL_NAME_SEPARATORS.some(
+      (sep) => name.endsWith(`${sep}${CCR_RETRIEVE_TOOL_NAME}`)
+    );
+  }
+  function toolNames(tool) {
+    const out = [];
+    if (!tool || typeof tool !== "object") return out;
+    if (typeof tool.name === "string") out.push(tool.name);
+    if (tool.function && typeof tool.function.name === "string") out.push(tool.function.name);
+    if (tool.type === "mcp" && typeof tool.server_label === "string") {
+      out.push(`mcp__${tool.server_label}__${CCR_RETRIEVE_TOOL_NAME}`);
+    }
+    return out;
+  }
+  function callerSupportsDirectRetrieve(body) {
+    const tools = body && body["tools"];
+    if (!Array.isArray(tools)) return false;
+    return tools.some((tool) => toolNames(tool).some(matchesRetrieveToolName));
+  }
+  var INDIRECT_CALL_HINTS = {
+    omp: "from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`",
+    opencode: "from your code tool (e.g. `execute`), call `mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`",
+    codex: "use `tool_search` to find the `omniroute_ccr_retrieve` tool, then call it with the hash",
+    pi: "from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`"
+  };
+  var INDIRECT_CAPABLE_AGENTS = new Set(Object.keys(INDIRECT_CALL_HINTS));
+  var CODE_TOOL_NAMES = /* @__PURE__ */ new Set([
+    "eval",
+    "execute",
+    "exec",
+    "exec_command",
+    "run_code",
+    "run_command",
+    "bash"
+  ]);
+  function callerReachesRetrieveIndirectly(body, agent) {
+    const agentName = (agent || "").toLowerCase().trim();
+    if (!INDIRECT_CAPABLE_AGENTS.has(agentName)) return null;
+    const tools = body && body["tools"];
+    if (!Array.isArray(tools)) return null;
+    const hasCodeTool = tools.some(
+      (tool) => toolNames(tool).some((name) => CODE_TOOL_NAMES.has(name.toLowerCase()))
+    );
+    if (!hasCodeTool) return null;
+    return { callHint: INDIRECT_CALL_HINTS[agentName] };
+  }
+  var DEFERRED_MARKER_RE = /\bdeferred\s+tools?\b|\btool[\s_-]?search\b/i;
+  function contractTexts(body) {
+    const out = [];
+    if (!body || typeof body !== "object") return out;
+    const take = (value) => {
+      if (typeof value === "string") out.push(value);
+    };
+    take(body.system);
+    take(body.instructions);
+    if (Array.isArray(body.system)) {
+      for (const part of body.system) {
+        if (part && typeof part.text === "string") out.push(part.text);
+      }
+    }
+    if (Array.isArray(body.messages)) {
+      for (const msg of body.messages) {
+        if (!msg || msg.role !== "system" && msg.role !== "developer") continue;
+        take(msg.content);
+      }
+    }
+    return out;
+  }
+  function listedRetrieveIdentifier(text) {
+    for (const rawLine of text.split(/\r?\n/)) {
+      const line = rawLine.trim().replace(/^[-*+]\s+/, "");
+      if (!line) continue;
+      const firstToken = line.split(/\s+/)[0];
+      if (matchesRetrieveToolName(firstToken)) return firstToken;
+    }
+    return null;
+  }
+  function callerAdvertisesDeferredRetrieve(body) {
+    const texts2 = contractTexts(body);
+    if (texts2.length === 0) return null;
+    const hasDeferredMarker = texts2.some((text) => DEFERRED_MARKER_RE.test(text));
+    if (!hasDeferredMarker) return null;
+    for (const text of texts2) {
+      const name = listedRetrieveIdentifier(text);
+      if (name) {
+        return {
+          toolName: name,
+          callHint: `use ToolSearch to load the \`${name}\` tool, then call it with the hash`
+        };
+      }
+    }
+    return null;
+  }
+  function detectRetrieveCapability(body, agent) {
+    if (callerSupportsDirectRetrieve(body)) return { mode: "direct" };
+    const indirect = callerReachesRetrieveIndirectly(body, agent);
+    if (indirect) return { mode: "indirect", callHint: indirect.callHint };
+    const deferred = callerAdvertisesDeferredRetrieve(body);
+    if (deferred) return { mode: "deferred", callHint: deferred.callHint, toolName: deferred.toolName };
+    return { mode: "none" };
+  }
+  function callerCanRetrieve(body, agent) {
+    return detectRetrieveCapability(body, agent).mode !== "none";
+  }
+
   // engines/session-dedup.js
   var DEFAULT_MIN_BLOCK_CHARS = 80;
   var MIN_BLOCK_LINES = 3;
@@ -971,8 +1083,6 @@
     return { messages: result, dedupCount, dedupMap };
   }
   var MAX_FUZZY_BLOCKS = 200;
-  var CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve";
-  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS = ["__", "_", ".", "/", ":", "-"];
   function fnv1a(s) {
     let h = 2166136261;
     for (let i = 0; i < s.length; i++) {
@@ -1023,23 +1133,8 @@
   function buildCcrMarker(hash, charCount) {
     return `[CCR retrieve hash=${hash} chars=${charCount}]`;
   }
-  function matchesCcrRetrieveToolName(name) {
-    if (typeof name !== "string") return false;
-    if (name === CCR_RETRIEVE_TOOL_NAME) return true;
-    return CCR_RETRIEVE_TOOL_NAME_SEPARATORS.some(
-      (sep) => name.endsWith(`${sep}${CCR_RETRIEVE_TOOL_NAME}`)
-    );
-  }
-  function callerSupportsCcrRetrieve(body) {
-    const tools = body["tools"];
-    if (!Array.isArray(tools)) return false;
-    return tools.some((tool) => {
-      const flatName = tool && typeof tool.name === "string" ? tool.name : void 0;
-      const fn = tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : void 0;
-      const mcpName = tool && tool.type === "mcp" && typeof tool.server_label === "string" ? tool.server_label : void 0;
-      return matchesCcrRetrieveToolName(flatName) || matchesCcrRetrieveToolName(fn) || mcpName && matchesCcrRetrieveToolName(`mcp__${mcpName}__omniroute_ccr_retrieve`);
-    });
-  }
+  var matchesCcrRetrieveToolName = matchesRetrieveToolName;
+  var callerSupportsCcrRetrieve = callerSupportsDirectRetrieve;
   function applyFuzzyPass(messages, opts, store) {
     try {
       const blocks = [];
@@ -1069,11 +1164,11 @@
       return { messages, fuzzyCount: 0 };
     }
   }
-  function runFuzzyPass(messages, stepConfig, minBlockChars, callerCanRetrieve, store) {
+  function runFuzzyPass(messages, stepConfig, minBlockChars, canRetrieve, store) {
     const raw = stepConfig["fuzzy"];
     const cfg = typeof raw === "boolean" ? { enabled: raw } : raw;
     if (!cfg || !cfg.enabled) return { messages, fuzzyCount: 0 };
-    if (!callerCanRetrieve) return { messages, fuzzyCount: 0 };
+    if (!canRetrieve) return { messages, fuzzyCount: 0 };
     return applyFuzzyPass(messages, {
       minJaccard: typeof cfg.minJaccard === "number" ? cfg.minJaccard : 0.85,
       shingleSize: typeof cfg.shingleSize === "number" ? cfg.shingleSize : 3,
@@ -1081,7 +1176,7 @@
       minBlockChars
     }, store);
   }
-  function applySessionDedup(body, stepConfig) {
+  function applySessionDedup(body, stepConfig, agent) {
     stepConfig = stepConfig || {};
     if (stepConfig["enabled"] === false) return { body, compressed: false, stats: null };
     const minBlockChars = typeof stepConfig["minBlockChars"] === "number" ? stepConfig["minBlockChars"] : DEFAULT_MIN_BLOCK_CHARS;
@@ -1106,7 +1201,7 @@
       exactMessages,
       stepConfig,
       minBlockChars,
-      callerSupportsCcrRetrieve(body),
+      callerCanRetrieve(body, agent),
       store
     );
     if (dedupCount + fuzzyCount === 0) return { body, compressed: false, stats: null, blockMap, dedupMap };
@@ -1153,7 +1248,7 @@
   ];
   function apply2(body, ctx, cfg) {
     if (!body || typeof body !== "object") return false;
-    const r = applySessionDedup(body, cfg);
+    const r = applySessionDedup(body, cfg, ctx && ctx.agent);
     if (!r.compressed) return false;
     body.messages = r.body.messages;
     if (ctx && ctx.state) {
@@ -7815,11 +7910,13 @@ ${GCF_FENCE_CLOSE}`;
     buildCcrReference: () => buildCcrReference,
     buildCcrReplacementText: () => buildCcrReplacementText,
     cacheImpact: () => cacheImpact7,
+    callerAdvertisesDeferredRetrieve: () => callerAdvertisesDeferredRetrieve,
     callerReachesRetrieveIndirectly: () => callerReachesRetrieveIndirectly,
     callerSupportsCcrRetrieve: () => callerSupportsCcrRetrieve2,
     configSchema: () => configSchema12,
     defaultOn: () => defaultOn7,
     description: () => description3,
+    detectRetrieveCapability: () => detectRetrieveCapability,
     effectiveMinChars: () => effectiveMinChars,
     handleCcrRetrieve: () => handleCcrRetrieve,
     hashContent: () => hashContent,
@@ -7831,7 +7928,7 @@ ${GCF_FENCE_CLOSE}`;
     levels: () => levels7,
     lossy: () => lossy7,
     makeStore: () => makeStore,
-    matchesCcrRetrieveToolName: () => matchesCcrRetrieveToolName2,
+    matchesCcrRetrieveToolName: () => matchesRetrieveToolName,
     queryBlock: () => queryBlock,
     recordRetrieval: () => recordRetrieval,
     restoreCcr: () => restoreCcr,
@@ -8200,48 +8297,12 @@ ${GCF_FENCE_CLOSE}`;
     if (!args.mode || args.mode === "full") return { content: block };
     return queryBlock(block, args);
   }
-  var CCR_RETRIEVE_TOOL_NAME2 = "omniroute_ccr_retrieve";
-  var CCR_RETRIEVE_TOOL_NAME_SEPARATORS2 = ["__", "_", ".", "/", ":", "-"];
-  function matchesCcrRetrieveToolName2(name) {
-    if (typeof name !== "string") return false;
-    if (name === CCR_RETRIEVE_TOOL_NAME2) return true;
-    return CCR_RETRIEVE_TOOL_NAME_SEPARATORS2.some((sep) => name.endsWith(`${sep}${CCR_RETRIEVE_TOOL_NAME2}`));
-  }
   var CCR_PROTOCOL_MARKER_SENTINEL = "[CCR protocol]";
-  var CCR_PROTOCOL_INSTRUCTION = `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space \u2014 call the \`${CCR_RETRIEVE_TOOL_NAME2}\` tool with that hash to get the original text back verbatim. Copy the hash EXACTLY as written \u2014 all 24 hexadecimal characters, never truncated, abbreviated, or reformatted \u2014 a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation \u2014 look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME2} for a dedup reference.`;
+  var CCR_PROTOCOL_INSTRUCTION = `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space \u2014 call the \`${CCR_RETRIEVE_TOOL_NAME}\` tool with that hash to get the original text back verbatim. Copy the hash EXACTLY as written \u2014 all 24 hexadecimal characters, never truncated, abbreviated, or reformatted \u2014 a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation \u2014 look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME} for a dedup reference.`;
   function buildCcrProtocolInstructionIndirect(callHint) {
-    return `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space \u2014 ${callHint} to get the original text back verbatim. Copy the hash EXACTLY as written \u2014 all 24 hexadecimal characters, never truncated, abbreviated, or reformatted \u2014 a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation \u2014 look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME2} for a dedup reference.`;
+    return `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space \u2014 ${callHint} to get the original text back verbatim. Copy the hash EXACTLY as written \u2014 all 24 hexadecimal characters, never truncated, abbreviated, or reformatted \u2014 a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation \u2014 look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME} for a dedup reference.`;
   }
-  function callerSupportsCcrRetrieve2(body) {
-    const tools = body && body["tools"];
-    if (!Array.isArray(tools)) return false;
-    return tools.some((tool) => {
-      const flatName = tool && typeof tool.name === "string" ? tool.name : void 0;
-      const nestedName = tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : void 0;
-      const responsesName = tool && tool.type === "mcp" && typeof tool.server_label === "string" ? tool.server_label : void 0;
-      return matchesCcrRetrieveToolName2(flatName) || matchesCcrRetrieveToolName2(nestedName) || responsesName && matchesCcrRetrieveToolName2(`mcp__${responsesName}__omniroute_ccr_retrieve`);
-    });
-  }
-  var INDIRECT_CALL_HINTS = {
-    omp: "from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`",
-    opencode: "from your code tool (e.g. `execute`), call `mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`",
-    codex: "use `tool_search` to find the `omniroute_ccr_retrieve` tool, then call it with the hash",
-    pi: "from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`"
-  };
-  var INDIRECT_CAPABLE_AGENTS = new Set(Object.keys(INDIRECT_CALL_HINTS));
-  var CODE_TOOL_NAMES = /* @__PURE__ */ new Set(["eval", "execute", "exec", "exec_command", "run_code", "run_command", "bash"]);
-  function callerReachesRetrieveIndirectly(body, agent) {
-    const agentName = (agent || "").toLowerCase().trim();
-    if (!INDIRECT_CAPABLE_AGENTS.has(agentName)) return null;
-    const tools = body && body["tools"];
-    if (!Array.isArray(tools)) return null;
-    const hasCodeTool = tools.some((tool) => {
-      const name = (tool && typeof tool.name === "string" ? tool.name : void 0) || (tool && tool.function && typeof tool.function.name === "string" ? tool.function.name : void 0);
-      return name && CODE_TOOL_NAMES.has(name.toLowerCase());
-    });
-    if (!hasCodeTool) return null;
-    return { callHint: INDIRECT_CALL_HINTS[agentName] };
-  }
+  var callerSupportsCcrRetrieve2 = callerSupportsDirectRetrieve;
   function messageContainsSentinel(message) {
     const content = message && (message.content ?? message.output);
     if (typeof content === "string") return content.includes(CCR_PROTOCOL_MARKER_SENTINEL);
@@ -8328,25 +8389,19 @@ ${GCF_FENCE_CLOSE}`;
   function applyCcr(body, cfg, opts) {
     cfg = cfg || {};
     opts = opts || {};
-    const empty = { body, compressed: false, stats: null, replacedCount: 0, map: null, store: null };
+    const empty = { body, compressed: false, stats: null, replacedCount: 0, map: null, store: null, retrievalMode: "none" };
     if (cfg["enabled"] === false) return empty;
     if (!body || typeof body !== "object") return empty;
     let indirectHint = null;
+    let retrievalMode = "gate_off";
     if (cfg["requireRetrieveTool"] !== false) {
-      let callerCanRetrieve = false;
-      try {
-        callerCanRetrieve = callerSupportsCcrRetrieve2(body);
-      } catch {
-        callerCanRetrieve = false;
-      }
-      if (!callerCanRetrieve) {
-        const indirect = callerReachesRetrieveIndirectly(body, opts.agent);
-        if (!indirect) return { ...empty, gateReason: "no_retrieve_tool" };
-        indirectHint = indirect.callHint;
-      }
+      const capability = detectRetrieveCapability(body, opts.agent);
+      retrievalMode = capability.mode;
+      if (capability.mode === "none") return { ...empty, gateReason: "no_retrieve_tool", retrievalMode };
+      if (capability.mode === "indirect" || capability.mode === "deferred") indirectHint = capability.callHint || null;
     }
     const view = conversationView(body, opts.protocol);
-    if (!view || view.segments.length === 0) return empty;
+    if (!view || view.segments.length === 0) return { ...empty, retrievalMode };
     const minChars = typeof cfg["minChars"] === "number" ? cfg["minChars"] : DEFAULT_MIN_CHARS;
     const rampFactor = typeof cfg["retrievalRampFactor"] === "number" ? cfg["retrievalRampFactor"] : RETRIEVAL_RAMP_FACTOR_DEFAULT;
     const minBlockBytes = typeof cfg["minBlockBytes"] === "number" ? Math.max(0, cfg["minBlockBytes"]) : DEFAULT_MIN_BLOCK_BYTES;
@@ -8380,7 +8435,7 @@ ${GCF_FENCE_CLOSE}`;
         newChars += originals[i].length;
       }
     }
-    if (replacedCount === 0) return empty;
+    if (replacedCount === 0) return { ...empty, retrievalMode };
     if (shared && typeof opts.persistStore === "function") {
       try {
         opts.persistStore(store);
@@ -8394,7 +8449,7 @@ ${GCF_FENCE_CLOSE}`;
       }
     }
     const stats = makeStats(originalChars, newChars, Math.round(Date.now() - start), replacedCount);
-    return { body, compressed: true, stats, replacedCount, map, store };
+    return { body, compressed: true, stats, replacedCount, map, store, retrievalMode };
   }
   function apply12(body, ctx, cfg) {
     try {
@@ -8408,6 +8463,7 @@ ${GCF_FENCE_CLOSE}`;
         store: ctxObj.ccrStore,
         persistStore: ctxObj.persistCcrStore
       });
+      if (ctxObj.state && r.retrievalMode) ctxObj.state.ccrRetrievalMode = r.retrievalMode;
       if (!r.compressed) {
         if (r.gateReason && ctxObj.state) ctxObj.state.ccrGateReason = r.gateReason;
         return false;
@@ -9724,14 +9780,15 @@ ${GCF_FENCE_CLOSE}`;
   function dedupRoundTrip(beforeBody, body, ctx) {
     const map = ctx.state?.sessionDedup?.map || {};
     const before = texts(beforeBody, ctx.protocol), after = texts(body, ctx.protocol);
-    let checked = 0, passed = 0;
+    let checked = 0, passed = 0, firstMismatch = -1;
     for (let i = 0; i < after.length; i++) {
       if (!after[i].includes("[dedup:ref sha=")) continue;
       checked++;
       const restored = after[i].replace(/\[dedup:ref sha=([0-9a-f]{24})[^\]]*\]/g, (ref, sha) => map[sha] ?? ref);
       if (restored === before[i]) passed++;
+      else if (firstMismatch < 0) firstMismatch = i;
     }
-    return { checked, passed };
+    return firstMismatch < 0 ? { checked, passed } : { checked, passed, firstMismatch };
   }
   function headroomRoundTrip(beforeBody, body, ctx) {
     const before = texts(beforeBody, ctx.protocol), after = texts(body, ctx.protocol);
@@ -9833,6 +9890,9 @@ ${GCF_FENCE_CLOSE}`;
       try {
         const cfg = engineConfig(engine, options);
         const changed = engine.apply(body, ctx, cfg) === true;
+        if (engine.id === "ccr" && ctx.state && ctx.state.ccrRetrievalMode) {
+          record.retrieval = ctx.state.ccrRetrievalMode;
+        }
         if (changed) {
           record.afterBytes = byteLength2(body);
           currentBytes = record.afterBytes;

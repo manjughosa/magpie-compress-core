@@ -21,3 +21,10 @@ backup/
 .DS_Store
 # 本地参考日志：各 harness 的实测存档，只留在本机，供写 skill 与研发对照。
 docs/*.local.md
+# 运行时数据文件（正常情况下在 ~/.config/magpie/compress-core，不在仓库；
+# 万一把数据目录指到仓库，这几个也不许进版本库）。
+stats.json
+ccr-store.json
+captures-index.json
+commands.json
+options-*.json

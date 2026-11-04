@@ -206,14 +206,15 @@ function canonicalJson(text) {
 function dedupRoundTrip(beforeBody, body, ctx) {
   const map = ctx.state?.sessionDedup?.map || {}
   const before = texts(beforeBody, ctx.protocol), after = texts(body, ctx.protocol)
-  let checked = 0, passed = 0
+  let checked = 0, passed = 0, firstMismatch = -1
   for (let i = 0; i < after.length; i++) {
     if (!after[i].includes("[dedup:ref sha=")) continue
     checked++
     const restored = after[i].replace(/\[dedup:ref sha=([0-9a-f]{24})[^\]]*\]/g, (ref, sha) => map[sha] ?? ref)
     if (restored === before[i]) passed++
+    else if (firstMismatch < 0) firstMismatch = i
   }
-  return { checked, passed }
+  return firstMismatch < 0 ? { checked, passed } : { checked, passed, firstMismatch }
 }
 function headroomRoundTrip(beforeBody, body, ctx) {
   const before = texts(beforeBody, ctx.protocol), after = texts(body, ctx.protocol)
@@ -338,6 +339,11 @@ export function runPipeline(body, ctx, options = {}, beforeBody = null) {
     try {
       const cfg = engineConfig(engine, options)
       const changed = engine.apply(body, ctx, cfg) === true
+      // ccr 的能力判定结果（direct / indirect / deferred / gate_off）。客户端升级把
+      // 门控掀掉时，这一行会直接出现在 requests.jsonl 里，不用再靠猜。
+      if (engine.id === "ccr" && ctx.state && ctx.state.ccrRetrievalMode) {
+        record.retrieval = ctx.state.ccrRetrievalMode
+      }
       if (changed) { record.afterBytes = byteLength(body); currentBytes = record.afterBytes } else { record.afterBytes = currentBytes }
       record.ms = Date.now() - t
       record.status = changed ? "hit" : "skipped"
