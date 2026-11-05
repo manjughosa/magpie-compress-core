@@ -1,5 +1,7 @@
 # compress-core 复活收尾报告（goal mvt0a83q-fvzhss）
 
+[中文](./goal-closing-report.md) | [English](./goal-closing-report.en.md)
+
 日期：2026-10-29 ｜ 目标：四策略全活 + 界面预设切换真正生效
 
 ## 一、问题诊断（起点）

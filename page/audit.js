@@ -4,8 +4,23 @@
   "use strict"
 
   var U = globalThis.CompressUI
+  var I18N = globalThis.CompressI18n
   var $ = function (id) { return document.getElementById(id) }
-  var lang = "zh"
+  var lastResult = null
+  function pick(zh, en) { return I18N && I18N.pick ? I18N.pick(zh, en) : zh }
+  if (I18N && I18N.onChange) {
+    I18N.onChange(function (next) {
+      lang = next
+      var input = $("labInput")
+      var modeEl = $("labMode")
+      if (input) {
+        input.placeholder = modeEl && modeEl.value === "json"
+          ? '{"model":"lab","messages":[{"role":"user","content":"…"},{"role":"tool","content":"…"}]}'
+          : pick("粘贴一段对话或文本…", "Paste a conversation or some text…")
+      }
+      if (lastResult) renderLabResult($("labResult"), lastResult)
+    })
+  }
   var getOptions = function () { return {} }
 
   function fmtBytes(n) {
@@ -44,28 +59,29 @@
 
     var text = input.value.trim()
     if (!text) {
-      if (status) status.textContent = "请输入要试压的文本"
+      if (status) status.textContent = pick("请输入要试压的文本", "Enter some text to compress")
       return
     }
 
     if (!globalThis.CompressLab) {
-      if (status) status.textContent = "试压引擎未加载"
+      if (status) status.textContent = pick("试压引擎未加载", "Lab engine not loaded")
       return
     }
 
     btn.disabled = true
-    if (status) status.textContent = "正在运行…"
+    if (status) status.textContent = pick("正在运行…", "Running…")
 
     var modeEl = $("labMode")
     var mode = modeEl ? modeEl.value : "text"
 
     globalThis.CompressLab.run(text, strategy.value, getOptions(), mode)
       .then(function (res) {
+        lastResult = res
         if (status) status.textContent = ""
         renderLabResult(result, res)
       })
       .catch(function (err) {
-        if (status) status.textContent = "试压失败：" + (err.message || err)
+        if (status) status.textContent = pick("试压失败：", "Test failed: ") + (err.message || err)
       })
       .finally(function () {
         btn.disabled = false
@@ -85,16 +101,23 @@
       U.el("span", "from", fmtBytes(res.before)),
       U.el("span", "arrow", "→"),
       U.el("span", "to", fmtBytes(res.after)),
-      U.el("span", "rate" + (rate > 0 ? "" : " is-flat"), rate > 0 ? "−" + rate + "%" : "没改动")
+      U.el("span", "rate" + (rate > 0 ? "" : " is-flat"), rate > 0 ? "−" + rate + "%" : pick("没改动", "no change"))
     )
     head.append(stat)
 
     // 这次为什么动 / 为什么没动——「前后一样」必须有个交代
     var note = U.el("div", "lab-note" + (rate > 0 ? "" : " is-miss"))
-    note.append(U.el("p", "lab-note-line", (res.label || res.strategy) + "：" + (res.why || "")))
+    var engineMeta = globalThis.CompressView && globalThis.CompressView.engines
+      ? globalThis.CompressView.engines().filter(function (e) { return e.id === res.strategy })[0]
+      : null
+    var whyText = I18N && I18N.lang === "en" && globalThis.CompressView
+      ? (globalThis.CompressView.whyEn(res.strategy) || res.why || "")
+      : ((engineMeta && engineMeta.why) || res.why || "")
+    var reasonText = I18N && I18N.t ? I18N.t(res.reasonText || "") : (res.reasonText || "")
+    note.append(U.el("p", "lab-note-line", (res.label || res.strategy) + pick("：", ": ") + whyText))
     note.append(U.el("p", "lab-note-line", rate > 0
-      ? "这次命中了 · " + res.ms + " ms"
-      : "这次没命中 —— " + (res.reasonText || "输入里没有它要的东西")))
+      ? pick("这次命中了 · " + res.ms + " ms", "Hit this time · " + res.ms + " ms")
+      : pick("这次没命中 —— ", "Miss this time — ") + (reasonText || pick("输入里没有它要的东西", "nothing in the input matches what it looks for"))))
     head.append(note)
 
     // 差异对比
@@ -103,7 +126,7 @@
     var beforePane = U.el("div", "diff-pane")
     var beforeHead = U.el("div", "diff-pane-head")
     beforeHead.append(
-      U.el("span", "diff-pane-title", "压缩前"),
+      U.el("span", "diff-pane-title", pick("压缩前", "Before")),
       U.el("span", "diff-pane-size", fmtBytes(res.before))
     )
     var beforeBody = U.el("div", "diff-pane-body")
@@ -113,7 +136,7 @@
     var afterPane = U.el("div", "diff-pane")
     var afterHead = U.el("div", "diff-pane-head")
     afterHead.append(
-      U.el("span", "diff-pane-title", "压缩后"),
+      U.el("span", "diff-pane-title", pick("压缩后", "After")),
       U.el("span", "diff-pane-size", fmtBytes(res.after))
     )
     var afterBody = U.el("div", "diff-pane-body")
@@ -145,7 +168,7 @@
     var removedCount = beforeLines.length - afterLines.length
     if (removedCount > 0) {
       result.push("")
-      result.push('<span class="diff-removed">… 已删除 ' + removedCount + " 行 …</span>")
+      result.push('<span class="diff-removed">' + pick("… 已删除 " + removedCount + " 行 …", "… " + removedCount + " lines removed …") + "</span>")
     }
 
     return result.join("\n")
@@ -167,7 +190,7 @@
       var syncPlaceholder = function () {
         input.placeholder = modeEl.value === "json"
           ? '{"model":"lab","messages":[{"role":"user","content":"…"},{"role":"tool","content":"…"}]}'
-          : "粘贴一段对话或文本…"
+          : pick("粘贴一段对话或文本…", "Paste a conversation or some text…")
       }
       modeEl.addEventListener("change", syncPlaceholder)
       syncPlaceholder()

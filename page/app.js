@@ -5,9 +5,19 @@
 
   var V = globalThis.CompressView
   var U = globalThis.CompressUI
+  var I18N = globalThis.CompressI18n
   var $ = function (id) { return document.getElementById(id) }
-  var lang = "zh"
+  var lang = I18N ? I18N.lang : "zh"
   var T = V.text(lang)
+  function pick(zh, en) { return I18N && I18N.pick ? I18N.pick(zh, en) : zh }
+  function tr(text) { return I18N && I18N.t ? I18N.t(text) : text }
+  if (I18N && I18N.onChange) {
+    I18N.onChange(function (next) {
+      lang = next
+      T = V.text(lang)
+      safePaint()
+    })
+  }
   var options = {}
   var state = { preset: "safe", open: {}, view: "main", pinned: null }
   // 页面读不到 capture-store.js，保留上限在这里镜像一份，只用于提示文案。
@@ -218,7 +228,7 @@
     try {
       paint()
     } catch (err) {
-      setMessage("渲染失败：" + (err && err.message ? err.message : err), "err")
+      setMessage(pick("渲染失败：", "Render failed: ") + (err && err.message ? err.message : err), "err")
       if (globalThis.console) console.error("[Compress] paint failed", err)
     }
   }
@@ -277,7 +287,7 @@
       var on = enabled[engine.id] === true
       var step = U.el("li", "pipeline-step" + (on ? " is-on" : " is-off"))
       step.append(U.el("span", "pipeline-num", String(engine.stackPriority)), U.el("span", "pipeline-name", engine.label))
-      if (!on) step.append(U.el("span", "pipeline-off", engine.available === false ? "依赖未配置" : "未启用"))
+      if (!on) step.append(U.el("span", "pipeline-off", engine.available === false ? pick("依赖未配置", "dependency not configured") : pick("未启用", "not enabled")))
       host.append(step)
     })
   }
@@ -411,11 +421,11 @@
 
     if (!captures.length) {
       if (hint) hint.textContent = options.capture === false
-        ? "暂无记录。打开下面的「记录完整快照」后，每条经过网关的请求都会在这里留一条。"
-        : "暂无记录。记录已打开，下一条经过网关的请求就会出现在这里，保留最新 " + KEEP_CAPTURES + " 条。"
+        ? pick("暂无记录。打开下面的「记录完整快照」后，每条经过网关的请求都会在这里留一条。", "No records yet. Turn on “Record full snapshots” below and every request through the gateway will leave a row here.")
+        : pick("暂无记录。记录已打开，下一条经过网关的请求就会出现在这里，保留最新 " + KEEP_CAPTURES + " 条。", "No records yet. Recording is on; the next request through the gateway appears here. The newest " + KEEP_CAPTURES + " are kept.")
       return
     }
-    if (hint) hint.textContent = captures.length + " / " + KEEP_CAPTURES + " 条记录 · 点击一条查看差异"
+    if (hint) hint.textContent = pick(captures.length + " / " + KEEP_CAPTURES + " 条记录 · 点击一条查看差异", captures.length + " / " + KEEP_CAPTURES + " records · click one to see the diff")
 
     captures.forEach(function (cap) {
       var rate = sessionRate(cap)
@@ -426,7 +436,7 @@
       row.className = "session-row"
       row.type = "button"
       row.dataset.id = cap.id
-      row.setAttribute("aria-label", (cap.model || "请求") + "，" + fmtBytes(before) + " 压缩到 " + fmtBytes(after))
+      row.setAttribute("aria-label", pick((cap.model || "请求") + "，" + fmtBytes(before) + " 压缩到 " + fmtBytes(after), (cap.model || "request") + ", " + fmtBytes(before) + " compressed to " + fmtBytes(after)))
 
       var info = document.createElement("div")
       info.className = "session-info"
@@ -515,7 +525,7 @@
     var body = $("diffBody")
     if (!modal || !body) return
 
-    if (title) title.textContent = "压缩前后差异"
+    if (title) title.textContent = pick("压缩前后差异", "Before & after")
     if (meta) {
       U.clear(meta)
       var rate = sessionRate(cap)
@@ -524,7 +534,7 @@
         cap.model || "",
         cap.protocol || "",
         fmtBytes(Number(cap.before) || 0) + " → " + fmtBytes(Number(cap.after) || 0),
-        "压缩率 " + fmtRate(rate),
+        pick("压缩率 ", "rate ") + fmtRate(rate),
       ]
       items.forEach(function (text) {
         if (!text) return
@@ -599,16 +609,16 @@
     var head = U.el("div", "diff-report-head")
     var tokens =
       report && report.estimatedBeforeTokens != null
-        ? "约 " + report.estimatedBeforeTokens.toLocaleString("zh-CN") + " → " + report.estimatedAfterTokens.toLocaleString("zh-CN") + " token"
+        ? pick("约 " + report.estimatedBeforeTokens.toLocaleString("zh-CN") + " → " + report.estimatedAfterTokens.toLocaleString("zh-CN") + " token", "~" + report.estimatedBeforeTokens.toLocaleString("en-US") + " → " + report.estimatedAfterTokens.toLocaleString("en-US") + " tokens")
         : ""
     head.append(
-      U.el("span", "", "策略贡献"),
-      U.el("span", "muted", tokens + (report && report.totalMs != null ? " · 总耗时 " + report.totalMs + " ms" : "")),
+      U.el("span", "", pick("策略贡献", "Strategy contributions")),
+      U.el("span", "muted", tokens + (report && report.totalMs != null ? pick(" · 总耗时 " + report.totalMs + " ms", " · total " + report.totalMs + " ms") : "")),
     )
     wrap.append(head)
 
     if (!active.length) {
-      wrap.append(U.el("p", "diff-note", "这次请求没有任何策略被启用。"))
+      wrap.append(U.el("p", "diff-note", pick("这次请求没有任何策略被启用。", "No strategy was enabled for this request.")))
       return wrap
     }
 
@@ -618,7 +628,7 @@
       var line = U.el("div", "diff-report-row")
       line.append(
         U.el("span", "diff-report-name", row.label || row.id),
-        U.el("span", "diff-report-verdict " + (hit ? "hit" : "skip"), hit ? "命中" : REASON_ZH[row.reason] || row.reason || "跳过"),
+        U.el("span", "diff-report-verdict " + (hit ? "hit" : "skip"), hit ? pick("命中", "hit") : tr(REASON_ZH[row.reason] || row.reason || pick("跳过", "skipped"))),
         U.el("span", "diff-report-saved", row.savedBytes ? fmtBytes(row.savedBytes) : "—"),
         U.el("span", "diff-report-ms", (row.ms != null ? row.ms : 0) + " ms"),
       )
@@ -626,7 +636,7 @@
     })
     wrap.append(list)
 
-    if (rest > 0) wrap.append(U.el("p", "diff-note", "另有 " + rest + " 个策略未启用。"))
+    if (rest > 0) wrap.append(U.el("p", "diff-note", pick("另有 " + rest + " 个策略未启用。", "Another " + rest + " strategies were not enabled.")))
     return wrap
   }
 
@@ -649,7 +659,7 @@
       return {
         beforeLines: beforeLines, afterLines: afterLines, beforeSet: beforeSet, afterSet: afterSet,
         added: 0, removed: 0, prefix: prefix, start: 0, end: Math.min(40, longest),
-        note: "两段文本逐行一致（" + beforeLines.length + " 行）——这次压缩没有改动文本内容。",
+        note: pick("两段文本逐行一致（" + beforeLines.length + " 行）——这次压缩没有改动文本内容。", "The two texts are identical line by line (" + beforeLines.length + " lines) — this compression changed no content."),
       }
     }
 
@@ -658,8 +668,9 @@
       added: added, removed: removed, prefix: prefix,
       start: Math.max(0, prefix - DIFF_WINDOW),
       end: Math.min(longest, prefix + DIFF_WINDOW * 2),
-      note: "前 " + prefix + " 行完全相同，差异从第 " + (prefix + 1) + " 行开始；"
-        + "逐行比对共新增 " + added + " 行、少了 " + removed + " 行。",
+      note: pick("前 " + prefix + " 行完全相同，差异从第 " + (prefix + 1) + " 行开始；"
+        + "逐行比对共新增 " + added + " 行、少了 " + removed + " 行。", "The first " + prefix + " lines are identical; the diff starts at line " + (prefix + 1) + ". "
+        + "Line-by-line comparison: " + added + " lines added, " + removed + " lines removed."),
     }
   }
 
@@ -667,7 +678,7 @@
     return lines
       .map(function (line, i) {
         var text = line.length > MAX_LINE_CHARS
-          ? line.slice(0, MAX_LINE_CHARS) + " …（本行还有 " + (line.length - MAX_LINE_CHARS) + " 字符）"
+          ? line.slice(0, MAX_LINE_CHARS) + pick(" …（本行还有 " + (line.length - MAX_LINE_CHARS) + " 字符）", " …(" + (line.length - MAX_LINE_CHARS) + " more chars)")
           : line
         var cls = classify(line)
         return (
@@ -690,10 +701,10 @@
     var header = U.el("div", "diff-header")
     var stats = U.el("div", "diff-stats")
     var cells = [
-      ["压缩前", fmtBytes(beforeBytes), ""],
-      ["压缩后", fmtBytes(afterBytes), ""],
-      ["压缩率", fmtRate(rate), rate > 0 ? "good" : ""],
-      ["节省", fmtBytes(Math.max(0, beforeBytes - afterBytes)), ""],
+      [pick("压缩前", "Before"), fmtBytes(beforeBytes), ""],
+      [pick("压缩后", "After"), fmtBytes(afterBytes), ""],
+      [pick("压缩率", "Rate"), fmtRate(rate), rate > 0 ? "good" : ""],
+      [pick("节省", "Saved"), fmtBytes(Math.max(0, beforeBytes - afterBytes)), ""],
     ]
     cells.forEach(function (cell) {
       var box = U.el("div", "diff-stat")
@@ -711,7 +722,7 @@
     host.append(header)
 
     if (phase === "loading") {
-      host.append(U.el("p", "diff-note", "正在加载完整快照…"))
+      host.append(U.el("p", "diff-note", pick("正在加载完整快照…", "Loading the full snapshot…")))
       return
     }
     if (!record) {
@@ -719,7 +730,7 @@
         U.el(
           "p",
           "diff-note",
-          "这条记录的完整快照没有随页面发布（可能已被清理或超过发布上限），只剩索引里的体积、模型与协议。",
+          pick("这条记录的完整快照没有随页面发布（可能已被清理或超过发布上限），只剩索引里的体积、模型与协议。", "The full snapshot for this record was not published with the page (it may have been cleaned up or exceeded the publish cap); only the size, model, and protocol from the index are left."),
         ),
       )
       return
@@ -733,7 +744,7 @@
     var leftPane = U.el("div", "diff-pane")
     var leftHead = U.el("div", "diff-pane-head")
     leftHead.append(
-      U.el("span", "diff-pane-title", "处理前 · 第 " + (st.start + 1) + "–" + Math.min(st.end, st.beforeLines.length) + " 行"),
+      U.el("span", "diff-pane-title", pick("处理前 · 第 " + (st.start + 1) + "–" + Math.min(st.end, st.beforeLines.length) + " 行", "Before · lines " + (st.start + 1) + "–" + Math.min(st.end, st.beforeLines.length))),
       U.el("span", "diff-pane-size", fmtBytes(beforeBytes)),
     )
     var leftBody = U.el("div", "diff-pane-body")
@@ -745,7 +756,7 @@
     var rightPane = U.el("div", "diff-pane")
     var rightHead = U.el("div", "diff-pane-head")
     rightHead.append(
-      U.el("span", "diff-pane-title", "处理后 · 第 " + (st.start + 1) + "–" + Math.min(st.end, st.afterLines.length) + " 行"),
+      U.el("span", "diff-pane-title", pick("处理后 · 第 " + (st.start + 1) + "–" + Math.min(st.end, st.afterLines.length) + " 行", "After · lines " + (st.start + 1) + "–" + Math.min(st.end, st.afterLines.length))),
       U.el("span", "diff-pane-size", fmtBytes(afterBytes)),
     )
     var rightBody = U.el("div", "diff-pane-body")
@@ -758,7 +769,7 @@
     host.append(panes)
 
     if (st.prefix > 0) {
-      host.append(U.el("p", "diff-note", "窗口外还有 " + st.prefix + " 行完全一致的内容未显示。"))
+      host.append(U.el("p", "diff-note", pick("窗口外还有 " + st.prefix + " 行完全一致的内容未显示。", st.prefix + " more identical lines outside the window are not shown.")))
     }
 
     host.append(renderStrategyReport(record.report))

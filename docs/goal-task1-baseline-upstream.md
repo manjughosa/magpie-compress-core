@@ -1,5 +1,7 @@
 # Task-1 取证：基线数据表 + 上游 OmniRoute 语义摘要
 
+[中文](./goal-task1-baseline-upstream.md) | [English](./goal-task1-baseline-upstream.en.md)
+
 日期：2026-10-29 · 目标 goal=mvt0a83q-fvzhss（四策略全活）
 
 ## 一、基线数据表（真实流量回放）

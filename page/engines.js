@@ -62,7 +62,7 @@ globalThis.CompressCatalog = {
       "tier": 3,
       "tierPct": 22.1,
       "tierN": 50,
-      "note": null,
+      "note": "范围说明：CCR 原本可以处理更大的文本块，但调研确认，把工具输出换成取回标记会打断 agent 的工具调用循环；因此工具输出压缩已从 CCR 的范围中切掉，不合并进 compress-core。",
       "fields": [
         {
           "key": "minChars",

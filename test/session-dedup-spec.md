@@ -1,5 +1,7 @@
 # session-dedup 引擎 → 纯 JavaScript 移植规格书
 
+[中文](./session-dedup-spec.md) | [English](./session-dedup-spec.en.md)
+
 > 源文件：`open-sse/services/compression/engines/session-dedup/index.ts` + `fuzzy.ts`
 > 目标：纯 JS（ES2018），无 node API、无 npm 依赖、无 fetch/timers。
 > 本规格书为**唯一移植依据**，逐字记录所有常量、算法步骤与边界行为。

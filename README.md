@@ -1,5 +1,7 @@
 # compress-core
 
+[中文](./README.md) | [English](./README.en.md)
+
 给 magpie 网关用的上下文压缩插件。它在请求离开本机之前改写 `messages`，把重复的、噪声的、格式化的部分去掉，然后照原样交给上游。
 
 这是 OmniRoute 压缩策略的完整移植：策略 id、名字、优先级、有损标记都跟那边一致，能搬的都搬了，搬不动的在表里标了原因。
@@ -20,6 +22,7 @@ magpie plugin add github:magpie-community/plugins             # 从仓库装（p
 
 | id | 名字 | 优先级 | 有损 | 状态 | 做什么 |
 | --- | --- | --- | --- | --- | --- |
+| `read-lifecycle` | Read Lifecycle | 2 | 是 | 已移植 | 把被后续 Read/Write 覆盖掉的旧文件读取结果折成短桩。 |
 | `session-dedup` | Session Dedup | 3 | 否 | 已移植 | 本会话早前发过的文本换成 `[dedup:ref sha=…]`，原文可用映射还原。 |
 | `ccr` | CCR | 4 | 否 | 已移植 | 大段重复/连续块换成内容寻址引用，原文可检索。 |
 | `lite` | Lite Cleanup | 5 | 否 | 已移植 | 只处理空白、重复行与格式，不动措辞。最快，永远安全。 |
@@ -29,7 +32,6 @@ magpie plugin add github:magpie-community/plugins             # 从仓库装（p
 | `leanctx-structured` | LeanCTX Structured | 17 | 是 | 可选 | 工具输出中的 CSV/TSV/YAML 整理；常量只留一次，可选丢弃高熵列，默认关闭。 |
 | `relevance` | Relevance | 18 | 是 | 已移植 | 按最后一条用户消息给句子打分，丢掉低分句；数字、URL、报错、代码、堆栈行永不丢。 |
 | `caveman` | Caveman | 20 | 是 | 已移植 | 规则式散文压缩，11 种语言的规则包。 |
-| `read-lifecycle` | Read Lifecycle | 22 | 是 | 已移植 | 把被后续 Read/Write 覆盖掉的旧文件读取结果折成短桩。 |
 | `aggressive` | Aggressive | 30 | 是 | 已移植 | 老轮次摘要 + 老化。 |
 | `llmlingua` | LLMLingua-2 | 35 | 是 | 不可用 | 需要 ONNX 模型与 worker 线程，插件宿主里跑不了。 |
 | `ultra` | Ultra | 40 | 是 | 已移植 | 启发式 token 级剪枝，最激进的纯本地选项。 |
@@ -39,7 +41,7 @@ magpie plugin add github:magpie-community/plugins             # 从仓库装（p
 
 不可用的 LLMLingua-2 / OmniGlyph 在面板上照常显示并写明缺什么。LLM Compressor 是可选后端：未配置模型时不工作，不会偷偷发请求。
 
-默认开启无损策略与 RTK / Codex Tool Output / Read Lifecycle。Read Lifecycle 只折叠被同路径后续 Read 或 Write 明确取代的旧结果，保留一行说明；它会改变历史前缀，介意缓存时单独关闭。RTK 不要与 Magpie 官方 RTK 同时开启。Relevance、Caveman、Aggressive、Ultra、Ionizer 这些散文剪枝策略仍可单独开启，不做全局默认叠加。
+安装默认开启 `ccr`、`lite`、`headroom`、`rtk`、`codex-responses`、`read-lifecycle`，其余关闭（包括 `session-dedup`）。Read Lifecycle 只折叠被同路径后续 Read 或 Write 明确取代的旧结果，保留一行说明；它会改变历史前缀，介意缓存时单独关闭。RTK 不要与 Magpie 官方 RTK 同时开启。Relevance、Caveman、Aggressive、Ultra、Ionizer 这些散文剪枝策略仍可单独开启，不做全局默认叠加。
 
 LLM 后端在 options 里配置，例如 `"llm": {"enabled": true, "model": "group/deepseek-v4.1-flash", "timeoutMs": 12000}`。仅可信 Bun 宿主发请求，默认使用本机 `http://127.0.0.1:3425/v1`；同步 moejs fallback 不会等待异步后端。
 
@@ -88,7 +90,7 @@ ccr 越倾向不再压它（防乒乓）。模型读到的标签行前面会保�
 | 档 | 含义 |
 | --- | --- |
 | 关闭 | 全关。 |
-| 稳妥 | OmniRoute 的"安全默认"：**不删原文**的策略全开，其余不开。也就是 `ccr`、`lite`、`headroom`。`session-dedup` 同样不删原文（换成指向会话内已有副本的引用），但**默认关**，需要时手动开。ccr 可经 retrieve 工具取回，所以这里说的是"原文仍在"，不是"一个字节都不动"。 |
+| 稳妥 | OmniRoute 的"安全默认"：所有**可用且不删原文**的策略全开，其余不开。也就是 `session-dedup`、`ccr`、`lite`、`headroom`。这里的"无损"指原文仍在或可还原，不是"一个字节都不动"。 |
 | 自定义 | 你自己逐个点出来的结果。手动改任何开关，档位自动落到这一档。 |
 | 全开 | 所有可用策略全开（不可用的仍然开不了）。 |
 
@@ -121,6 +123,8 @@ lite 默认**全量改写、严格前缀稳定**：每条消息从第一轮起�
 ## 页面
 
 侧栏 Plugins 组 → 压缩：一条压缩尺、档位、每个策略一行、最近八次请求。
+
+界面按浏览器语言自动选择中文或英文；标题旁的 `EN` / `中文` 按钮可随时切换，并记住选择。策略说明、参数标签、实验室和差异弹窗都跟随语言。文档同样成对提供，每篇顶部有中英文互链。
 
 ## 面板 · 设置
 
@@ -155,7 +159,7 @@ magpie 给页面和面板的沙箱是 `connect-src 'none'`，也没有文件系�
 
 ## 会话记录
 
-钩子能在**每一次**经过网关的请求上留一条快照，`capture` 默认**关**（显式设 `true` 才开）。快照落在插件配置目录的 `captures/`，索引另存 `captures-index.json`，最多保留最近 50 条，每条上限 2MB。
+钩子能在**每一次**经过网关的请求上留一条快照。安装默认的 `package.json` 里 `capture` 是 **开**；代码只在 `options.capture === true` 时记录，显式写 `false` 关闭，自己构造 options 时省略这个键也不会记录。快照落在插件配置目录的 `captures/`，索引另存 `captures-index.json`，最多保留最近 50 条，每条上限 2MB。
 
 页面的 CSP 是 `connect-src 'none'`，只放行插件自己的 `page/` 目录。所以数字和列表都由钩子发布成**包内 `page/` 目录**（`page-publish.js` 的落点，不是插件数据目录）下的两个脚本，页面用 `<script src>` 载入：`captures-index.js`（会话列表：id、时间、`agent`、模型、字节数）和 `compress-stats.js`（顶部统计与每个策略的 saving）。对话原文只在 `captures/`，不进安装包。行上的 `agent`（`dsh`、`pi` 等）标的是这条请求由哪一路 harness 发出。
 
@@ -192,7 +196,7 @@ MIT（`LICENSE`，保留 OmniRoute 的版权行）。每个引擎都是 OmniRout
 ## 开发
 
 ```bash
-node test/run.mjs                 # 全部测试（30 套，清单在 test/suites.mjs）
+node test/run.mjs                 # 全部测试（清单在 test/suites.mjs）
 node test/run.mjs lite            # 只跑一套：参数是套件名（每个套件文件里的 name；例：`lite`、`gateway cases (cases.json)`）
 bun test                          # 同一个入口的 bun 版：CI 就是它
 node scripts/gen-page-catalog.mjs # 改完 catalog.js 后重新生成 page/engines.js

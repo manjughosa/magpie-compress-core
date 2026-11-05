@@ -1,5 +1,7 @@
 # 引擎移植契约（所有引擎模块必须遵守）
 
+[中文](./CONTRACT.md) | [English](./CONTRACT.en.md)
+
 目标：把 OmniRoute 的压缩引擎逐个移植成纯 JS 模块，跑在 magpie 的 moejs 网关中间件里。
 
 ## 运行时铁律（moejs）

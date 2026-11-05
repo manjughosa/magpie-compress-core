@@ -1,5 +1,7 @@
 # CCR 压缩-取回链路（task-3 · 2026-10-29）
 
+[中文](./ccr-retrieval-chain.md) | [English](./ccr-retrieval-chain.en.md)
+
 > **这是什么**：ccr 把请求里的大段文本换成一行哈希标签（`[CCR retrieve hash=…]`），
 > 原文存在本地 store 文件里，一字不删。模型需要原文时调用 `omniroute_ccr_retrieve`
 > 工具按哈希取回——所以叫「无损压缩」。**前提是 agent 的工具清单里装了这个 retrieve
@@ -29,7 +31,7 @@ mcp/ccr-retrieve-server.mjs（stdio MCP，零依赖）
       full ≤256KiB；取回计数合并写回文件 → ramp 跨进程生效
 ```
 
-## 门控的三种可达形状（harness.js）
+## 门控的可达形状（harness.js）
 
 | 模式 | 判据 | 典型调用方 |
 |:--|:--|:--|
@@ -72,8 +74,9 @@ store 路径解析：argv > CCR_STORE_PATH > COMPRESS_CORE_DATA_DIR/MAGPIE_CONFI
 
 ## 验证证据
 
-- test/ccr-persist.test.mjs P-1~P-9 全绿（序列化 round-trip、过期剔除、512KB 上限、
-  持久 handle、端到端命中+兑现、门控 reason、ramp 持久、MCP 层、路径解析）
+- test/ccr-persist.test.mjs P-1~P-11 全绿（序列化 round-trip、过期剔除、512KB 上限、
+  持久 handle、端到端命中+兑现、门控 reason、ramp 持久、MCP 层、路径解析、
+  安装命令日志与幂等重放）
 - stdio 冒烟：真实子进程 JSON-RPC initialize/tools/list/tools/call，
   full 模式取回 6000 字符逐字节一致。
 - 回放口径不变：历史 capture 未声明 retrieve 工具，ccr 按门控跳过（上游语义），

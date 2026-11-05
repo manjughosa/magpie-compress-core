@@ -3,6 +3,8 @@ import { runLab } from "../lab.js"
 import { engineById, ENGINES } from "../catalog.js"
 
 const encoder = new TextEncoder()
+const I18N = globalThis.CompressI18n
+function pick(zh, en) { return I18N && I18N.pick ? I18N.pick(zh, en) : zh }
 
 // 为什么这次没动：把 pipeline 的 reason 翻成人话，免得面板上只剩「没区别」。
 const REASON_ZH = {
@@ -21,25 +23,48 @@ const REASON_ZH = {
   changed: "改动了。",
 }
 
+const REASON_EN = {
+  no_repeat_eligible_block: "No repeated block in the input — deduplication relies on text already sent earlier in the same session.",
+  nothing_to_remove: "Scanned: nothing in this text it can remove.",
+  no_whitespace_or_tool_result_change: "No extra whitespace, repeated lines, or compactable tool output in the input.",
+  no_matching_tool_output_filter: "No command output recognized — this strategy only handles tool results.",
+  no_eligible_json_array_or_not_smaller: "No JSON array large enough to fold, or the result is not smaller.",
+  no_eligible_response_item: "No Responses-protocol shell / patch / search output in this request.",
+  protocol_not_responses: "This strategy only applies to the Responses protocol; the lab currently runs chat.",
+  budget_exceeded: "This test exceeded its time budget.",
+  round_trip_mismatch: "The result could not be restored, so it was rolled back (fail-open).",
+  engine_error: "The strategy errored and was rolled back (fail-open).",
+  unavailable: "This strategy cannot run in this environment.",
+  disabled: "This strategy was not enabled for this test.",
+  changed: "changed.",
+}
+
 globalThis.CompressLab = {
   engines: ENGINES.map(function (e) {
-    return { id: e.id, label: e.label, available: e.available !== false, why: e.why || "" }
+    return {
+      id: e.id,
+      label: e.label,
+      available: e.available !== false,
+      why: I18N && I18N.lang === "en" && globalThis.CompressView
+        ? (globalThis.CompressView.whyEn(e.id) || e.why || "")
+        : (e.why || ""),
+    }
   }),
   async run(input, strategy, options, mode) {
-    if (typeof input !== "string" || !input.trim()) throw new Error("请输入要试压的文本。")
-    if (encoder.encode(input).length > 256000) throw new Error("试压文本不能超过 256 KB。")
+    if (typeof input !== "string" || !input.trim()) throw new Error(pick("请输入要试压的文本。", "Enter some text to compress."))
+    if (encoder.encode(input).length > 256000) throw new Error(pick("试压文本不能超过 256 KB。", "Test input must be under 256 KB."))
     const meta = engineById(strategy)
-    if (!meta || meta.available === false) throw new Error("这个策略当前不可用。")
+    if (!meta || meta.available === false) throw new Error(pick("这个策略当前不可用。", "This strategy is currently unavailable."))
 
     const shape = mode === "json" ? "json" : "text"
     if (shape === "json") {
       let parsed = null
-      try { parsed = JSON.parse(input) } catch { throw new Error("请求体 JSON 解析失败，检查一下括号和引号。") }
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("请求体 JSON 的顶层必须是对象。")
+      try { parsed = JSON.parse(input) } catch { throw new Error(pick("请求体 JSON 解析失败，检查一下括号和引号。", "Could not parse the request body JSON; check brackets and quotes.")) }
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error(pick("请求体 JSON 的顶层必须是对象。", "The request body JSON must have an object at the top level."))
     }
 
     const result = await runLab({ id: `lab-${Date.now()}`, mode: shape, input, protocol: "chat", strategy }, options)
-    if (!result.ok) throw new Error(result.error || "试压失败")
+    if (!result.ok) throw new Error(result.error || pick("试压失败", "Test failed"))
 
     const record = result.record || {}
     return {
@@ -47,11 +72,13 @@ globalThis.CompressLab = {
       at: result.at,
       strategy,
       label: meta.label || strategy,
-      why: meta.why || "",
+      why: I18N && I18N.lang === "en" && globalThis.CompressView
+        ? (globalThis.CompressView.whyEn(strategy) || meta.why || "")
+        : (meta.why || ""),
       mode: shape,
       status: record.status || "skipped",
       reason: record.reason || "",
-      reasonText: REASON_ZH[record.reason] || "",
+      reasonText: pick(REASON_ZH[record.reason] || "", REASON_EN[record.reason] || ""),
       ms: record.ms || 0,
       before: result.report.beforeBytes,
       after: result.report.afterBytes,

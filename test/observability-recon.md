@@ -1,5 +1,7 @@
 # magpie-compress-core 可观测性：运行时能力侦察
 
+[中文](./observability-recon.md) | [English](./observability-recon.en.md)
+
 侦察日期：2026-10-26。对象：本机安装的 magpie 可执行文件、已安装插件源码与 magpie 中文插件文档。
 
 ## 1. moejs 中间件

@@ -1182,6 +1182,13 @@ select:focus { border-color: var(--accent); }
   height: 14px;
 }
 
+/* 语言切换按钮：显示目标语言，宽度固定，避免切换时挤动预设组。 */
+.save-btn.lang-toggle {
+  min-width: 38px;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* 实验室说明：多数策略依赖上下文，短文本试不出效果。 */
 .lab-note {
   margin: 10px 0 0;

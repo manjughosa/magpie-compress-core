@@ -1,5 +1,7 @@
 # 策略可用性完善 · 2026-11-03
 
+[中文](./strategy-availability-2026-11-03.md) | [English](./strategy-availability-2026-11-03.en.md)
+
 ## 已完成
 
 - 修复 Lite 在 Responses 默认保护当前轮、导致与其他协议默认行为不一致的问题；显式 `preserveCurrentTurn: true` 仍保留保护行为。

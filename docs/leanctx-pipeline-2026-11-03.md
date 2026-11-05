@@ -1,5 +1,7 @@
 # 第 16 策略与组合流水线 · 2026-11-03
 
+[中文](./leanctx-pipeline-2026-11-03.md) | [English](./leanctx-pipeline-2026-11-03.en.md)
+
 ## 完成内容
 
 - **LeanCTX Structured（第 16 条）**：`stackPriority: 17`，位于 Headroom(15) 与 Relevance(18) 之间；默认关闭、显式有损，只处理工具输出中的 CSV/TSV 与受限 YAML 清单，不处理普通对话。

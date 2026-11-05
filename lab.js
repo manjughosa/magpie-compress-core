@@ -6,6 +6,7 @@ import { engineModule } from "./engines/index.js"
 export const MAX_LAB_BYTES = 256000
 const PROTOCOLS = new Set(["chat", "responses", "anthropic", "gemini"])
 const encoder = new TextEncoder()
+const I18N = globalThis.CompressI18n
 
 export function conversationText(body, protocol) {
   const view = conversationView(body, protocol)
@@ -17,22 +18,23 @@ export function conversationText(body, protocol) {
   }).join("\n")
 }
 
-function inputError(message) {
-  throw new Error(`实验室输入错误：${message}`)
+function inputError(zh, en) {
+  const prefix = I18N && I18N.pick ? I18N.pick("实验室输入错误：", "Lab input error: ") : "实验室输入错误："
+  throw new Error(prefix + (I18N && I18N.pick ? I18N.pick(zh, en) : zh))
 }
 
 function parseRequest(request) {
-  if (!request || typeof request !== "object" || Array.isArray(request)) inputError("请求必须是对象")
+  if (!request || typeof request !== "object" || Array.isArray(request)) inputError("请求必须是对象", "the request must be an object")
   const { mode, input, protocol, strategy } = request
-  if (mode !== "text" && mode !== "json") inputError("mode 仅支持 text 或 json")
-  if (!PROTOCOLS.has(protocol)) inputError("protocol 仅支持 chat、responses、anthropic、gemini")
-  if (typeof input !== "string") inputError("input 必须是字符串")
-  if (encoder.encode(input).length > MAX_LAB_BYTES) inputError(`input 不能超过 ${MAX_LAB_BYTES} 字节`)
+  if (mode !== "text" && mode !== "json") inputError("mode 仅支持 text 或 json", "mode supports only text or json")
+  if (!PROTOCOLS.has(protocol)) inputError("protocol 仅支持 chat、responses、anthropic、gemini", "protocol supports only chat, responses, anthropic, or gemini")
+  if (typeof input !== "string") inputError("input 必须是字符串", "input must be a string")
+  if (encoder.encode(input).length > MAX_LAB_BYTES) inputError(`input 不能超过 ${MAX_LAB_BYTES} 字节`, `input must be under ${MAX_LAB_BYTES} bytes`)
 
   if (mode === "text") return { model: "lab", messages: [{ role: "user", content: input }] }
   let body
-  try { body = JSON.parse(input) } catch { inputError("JSON 格式无效") }
-  if (!body || typeof body !== "object" || Array.isArray(body)) inputError("JSON 顶层必须是对象")
+  try { body = JSON.parse(input) } catch { inputError("JSON 格式无效", "invalid JSON") }
+  if (!body || typeof body !== "object" || Array.isArray(body)) inputError("JSON 顶层必须是对象", "the JSON top level must be an object")
   return body
 }
 
@@ -40,10 +42,10 @@ export async function runLab(request, options = {}) {
   const body = parseRequest(request)
   const { id, mode, protocol, strategy } = request
   const meta = typeof strategy === "string" ? engineById(strategy) : null
-  if (!meta) inputError("策略不在引擎目录中")
-  if (meta.available === false) inputError("策略当前不可用")
-  if (!engineModule(strategy)) inputError("策略没有可用实现")
-  if (!options || typeof options !== "object" || Array.isArray(options)) inputError("options 必须是对象")
+  if (!meta) inputError("策略不在引擎目录中", "the strategy is not in the engine catalog")
+  if (meta.available === false) inputError("策略当前不可用", "the strategy is currently unavailable")
+  if (!engineModule(strategy)) inputError("策略没有可用实现", "the strategy has no implementation")
+  if (!options || typeof options !== "object" || Array.isArray(options)) inputError("options 必须是对象", "options must be an object")
 
   const strategies = Object.fromEntries(ENGINES.map(engine => [engine.id, false]))
   strategies[strategy] = true

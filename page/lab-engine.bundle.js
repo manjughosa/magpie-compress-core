@@ -9245,6 +9245,7 @@ ${GCF_FENCE_CLOSE}`;
       label: "CCR",
       description: "Lossless \u2014 replaces large repeated/contiguous blocks with content-addressed references instead of deleting them; the original content stays retrievable.",
       why: "\u628A\u5927\u7684\u91CD\u590D\u6216\u8FDE\u7EED\u5757\u6362\u6210\u5185\u5BB9\u5BFB\u5740\u5F15\u7528\uFF0C\u539F\u6587\u4ECD\u53EF\u53D6\u56DE\u3002",
+      note: "\u8303\u56F4\u8BF4\u660E\uFF1ACCR \u539F\u672C\u53EF\u4EE5\u5904\u7406\u66F4\u5927\u7684\u6587\u672C\u5757\uFF0C\u4F46\u8C03\u7814\u786E\u8BA4\uFF0C\u628A\u5DE5\u5177\u8F93\u51FA\u6362\u6210\u53D6\u56DE\u6807\u8BB0\u4F1A\u6253\u65AD agent \u7684\u5DE5\u5177\u8C03\u7528\u5FAA\u73AF\uFF1B\u56E0\u6B64\u5DE5\u5177\u8F93\u51FA\u538B\u7F29\u5DF2\u4ECE CCR \u7684\u8303\u56F4\u4E2D\u5207\u6389\uFF0C\u4E0D\u5408\u5E76\u8FDB compress-core\u3002",
       stackPriority: 4,
       lossy: false,
       cacheImpact: "low",
@@ -9953,6 +9954,7 @@ ${GCF_FENCE_CLOSE}`;
   var MAX_LAB_BYTES = 256e3;
   var PROTOCOLS = /* @__PURE__ */ new Set(["chat", "responses", "anthropic", "gemini"]);
   var encoder = new TextEncoder();
+  var I18N = globalThis.CompressI18n;
   function conversationText(body, protocol) {
     const view = conversationView(body, protocol);
     if (!view) return "";
@@ -9962,34 +9964,35 @@ ${GCF_FENCE_CLOSE}`;
       return `[${tags.join("] [")}] ${segment.text}`;
     }).join("\n");
   }
-  function inputError(message) {
-    throw new Error(`\u5B9E\u9A8C\u5BA4\u8F93\u5165\u9519\u8BEF\uFF1A${message}`);
+  function inputError(zh, en) {
+    const prefix = I18N && I18N.pick ? I18N.pick("\u5B9E\u9A8C\u5BA4\u8F93\u5165\u9519\u8BEF\uFF1A", "Lab input error: ") : "\u5B9E\u9A8C\u5BA4\u8F93\u5165\u9519\u8BEF\uFF1A";
+    throw new Error(prefix + (I18N && I18N.pick ? I18N.pick(zh, en) : zh));
   }
   function parseRequest(request) {
-    if (!request || typeof request !== "object" || Array.isArray(request)) inputError("\u8BF7\u6C42\u5FC5\u987B\u662F\u5BF9\u8C61");
+    if (!request || typeof request !== "object" || Array.isArray(request)) inputError("\u8BF7\u6C42\u5FC5\u987B\u662F\u5BF9\u8C61", "the request must be an object");
     const { mode, input, protocol, strategy } = request;
-    if (mode !== "text" && mode !== "json") inputError("mode \u4EC5\u652F\u6301 text \u6216 json");
-    if (!PROTOCOLS.has(protocol)) inputError("protocol \u4EC5\u652F\u6301 chat\u3001responses\u3001anthropic\u3001gemini");
-    if (typeof input !== "string") inputError("input \u5FC5\u987B\u662F\u5B57\u7B26\u4E32");
-    if (encoder.encode(input).length > MAX_LAB_BYTES) inputError(`input \u4E0D\u80FD\u8D85\u8FC7 ${MAX_LAB_BYTES} \u5B57\u8282`);
+    if (mode !== "text" && mode !== "json") inputError("mode \u4EC5\u652F\u6301 text \u6216 json", "mode supports only text or json");
+    if (!PROTOCOLS.has(protocol)) inputError("protocol \u4EC5\u652F\u6301 chat\u3001responses\u3001anthropic\u3001gemini", "protocol supports only chat, responses, anthropic, or gemini");
+    if (typeof input !== "string") inputError("input \u5FC5\u987B\u662F\u5B57\u7B26\u4E32", "input must be a string");
+    if (encoder.encode(input).length > MAX_LAB_BYTES) inputError(`input \u4E0D\u80FD\u8D85\u8FC7 ${MAX_LAB_BYTES} \u5B57\u8282`, `input must be under ${MAX_LAB_BYTES} bytes`);
     if (mode === "text") return { model: "lab", messages: [{ role: "user", content: input }] };
     let body;
     try {
       body = JSON.parse(input);
     } catch {
-      inputError("JSON \u683C\u5F0F\u65E0\u6548");
+      inputError("JSON \u683C\u5F0F\u65E0\u6548", "invalid JSON");
     }
-    if (!body || typeof body !== "object" || Array.isArray(body)) inputError("JSON \u9876\u5C42\u5FC5\u987B\u662F\u5BF9\u8C61");
+    if (!body || typeof body !== "object" || Array.isArray(body)) inputError("JSON \u9876\u5C42\u5FC5\u987B\u662F\u5BF9\u8C61", "the JSON top level must be an object");
     return body;
   }
   async function runLab(request, options = {}) {
     const body = parseRequest(request);
     const { id: id15, mode, protocol, strategy } = request;
     const meta = typeof strategy === "string" ? engineById(strategy) : null;
-    if (!meta) inputError("\u7B56\u7565\u4E0D\u5728\u5F15\u64CE\u76EE\u5F55\u4E2D");
-    if (meta.available === false) inputError("\u7B56\u7565\u5F53\u524D\u4E0D\u53EF\u7528");
-    if (!engineModule(strategy)) inputError("\u7B56\u7565\u6CA1\u6709\u53EF\u7528\u5B9E\u73B0");
-    if (!options || typeof options !== "object" || Array.isArray(options)) inputError("options \u5FC5\u987B\u662F\u5BF9\u8C61");
+    if (!meta) inputError("\u7B56\u7565\u4E0D\u5728\u5F15\u64CE\u76EE\u5F55\u4E2D", "the strategy is not in the engine catalog");
+    if (meta.available === false) inputError("\u7B56\u7565\u5F53\u524D\u4E0D\u53EF\u7528", "the strategy is currently unavailable");
+    if (!engineModule(strategy)) inputError("\u7B56\u7565\u6CA1\u6709\u53EF\u7528\u5B9E\u73B0", "the strategy has no implementation");
+    if (!options || typeof options !== "object" || Array.isArray(options)) inputError("options \u5FC5\u987B\u662F\u5BF9\u8C61", "options must be an object");
     const strategies = Object.fromEntries(ENGINES.map((engine) => [engine.id, false]));
     strategies[strategy] = true;
     const bench = {
@@ -10042,6 +10045,10 @@ ${GCF_FENCE_CLOSE}`;
 
   // page/lab-engine.js
   var encoder2 = new TextEncoder();
+  var I18N2 = globalThis.CompressI18n;
+  function pick(zh, en) {
+    return I18N2 && I18N2.pick ? I18N2.pick(zh, en) : zh;
+  }
   var REASON_ZH = {
     no_repeat_eligible_block: "\u8F93\u5165\u91CC\u6CA1\u6709\u91CD\u590D\u51FA\u73B0\u7684\u5757\u2014\u2014\u53BB\u91CD\u8981\u9760\u540C\u4E00\u4F1A\u8BDD\u91CC\u5DF2\u7ECF\u53D1\u8FC7\u7684\u6587\u672C\u3002",
     nothing_to_remove: "\u626B\u8FC7\u4E86\uFF1A\u8FD9\u6BB5\u6587\u672C\u91CC\u6CA1\u6709\u5B83\u80FD\u53BB\u6389\u7684\u4E1C\u897F\u3002",
@@ -10057,38 +10064,58 @@ ${GCF_FENCE_CLOSE}`;
     disabled: "\u8FD9\u6B21\u6CA1\u542F\u7528\u8FD9\u4E2A\u7B56\u7565\u3002",
     changed: "\u6539\u52A8\u4E86\u3002"
   };
+  var REASON_EN = {
+    no_repeat_eligible_block: "No repeated block in the input \u2014 deduplication relies on text already sent earlier in the same session.",
+    nothing_to_remove: "Scanned: nothing in this text it can remove.",
+    no_whitespace_or_tool_result_change: "No extra whitespace, repeated lines, or compactable tool output in the input.",
+    no_matching_tool_output_filter: "No command output recognized \u2014 this strategy only handles tool results.",
+    no_eligible_json_array_or_not_smaller: "No JSON array large enough to fold, or the result is not smaller.",
+    no_eligible_response_item: "No Responses-protocol shell / patch / search output in this request.",
+    protocol_not_responses: "This strategy only applies to the Responses protocol; the lab currently runs chat.",
+    budget_exceeded: "This test exceeded its time budget.",
+    round_trip_mismatch: "The result could not be restored, so it was rolled back (fail-open).",
+    engine_error: "The strategy errored and was rolled back (fail-open).",
+    unavailable: "This strategy cannot run in this environment.",
+    disabled: "This strategy was not enabled for this test.",
+    changed: "changed."
+  };
   globalThis.CompressLab = {
     engines: ENGINES.map(function(e) {
-      return { id: e.id, label: e.label, available: e.available !== false, why: e.why || "" };
+      return {
+        id: e.id,
+        label: e.label,
+        available: e.available !== false,
+        why: I18N2 && I18N2.lang === "en" && globalThis.CompressView ? globalThis.CompressView.whyEn(e.id) || e.why || "" : e.why || ""
+      };
     }),
     async run(input, strategy, options, mode) {
-      if (typeof input !== "string" || !input.trim()) throw new Error("\u8BF7\u8F93\u5165\u8981\u8BD5\u538B\u7684\u6587\u672C\u3002");
-      if (encoder2.encode(input).length > 256e3) throw new Error("\u8BD5\u538B\u6587\u672C\u4E0D\u80FD\u8D85\u8FC7 256 KB\u3002");
+      if (typeof input !== "string" || !input.trim()) throw new Error(pick("\u8BF7\u8F93\u5165\u8981\u8BD5\u538B\u7684\u6587\u672C\u3002", "Enter some text to compress."));
+      if (encoder2.encode(input).length > 256e3) throw new Error(pick("\u8BD5\u538B\u6587\u672C\u4E0D\u80FD\u8D85\u8FC7 256 KB\u3002", "Test input must be under 256 KB."));
       const meta = engineById(strategy);
-      if (!meta || meta.available === false) throw new Error("\u8FD9\u4E2A\u7B56\u7565\u5F53\u524D\u4E0D\u53EF\u7528\u3002");
+      if (!meta || meta.available === false) throw new Error(pick("\u8FD9\u4E2A\u7B56\u7565\u5F53\u524D\u4E0D\u53EF\u7528\u3002", "This strategy is currently unavailable."));
       const shape = mode === "json" ? "json" : "text";
       if (shape === "json") {
         let parsed = null;
         try {
           parsed = JSON.parse(input);
         } catch {
-          throw new Error("\u8BF7\u6C42\u4F53 JSON \u89E3\u6790\u5931\u8D25\uFF0C\u68C0\u67E5\u4E00\u4E0B\u62EC\u53F7\u548C\u5F15\u53F7\u3002");
+          throw new Error(pick("\u8BF7\u6C42\u4F53 JSON \u89E3\u6790\u5931\u8D25\uFF0C\u68C0\u67E5\u4E00\u4E0B\u62EC\u53F7\u548C\u5F15\u53F7\u3002", "Could not parse the request body JSON; check brackets and quotes."));
         }
-        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("\u8BF7\u6C42\u4F53 JSON \u7684\u9876\u5C42\u5FC5\u987B\u662F\u5BF9\u8C61\u3002");
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error(pick("\u8BF7\u6C42\u4F53 JSON \u7684\u9876\u5C42\u5FC5\u987B\u662F\u5BF9\u8C61\u3002", "The request body JSON must have an object at the top level."));
       }
       const result = await runLab({ id: `lab-${Date.now()}`, mode: shape, input, protocol: "chat", strategy }, options);
-      if (!result.ok) throw new Error(result.error || "\u8BD5\u538B\u5931\u8D25");
+      if (!result.ok) throw new Error(result.error || pick("\u8BD5\u538B\u5931\u8D25", "Test failed"));
       const record = result.record || {};
       return {
         id: result.id,
         at: result.at,
         strategy,
         label: meta.label || strategy,
-        why: meta.why || "",
+        why: I18N2 && I18N2.lang === "en" && globalThis.CompressView ? globalThis.CompressView.whyEn(strategy) || meta.why || "" : meta.why || "",
         mode: shape,
         status: record.status || "skipped",
         reason: record.reason || "",
-        reasonText: REASON_ZH[record.reason] || "",
+        reasonText: pick(REASON_ZH[record.reason] || "", REASON_EN[record.reason] || ""),
         ms: record.ms || 0,
         before: result.report.beforeBytes,
         after: result.report.afterBytes,

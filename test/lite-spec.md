@@ -1,5 +1,7 @@
 # OmniRoute Lite 压缩引擎 — 纯 JavaScript 移植规格书
 
+[中文](./lite-spec.md) | [English](./lite-spec.en.md)
+
 > 唯一移植依据。基于本机源码逐字提取：
 > - `open-sse/services/compression/lite.ts`（336 行，主文件）
 > - `open-sse/services/compression/stats.ts`（`createCompressionStats`，330 行）
