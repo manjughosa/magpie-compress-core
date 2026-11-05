@@ -247,6 +247,21 @@ function truncateToolResultBlocks(msg, maxLength) {
   return { message: msg, applied: false }
 }
 
+function truncateToolContentParts(msg, maxLength) {
+  if (msg.role !== "tool" || !Array.isArray(msg.content)) {
+    return { message: msg, applied: false }
+  }
+  let applied = false
+  const content = msg.content.map((part) => {
+    if (!part || typeof part !== "object" || part.type !== "text") return part
+    if (typeof part.text !== "string" || part.text.length <= maxLength) return part
+    applied = true
+    return { ...part, text: truncateToolText(part.text, maxLength) }
+  })
+  if (applied) return { message: { ...msg, content }, applied: true }
+  return { message: msg, applied: false }
+}
+
 export function compressToolResults(body, options) {
   options = options || {}
   if (!body.messages) return { body, applied: false }
@@ -261,6 +276,11 @@ export function compressToolResults(body, options) {
       if (msg.content.length <= MAX_TOOL_LENGTH) return msg
       applied = true
       return { ...msg, content: truncateToolText(msg.content, MAX_TOOL_LENGTH) }
+    }
+    const arrayResult = truncateToolContentParts(msg, MAX_TOOL_LENGTH)
+    if (arrayResult.applied) {
+      applied = true
+      return arrayResult.message
     }
     const r = truncateToolResultBlocks(msg, MAX_TOOL_LENGTH)
     if (r.applied) applied = true

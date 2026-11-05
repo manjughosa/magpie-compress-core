@@ -307,9 +307,10 @@ interface ChatBody {
   5. Iterate `(msg, index)`:
      - The current-turn guard lives in `applyLiteCompression`: the segment `index >= turnStart(messages)` never reaches this layer.
      - `msg.role === "tool" && typeof msg.content === "string"`: `msg.content.length <= MAX_TOOL_LENGTH` → untouched; otherwise `applied=true`, `{ ...msg, content: truncateToolText(msg.content, MAX_TOOL_LENGTH) }`.
+     - `msg.role === "tool"` with array content: process each `{type:"text", text}` part and truncate only over-length text; non-text parts stay untouched.
      - Anything else → `truncateToolResultBlocks(msg, MAX_TOOL_LENGTH)`, merging `applied`.
   6. Return `{ body: { ...body, messages }, applied }`.
-- **Edge**: `role:"tool"` with array content goes through `truncateToolResultBlocks`, which returns it untouched because `role !== "user"` — OpenAI-style array-content tool messages are **not truncated**.
+- **Edge**: OpenAI-style array-content tool messages truncate each text part; Anthropic `tool_result` still takes the block path.
 
 ### 5.14 `removeRedundantContent(body, options = {})` — exported
 
@@ -481,7 +482,7 @@ function createCompressionStats(originalBody, compressedBody, mode, techniquesUs
 18. A `role:"tool"` message positioned **after the last assistant** (index ≥ lastAssistant+1) → never truncated.
 19. No assistant in the message list → `turnStart` returns 0, the whole body is the current turn, **no truncation at all**.
 20. `role:"tool"`, `content.length === 2000` (exactly the cap) → not truncated (`<=` passes).
-21. `role:"tool"` with array content → not truncated.
+21. `role:"tool"` with array content → each over-length `{type:"text"}` part is truncated; non-text parts stay untouched.
 22. Anthropic style: `role:"user"`, `content:[{type:"tool_result", content:"<3000 chars>"}]` → the inner string is truncated, the block structure survives.
 23. A `tool_result` whose `content` is `[{type:"text", text:"<3000 chars>"}]` → only `part.text` is truncated; short text parts and non-text parts are untouched.
 24. A `tool_result` block inside a `role:"assistant"` content array → untouched (only `role:"user"` is recognized).

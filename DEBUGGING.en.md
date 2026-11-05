@@ -45,8 +45,8 @@ contracts of `page/view.js` / `page/ui.js`.
 
 ## Contracts (stop guessing)
 
-- `page/view.js:293` `cards(strategies, stats, lang)` → returns an array of cards, each
-  item `{id, label, why, description, badge, tone, available, requires, on, rule}`.
+- `page/view.js:469` `cards(strategies, stats, lang)` → returns an array of cards, each
+  item `{id, label, why, description, badge, tone, available, requires, on, note, fields}`.
 - `page/ui.js:6` `el(tag, cls, text)`, `page/ui.js:13` `clear(host)`, `page/ui.js:21`
   `switchButton(on, disabled, onChange, label)`, `page/ui.js:37` `meter(host, m, T)`,
   `rows(host, cards, ctx)`, where `ctx = {T, open, config, onToggle, onSwitch, onField}`.
@@ -66,9 +66,11 @@ contracts of `page/view.js` / `page/ui.js`.
   would only have content for the period when the switch was manually turned on — which
   looks like "permanently stuck on old, local-harness-only sessions".
 - `page/captures-index.js` only carries index metadata; not a single conversation
-  original goes into it (that's why review rejected the previous version). Originals
-  live only in `<config>/magpie/compress-core/captures/<id>.json`, unreadable by the
-  page; the dialog shows only the summary and the file location.
+  original goes into it (that's why review rejected the previous version).
+  `capture-store.js` publishes the full text separately as `page/captures/<id>.js`;
+  the page loads it on demand with `<script src>` to render the diff. These copies are
+  local generated artifacts, ignored by `.gitignore` and excluded in `package.json`,
+  but **the page can read this copy**. The config-directory `captures/` is still host-only.
 - That script is a generated artifact and is not shipped with the package (it is in
   `.gitignore`); after a plugin update the host re-publishes it on the next request
   (`refreshCapturesIndex()`, once per process).

@@ -143,10 +143,14 @@ export async function run() {
   r = compressToolResults({ messages: [toolMsg(2000), { role: "assistant", content: "a" }] }, { maxToolLength: 2000 })
   check("20 恰等上限放行", !r.applied)
   r = compressToolResults({ messages: [
-    { role: "tool", content: [{ type: "text", text: big(3000) }] },
+    { role: "tool", content: [{ type: "text", text: big(3000) }, { type: "image", data: "x" }] },
     { role: "assistant", content: "a" },
   ] }, { maxToolLength: 2000 })
-  check("21 tool数组content不截", !r.applied)
+  {
+    const parts = r.body.messages[0].content
+    check("21 tool数组content逐段截断", r.applied && parts[0].text.includes("\n...[truncated]") && parts[0].text.length <= 2040)
+    check("21b 非text part原样保留", parts[1].type === "image" && parts[1].data === "x")
+  }
   r = compressToolResults({ messages: [
     { role: "user", content: [{ type: "tool_result", content: big(3000) }] },
     { role: "assistant", content: "a" },

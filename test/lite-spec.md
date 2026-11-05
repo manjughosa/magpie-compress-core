@@ -308,9 +308,10 @@ interface ChatBody {
   5. 遍历 `(msg, index)`：
      - 当前轮守卫在 `applyLiteCompression`：`index >= turnStart(messages)` 的段不进入本层的输入。
      - `msg.role === "tool" && typeof msg.content === "string"`：`msg.content.length <= MAX_TOOL_LENGTH` → 原样；否则 `applied=true`，`{ ...msg, content: truncateToolText(msg.content, MAX_TOOL_LENGTH) }`。
+     - `msg.role === "tool"` 且 `msg.content` 是数组：逐段处理 `{type:"text", text}`，只有超长 text 截断；非 text part 原样保留。
      - 其他 → `truncateToolResultBlocks(msg, MAX_TOOL_LENGTH)`，合并 `applied`。
   6. 返回 `{ body: { ...body, messages }, applied }`。
-- **边界**：`role:"tool"` 且 content 是**数组** → 走 `truncateToolResultBlocks`，因其 `role !== "user"` 直接返回原样 —— OpenAI 风格 array-content tool 消息**不被截断**。
+- **边界**：OpenAI 风格 array-content tool 消息会逐段截断 text part；Anthropic `tool_result` 仍走 block 路径。
 
 ### 5.14 `removeRedundantContent(body, options = {})` — 导出
 
@@ -482,7 +483,7 @@ function createCompressionStats(originalBody, compressedBody, mode, techniquesUs
 18. `role:"tool"` 消息位于**最后一条 assistant 之后**（index ≥ lastAssistant+1）→ 永不截断。
 19. 消息列表无 assistant → `turnStart` 返回 0，整段算当前轮，**无任何截断**。
 20. `role:"tool"`、`content.length === 2000`（恰好等于上限）→ 不截断（`<=` 放行）。
-21. `role:"tool"` 的 content 是数组 → 不截断。
+21. `role:"tool"` 的 content 是数组 → 每个超长 `{type:"text"}` part 截断，非 text part 原样保留。
 22. Anthropic 风格：`role:"user"`，`content:[{type:"tool_result", content:"<3000字符>"}]` → inner string 截断，块结构保留。
 23. `tool_result` 的 `content` 是数组 `[{type:"text", text:"<3000字符>"}]` → 只截 `part.text`；短 text part 与非 text part 不动。
 24. `role:"assistant"` content 数组里的 `tool_result` 块 → 不动（只认 `role:"user"`）。

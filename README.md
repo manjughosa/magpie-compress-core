@@ -161,7 +161,7 @@ magpie 给页面和面板的沙箱是 `connect-src 'none'`，也没有文件系�
 
 钩子能在**每一次**经过网关的请求上留一条快照。安装默认的 `package.json` 里 `capture` 是 **开**；代码只在 `options.capture === true` 时记录，显式写 `false` 关闭，自己构造 options 时省略这个键也不会记录。快照落在插件配置目录的 `captures/`，索引另存 `captures-index.json`，最多保留最近 50 条，每条上限 2MB。
 
-页面的 CSP 是 `connect-src 'none'`，只放行插件自己的 `page/` 目录。所以数字和列表都由钩子发布成**包内 `page/` 目录**（`page-publish.js` 的落点，不是插件数据目录）下的两个脚本，页面用 `<script src>` 载入：`captures-index.js`（会话列表：id、时间、`agent`、模型、字节数）和 `compress-stats.js`（顶部统计与每个策略的 saving）。对话原文只在 `captures/`，不进安装包。行上的 `agent`（`dsh`、`pi` 等）标的是这条请求由哪一路 harness 发出。
+页面的 CSP 是 `connect-src 'none'`，只放行插件自己的 `page/` 目录。所以数字和列表都由钩子发布成**包内 `page/` 目录**（`page-publish.js` 的落点，不是插件数据目录）下的两个脚本，页面用 `<script src>` 载入：`captures-index.js`（会话列表：id、时间、`agent`、模型、字节数）和 `compress-stats.js`（顶部统计与每个策略的 saving）。配置目录的原文只在 `captures/`；为了差异弹窗，钩子另把每条快照的 before/after 文本发布到 `page/captures/<id>.js`，这些本地生成物被 `.gitignore` 和 `package.json` 排除，但页面能读这份副本，不进安装包。行上的 `agent`（`dsh`、`pi` 等）标的是这条请求由哪一路 harness 发出。
 
 页面每 5 秒重新取一次两个已发布脚本和 `magpie.options`，有变化就重绘，不需要手动刷新。
 
@@ -171,6 +171,7 @@ magpie 给页面和面板的沙箱是 `connect-src 'none'`，也没有文件系�
 
 - `requests.jsonl`：每个请求一行统计（原始/压缩后字节、命中哪个策略、模型、客户端），**不含正文**。开关 `telemetry.samples` 打开后才额外存最多 8 对问答，每段 1600 字符，存前先过下面这套打码。
 - `captures/`：只在 `capture` 打开时才有，是完整请求正文，单条上限 2MB（超了整条不落盘，索引里标 `too_large`），只保留最新 50 条。
+- `page/captures/<id>.js`：为差异弹窗发布的本地副本，含同一份 before/after 文本；`.gitignore` 与 `package.json` 已排除，不进安装包。
 - `captures-index.json`：索引，不含正文。
 
 打码在 `telemetry-store.js` 的 `SECRET_RULES`，快照与样本共用一套：私钥块整段、`ghp_`/`github_pat_`/`AKIA`/`AIza`/`sk-`/`xox?-` 形态的令牌、`eyJ…` 的 JWT、`Bearer …`、以及 `authorization`、`api_key`、`password`、`client_secret` 这类字段的值，全部换成 `[redacted:…]`；邮箱和 `C:\Users\…` 这类路径只在样本里替换（快照要能看清代码原文）。字段名保留、值丢掉，所以仍然看得出这条请求带了什么凭据。
