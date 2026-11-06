@@ -37,8 +37,12 @@ function loadView(engines) {
 
 export async function run() {
   {
-    const en = loadI18n("en-US", "")
-    check("language: en-US -> en", en.lang === "en" && en.pick("压缩", "Compression") === "Compression")
+    // 宿主 iframe 是 sandbox="allow-scripts"，没有存储也没有同源；没有存量时一律中文，
+    // navigator 不参与判定。
+    const blank = loadI18n("en-US", "")
+    check("language: default zh without stored choice", blank.lang === "zh" && blank.pick("压缩", "Compression") === "压缩")
+    const en = loadI18n("en-US", "en")
+    check("language: stored en wins", en.lang === "en" && en.pick("压缩", "Compression") === "Compression")
     check("language: exact translate", en.t("压缩") === "Compression")
     const zh = loadI18n("zh-CN", "")
     check("language: zh-CN -> zh", zh.lang === "zh" && zh.pick("压缩", "Compression") === "压缩")

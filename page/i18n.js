@@ -23,11 +23,11 @@
     }
   }
 
+  // 默认中文。宿主把插件页塞进 sandbox="allow-scripts" 的 iframe（magpie 没有给
+  // allow-same-origin），localStorage 读写都会抛，面板上的选择存不住；navigator.language
+  // 跟着宿主走，也不是操作员的偏好。所以没有存储时只能写死 zh。
   var initial = saved()
-  if (!initial && typeof navigator !== "undefined") {
-    initial = (navigator.languages && navigator.languages[0]) || navigator.language || "en"
-  }
-  var lang = normalize(initial || "en")
+  var lang = normalize(initial || "zh")
 
   var TEXT_EN = {
     // page chrome / static HTML
