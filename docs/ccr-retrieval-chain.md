@@ -62,6 +62,18 @@ ToolSearch 清单，只查 `tools[]` 的门控会静默变成 `no_retrieve_tool`
 以上都只是**判定**；真正取回一次要靠调用方实际调用工具，历史命中数字只是当时快照，
 不代表所有客户端都健康。
 
+若调用报 `MCP tool call requires approval, but approval policy is never`，客户端审批层正在拦截工具；
+工具传输是否可达仍需独立验证。只对已安装且信任的 CCR 工具配置以下用户级覆盖，保留全局沙箱与审批策略：
+
+```toml
+[mcp_servers.ccr-retrieve.tools.omniroute_ccr_retrieve]
+approval_mode = "approve"
+```
+
+该工具会写回取回计数，应显式授权，而不是伪造只读声明规避审批。当前宿主已验证该覆盖在
+Library 同步后保留，并在不传临时授权参数的原生 Codex 会话中完成取回。
+参见 [Codex 配置参考](https://learn.chatgpt.com/docs/config-file/config-reference)。
+
 ## 安装 retrieve 工具（调用方 agent 侧，一次性）
 
 ```sh

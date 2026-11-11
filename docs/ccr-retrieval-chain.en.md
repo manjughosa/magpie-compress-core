@@ -77,6 +77,19 @@ All of the above is only the **gate**; an actual retrieval needs the caller to c
 tool, and historical hit numbers are snapshots from their own dates, not proof that every
 client is healthy.
 
+If a call reports `MCP tool call requires approval, but approval policy is never`, the client approval
+layer is blocking it; transport reachability still needs independent verification. For the installed,
+trusted CCR tool only, add this user-level override while preserving global sandbox and approval settings:
+
+```toml
+[mcp_servers.ccr-retrieve.tools.omniroute_ccr_retrieve]
+approval_mode = "approve"
+```
+
+The tool updates retrieval counters, so authorize it explicitly rather than mislabeling it read-only.
+On the current host this override survived Library sync, and a fresh native Codex session retrieved the
+original without a temporary approval override. See the [Codex configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
+
 ## Installing the retrieve tool (caller agent side, one-time)
 
 ```sh
