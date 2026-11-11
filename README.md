@@ -14,7 +14,7 @@ magpie plugin add <本目录>                                    # 本地目录
 magpie plugin add github:magpie-community/plugins             # 从仓库装（packages/compress-core）
 ```
 
-装完 `magpie plugin list` 里应该能看到这个插件声明了 `middleware`、`hooks`、`page` 和两个 `panels`。
+装完 `magpie plugin list` 里应该能看到这个插件声明了 `middleware`、`hooks`、`page` 和一个 `usage` 面板。
 
 ## 策略
 
@@ -124,7 +124,7 @@ lite 默认**全量改写、严格前缀稳定**：每条消息从第一轮起�
 
 侧栏 Plugins 组 → 压缩：一条压缩尺、档位、每个策略一行、最近八次请求。
 
-界面按浏览器语言自动选择中文或英文；标题旁的 `EN` / `中文` 按钮可随时切换，并记住选择。策略说明、参数标签、实验室和差异弹窗都跟随语言。文档同样成对提供，每篇顶部有中英文互链。
+界面默认中文；标题旁的 `EN` / `中文` 按钮可随时切换，浏览器存储可用时会记住选择。策略说明、参数标签、实验室和差异弹窗都跟随语言。文档同样成对提供，每篇顶部有中英文互链。
 
 ## 面板 · 设置
 
@@ -146,7 +146,7 @@ lite 默认**全量改写、严格前缀稳定**：每条消息从第一轮起�
 
 钩子把累计统计写进插件配置目录的 `stats.json`，和 `requests.jsonl`、`captures/` 放在一起，**不碰 magpie 自己的 `plugins.json`**。那个文件 magpie 盯着 mtime，一改就重启钩子宿主——等于每压一次请求重启一次，代价远超收益。
 
-magpie 给页面和面板的沙箱是 `connect-src 'none'`，也没有文件系统，`magpie.options` 是它唯一能读的东西。所以页面读不到 `stats.json`：压缩尺旁边会写明数字在哪个文件里，页面上不再显示实时数字。
+magpie 给页面和面板的沙箱是 `connect-src 'none'`，也没有文件系统，页面不能直接读取 `stats.json`。钩子把统计发布成同目录下的 `compress-stats.js`，页面定期重新载入它来更新数字，不通过网络请求读取数据文件。
 
 写文件时很保守：
 

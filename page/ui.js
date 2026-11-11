@@ -214,6 +214,7 @@
         ctx.onToggle(c.id)
       })
       row.addEventListener("keydown", function (ev) {
+        if (ev.target !== row) return
         if (ev.key === "Enter" || ev.key === " ") {
           ev.preventDefault()
           ctx.onToggle(c.id)

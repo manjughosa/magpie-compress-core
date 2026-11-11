@@ -659,7 +659,7 @@
     while (prefix < beforeLines.length && prefix < afterLines.length && beforeLines[prefix] === afterLines[prefix]) prefix++
 
     var longest = Math.max(beforeLines.length, afterLines.length)
-    if (added === 0 && removed === 0) {
+    if (prefix === beforeLines.length && prefix === afterLines.length) {
       return {
         beforeLines: beforeLines, afterLines: afterLines, beforeSet: beforeSet, afterSet: afterSet,
         added: 0, removed: 0, prefix: prefix, start: 0, end: Math.min(40, longest),
@@ -672,9 +672,11 @@
       added: added, removed: removed, prefix: prefix,
       start: Math.max(0, prefix - DIFF_WINDOW),
       end: Math.min(longest, prefix + DIFF_WINDOW * 2),
-      note: pick("前 " + prefix + " 行完全相同，差异从第 " + (prefix + 1) + " 行开始；"
-        + "逐行比对共新增 " + added + " 行、少了 " + removed + " 行。", "The first " + prefix + " lines are identical; the diff starts at line " + (prefix + 1) + ". "
-        + "Line-by-line comparison: " + added + " lines added, " + removed + " lines removed."),
+      note: added === 0 && removed === 0
+        ? pick("行顺序或重复次数发生变化，首处差异在第 " + (prefix + 1) + " 行。", "Line order or repetition count changed; the first difference is at line " + (prefix + 1) + ".")
+        : pick("前 " + prefix + " 行完全相同，差异从第 " + (prefix + 1) + " 行开始；"
+          + "逐行比对共新增 " + added + " 行、少了 " + removed + " 行。", "The first " + prefix + " lines are identical; the diff starts at line " + (prefix + 1) + ". "
+          + "Line-by-line comparison: " + added + " lines added, " + removed + " lines removed."),
     }
   }
 

@@ -14,7 +14,7 @@ magpie plugin add <this directory>                            # from a local dir
 magpie plugin add github:magpie-community/plugins             # from the repo (packages/compress-core)
 ```
 
-Afterwards `magpie plugin list` should show this plugin declaring `middleware`, `hooks`, `page` and two `panels`.
+Afterwards `magpie plugin list` should show this plugin declaring `middleware`, `hooks`, `page` and one `usage` panel.
 
 ## Strategies
 
@@ -108,7 +108,7 @@ Set `preserveCurrentTurn` to `true` for the conservative mode: everything after 
 
 Sidebar → Plugins group → Compress. One compression meter, the preset, one row per strategy, and the last eight requests.
 
-The UI follows the browser language automatically (`zh` or `en`); the `EN` / `中文` button beside the title switches at any time and remembers the choice. Strategy descriptions, parameter labels, the lab and the diff dialog follow it. Documentation is paired too, with a language link at the top of each file.
+The UI defaults to Chinese; the `EN` / `中文` button beside the title switches at any time and remembers the choice when browser storage is available. Strategy descriptions, parameter labels, the lab and the diff dialog follow it. Documentation is paired too, with a language link at the top of each file.
 
 Each row shows order, name, lossless/lossy, a one-line description, bytes saved and the switch; clicking it expands the full description, hits/saved/share, execution order, cache impact, what it reads, and that strategy's own parameters (number boxes, selects, checkbox groups).
 
@@ -130,7 +130,7 @@ Another trap: `magpie.options.set` **replaces the whole options object**, it doe
 
 The hooks write cumulative stats to `stats.json` in the plugin's config folder, next to `requests.jsonl` and `captures/`. They never write magpie's own `plugins.json`: magpie watches that file's mtime and restarts the hooks host on every change — one restart per compressed request, far more cost than the numbers are worth.
 
-The sandbox magpie gives the page and panels is `connect-src 'none'` with no filesystem, and `magpie.options` is the only thing they can read. So the page cannot read `stats.json`: the meter says which file the numbers live in, and no live figures are shown in the UI.
+The sandbox magpie gives the page and panels is `connect-src 'none'` with no filesystem, so the page cannot read `stats.json` directly. The hooks publish statistics as `compress-stats.js` beside the page, which reloads the script periodically to update its figures without fetching the data file.
 
 Writes are deliberately timid:
 

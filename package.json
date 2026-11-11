@@ -1,7 +1,7 @@
 {
   "name": "@magpie-community/middleware-compress-core",
-  "version": "0.5.0",
-  "description": "magpie middleware: OmniRoute's context-compression engines, ported. 15 strategies, four presets, two panels.",
+  "version": "0.5.1",
+  "description": "magpie middleware: OmniRoute's context-compression engines, ported. 16 strategies, four presets, a usage panel.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/manjughosa/magpie-compress-core.git"
@@ -20,12 +20,15 @@
     "adapter.js",
     "capture-store.js",
     "catalog.js",
+    "ccr-store-file.js",
     "compress-core.middleware.js",
     "engines",
     "harness.js",
     "hash.js",
     "lab.js",
     "llm-backend.js",
+    "lock-file.js",
+    "mcp/ccr-retrieve-server.mjs",
     "observability.hooks.js",
     "options-commands.js",
     "page/*.html",
@@ -35,6 +38,7 @@
     "!page/captures",
     "!page/captures-index.js",
     "!page/compress-stats.js",
+    "!page/compress-ccr-status.js",
     "page-publish.js",
     "pipeline.js",
     "stats-writer.js",

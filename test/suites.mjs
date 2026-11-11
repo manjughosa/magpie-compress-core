@@ -39,7 +39,9 @@ export const suites = [
   "audit.test.mjs",
   "page-catalog.test.mjs",
   "page-save-flow.test.mjs",
+  "page-interaction.test.mjs",
   "page-i18n.test.mjs",
+  "package.test.mjs",
   "config-contract.test.mjs",
   "performance.test.mjs",
   // 清空日志会把共享 stats-writer 的累计计数归零，放最后，别让前面的套件看到被清零的数。
