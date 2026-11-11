@@ -4,6 +4,7 @@
 
 - **Native Codex tool search**: recognize loaded CCR definitions in typed `input[].tools` contracts (`tool_search_output`) and nested `namespace` tools. The old gate stayed `none` even after successful tool discovery and retrieval. Definitions not yet loaded still fail closed.
 - **Contract boundaries**: namespace group names, user text and ordinary tool output cannot enable CCR. Matrix regressions verify compression, retrieval instructions, and negative cases.
+- **Cross-platform retrieval acceptance**: every positive harness fixture now persists its originals, starts the real MCP server over stdio, and compares each returned block byte-for-byte. Node and Bun run the same matrix on Ubuntu and Windows CI.
 
 ## 0.5.3 — 2026-11-12
 

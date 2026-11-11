@@ -10,7 +10,14 @@
 
 import { check } from "./helpers.mjs"
 import { runPipeline, clone } from "../pipeline.js"
-import { applyCcr, detectRetrieveCapability } from "../engines/ccr/index.js"
+import { spawn } from "node:child_process"
+import { createInterface } from "node:readline"
+import { mkdtempSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { fileURLToPath } from "node:url"
+import { applyCcr, detectRetrieveCapability, makeStore } from "../engines/ccr/index.js"
+import { createPersistentCcrStore } from "../ccr-store-file.js"
 import { callerSupportsDirectRetrieve } from "../harness.js"
 import * as dedup from "../engines/session-dedup.js"
 
@@ -259,6 +266,67 @@ const FIXTURES = [
   ),
 ]
 
+
+async function verifyAllHarnessStdio(cases, shared) {
+  const dir = mkdtempSync(join(tmpdir(), "ccr-harness-stdio-"))
+  const file = join(dir, "store.json")
+  const persisted = createPersistentCcrStore(file)
+  await persisted.ready
+  for (const [key, entry] of shared.entries) persisted.get().entries.set(key, entry)
+  persisted.persist()
+  check("H-10 全 harness 原文落盘", await persisted.flushNow())
+
+  const server = fileURLToPath(new URL("../mcp/ccr-retrieve-server.mjs", import.meta.url))
+  const child = spawn(process.execPath, [server, file], { stdio: ["pipe", "pipe", "pipe"] })
+  const lines = createInterface({ input: child.stdout, terminal: false })
+  let nextId = 1
+  async function rpc(method, params) {
+    const id = nextId++
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => finish(new Error("stdio timeout")), 5000)
+      function finish(error, value) {
+        clearTimeout(timer)
+        lines.off("line", onLine)
+        child.off("error", onError)
+        child.off("exit", onExit)
+        if (error) reject(error)
+        else resolve(value)
+      }
+      function onLine(line) {
+        let message
+        try { message = JSON.parse(line) } catch { return }
+        if (message.id === id) finish(null, message)
+      }
+      function onError(error) { finish(error) }
+      function onExit(code) { finish(new Error("stdio exit " + code)) }
+      lines.on("line", onLine)
+      child.once("error", onError)
+      child.once("exit", onExit)
+      child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n", (error) => {
+        if (error) onError(error)
+      })
+    })
+  }
+  try {
+    const init = await rpc("initialize", { protocolVersion: "2024-11-05", capabilities: {} })
+    check("H-10 stdio initialize", init.result?.capabilities?.tools !== undefined)
+    const list = await rpc("tools/list")
+    check("H-10 stdio tools/list", list.result?.tools?.[0]?.name === "omniroute_ccr_retrieve")
+    for (const item of cases) {
+      for (const [hash, original] of Object.entries(item.map || {})) {
+        const out = await rpc("tools/call", {
+          name: "omniroute_ccr_retrieve", arguments: { hash, mode: "full" },
+        })
+        check("H-10 " + item.name + " stdio 原文逐字一致",
+          out.result?.isError === false && out.result.content?.[0]?.text === original)
+      }
+    }
+  } finally {
+    lines.close()
+    child.kill()
+  }
+}
+
 export async function run() {
   // ── H-01 判定矩阵 ────────────────────────────────────────────────────────
   for (const f of FIXTURES) {
@@ -365,6 +433,8 @@ export async function run() {
   }
 
   // ── H-03 每个可达形状都必须真的压得动，并写出可兑现的 marker ─────────────
+  const shared = makeStore()
+  const retrievalCases = []
   for (const f of FIXTURES) {
     if (f.expected === "none") {
       // 不可达形状必须失败关闭：不压，理由如实上报（正文里的假 schema 也不例外）。
@@ -378,13 +448,17 @@ export async function run() {
     }
     const body = clone(f.body)
     const beforeText = JSON.stringify(body)
-    const r = applyCcr(body, {}, { protocol: f.protocol, agent: f.agent })
+    const r = applyCcr(body, {}, { protocol: f.protocol, agent: f.agent, store: shared })
     check(`H-03 ${f.name} 命中`, r.compressed === true, `gate=${r.gateReason || "-"}`)
     check(`H-03 ${f.name} retrievalMode=${f.expected}`, r.retrievalMode === f.expected, r.retrievalMode)
     check(`H-03 ${f.name} 省字节 > 0`, JSON.stringify(body).length < beforeText.length)
     // marker 只有配上取回说明才可兑现（responses 落在 instructions，anthropic 落在 system）。
     check(`H-03 ${f.name} marker 可兑现`, JSON.stringify(body).includes("[CCR protocol]"))
+    retrievalCases.push({ name: f.name, map: r.map })
   }
+
+  // H-10 不只判 gate：全部可达 harness 都经真实 stdio MCP 取回本次原文。
+  await verifyAllHarnessStdio(retrievalCases, shared)
 
   // ── H-04 延迟路径的协议说明必须教模型用 ToolSearch，且点名真实工具 ──────
   {

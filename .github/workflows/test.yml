@@ -1,22 +1,30 @@
-# test/run.mjs and bun test run the same suites (listed in test/suites.mjs); both are here so a change
-# that breaks either entry point fails the build. HOME is moved into a throwaway
-# folder the way magpie's own CI does it: a suite that resolves the config
-# directory from HOME must not touch the runner's real one.
+# Node and Bun execute the same suites, including real MCP stdio retrieval for every
+# supported harness shape. Keep both desktop platforms on identical acceptance.
 name: test
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
       - name: bun test
-        run: HOME=$(mktemp -d) bun test
+        shell: bash
+        run: HOME="$(mktemp -d)" bun test
       - name: node test/run.mjs
-        run: HOME=$(mktemp -d) node test/run.mjs
+        shell: bash
+        run: HOME="$(mktemp -d)" node test/run.mjs
