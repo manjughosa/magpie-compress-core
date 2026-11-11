@@ -43,7 +43,7 @@ mcp/ccr-retrieve-server.mjs (stdio MCP, zero dependencies)
 
 | Shape | Criterion | Typical callers |
 |:--|:--|:--|
-| `direct` | `body.tools[]` contains a name ending in `omniroute_ccr_retrieve` (`__ _ . / : -` separators all work) | Claude Code (older versions), Copilot, codex `type:"mcp"` |
+| `direct` | A retrieve definition in current `tools[]` or in `tools[]` of root `input` items typed `tool_search_output`, including namespaced functions | Claude Code (older versions), Copilot, Codex |
 | `indirect` | There is a code tool (eval/execute/…) and the agent is in the `INDIRECT_CALL_HINTS` allowlist (a **declaration heuristic, not proof of reachability**) | omp / pi / opencode |
 | `deferred` | system/instructions mention "deferred tools / ToolSearch", and the tool name appears **on its own line** | Claude Code 2.1.3xx (deferred MCP tool loading) |
 | `none` | None of the above hold | hindsight, clients without retrieve installed |
@@ -54,7 +54,7 @@ ToolSearch manifest in system, so a gate that only checks `tools[]` silently deg
 **does not scan message bodies** — a tool name mentioned in the body does not mean the
 model can call it. `test/harness-matrix.test.mjs` pins a fixture for each shape.
 
-Two additions on 2026-11-12:
+Three additions on 2026-11-12:
 
 - The detection now also accepts one more shape: explicit text blocks (`text` / `input_text`
   only) inside the content block array of a **system/developer message**
@@ -72,6 +72,12 @@ Two additions on 2026-11-12:
   (the stdio command) in the Library: the sync rewrites each agent's configuration from it
   and survives later syncs. Whether each client is actually repaired must be verified
   independently; a code-side fix is not proof of it.
+- **Loaded native Codex definitions**: read `tools[]` in root `input` items with
+  `type:"tool_search_output"`, including functions within `type:"namespace"`. Before the CCR
+  definition loads the mode remains `none`; afterward it is `direct`. Namespace names, user text
+  and ordinary tool output do not establish callable functions. A native call retrieved the exact
+  6209-character original; regressions cover the transition and forged declarations.
+  See the official [Tool search contract](https://developers.openai.com/api/docs/guides/tools-tool-search).
 
 All of the above is only the **gate**; an actual retrieval needs the caller to call the
 tool, and historical hit numbers are snapshots from their own dates, not proof that every

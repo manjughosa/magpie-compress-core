@@ -71,6 +71,11 @@ ccr 是「把大段文本换成一个标签」的策略。它和其他压缩不�
 omp / pi / opencode——这是**按声明推断的启发式，不是能取回的证明**）、`deferred`
 （延迟工具清单里逐行列出；判定也支持 system/developer 消息 content 块数组里的显式
 `text` / `input_text` 块）。原生 Claude CLI 回环请求已验证消息文本块容器：旧门控为 `none`，修复后为 `deferred`。
+
+原生 Codex 搜索后加载的定义位于根 `input[]` 中 `type:"tool_search_output"` 项的 `tools[]`，
+其中 `type:"namespace"` 下的函数也参与判定。未加载 CCR 定义的首轮保持 `none`；加载后为 `direct`。
+门控不扫描用户正文或普通工具输出。原生工具调用已逐字取回 6209 字符原文，回归覆盖加载前后状态；
+结构依据官方 [Tool search](https://developers.openai.com/api/docs/guides/tools-tool-search)。
 历史线性化 capture 仍不足以恢复旧请求的容器结构。注意
 **有 shell 不等于能取回**：codex 常带 `exec_command`，但 shell 本身不构成 retrieve 通道，
 2026-11-12 起 codex 不在间接白名单里——它要么显式声明 retrieve 工具，要么命中延迟清单。

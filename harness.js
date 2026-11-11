@@ -8,8 +8,8 @@
 // 这里 import，test/harness-matrix.test.mjs 逐 harness 钉死形状。
 //
 // 判定顺序：直接声明 → 代码工具间接可达 → 延迟工具（ToolSearch 列表）→ 不可达。
-// 三条都只读“工具契约”所在的位置（tools[] / system / instructions），绝不扫描
-// messages 正文——正文里提到工具名不代表模型能调用它，扫正文会把对话内容误判成能力。
+// 三条都只读工具契约（tools[] / tool_search_output.tools / system / instructions），
+// 不扫描用户对话或普通工具返回正文：提到工具名不代表能调用。
 
 export const CCR_RETRIEVE_TOOL_NAME = "omniroute_ccr_retrieve"
 
@@ -32,6 +32,12 @@ export const matchesCcrRetrieveToolName = matchesRetrieveToolName
 function toolNames(tool) {
   const out = []
   if (!tool || typeof tool !== "object") return out
+  if (tool.type === "namespace") {
+    if (Array.isArray(tool.tools)) {
+      for (const nested of tool.tools) out.push(...toolNames(nested))
+    }
+    return out
+  }
   if (typeof tool.name === "string") out.push(tool.name)
   if (tool.function && typeof tool.function.name === "string") out.push(tool.function.name)
   // Responses API：{ type: "mcp", server_label: "ccr-retrieve" } 不写全名。
@@ -41,11 +47,15 @@ function toolNames(tool) {
   return out
 }
 
-/** body.tools[] 里是否直接声明了 retrieve 工具。 */
+/** 当前 tools[] 或 Responses 已加载的工具定义里是否声明了 retrieve。 */
 export function callerSupportsDirectRetrieve(body) {
   const tools = body && body["tools"]
-  if (!Array.isArray(tools)) return false
-  return tools.some((tool) => toolNames(tool).some(matchesRetrieveToolName))
+  if (Array.isArray(tools) && tools.some((tool) => toolNames(tool).some(matchesRetrieveToolName))) return true
+  const input = body && body["input"]
+  return Array.isArray(input) && input.some((item) =>
+    item?.type === "tool_search_output" && Array.isArray(item.tools) &&
+    item.tools.some((tool) => toolNames(tool).some(matchesRetrieveToolName))
+  )
 }
 
 // 兼容旧名字。

@@ -754,6 +754,12 @@
   function toolNames(tool) {
     const out = [];
     if (!tool || typeof tool !== "object") return out;
+    if (tool.type === "namespace") {
+      if (Array.isArray(tool.tools)) {
+        for (const nested of tool.tools) out.push(...toolNames(nested));
+      }
+      return out;
+    }
     if (typeof tool.name === "string") out.push(tool.name);
     if (tool.function && typeof tool.function.name === "string") out.push(tool.function.name);
     if (tool.type === "mcp" && typeof tool.server_label === "string") {
@@ -763,8 +769,11 @@
   }
   function callerSupportsDirectRetrieve(body) {
     const tools = body && body["tools"];
-    if (!Array.isArray(tools)) return false;
-    return tools.some((tool) => toolNames(tool).some(matchesRetrieveToolName));
+    if (Array.isArray(tools) && tools.some((tool) => toolNames(tool).some(matchesRetrieveToolName))) return true;
+    const input = body && body["input"];
+    return Array.isArray(input) && input.some(
+      (item) => item?.type === "tool_search_output" && Array.isArray(item.tools) && item.tools.some((tool) => toolNames(tool).some(matchesRetrieveToolName))
+    );
   }
   var INDIRECT_CALL_HINTS = {
     omp: "from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`",

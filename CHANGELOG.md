@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.4 — 2026-11-12
+
+- **Native Codex tool search**: recognize loaded CCR definitions in typed `input[].tools` contracts (`tool_search_output`) and nested `namespace` tools. The old gate stayed `none` even after successful tool discovery and retrieval. Definitions not yet loaded still fail closed.
+- **Contract boundaries**: namespace group names, user text and ordinary tool output cannot enable CCR. Matrix regressions verify compression, retrieval instructions, and negative cases.
+
 ## 0.5.3 — 2026-11-12
 
 - **CCR gate**: `deferred` now also reads the content block array of a system/developer message (explicit `text` / `input_text` blocks only; other messages and block types are still not scanned) — verified against a native Claude CLI loopback request (`none` before, `deferred` after). codex is off the indirect allowlist: a shell or `exec_command` alone is not a retrieval channel, so codex must declare the retrieve tool or match a deferred manifest; `indirect` stays a declaration heuristic, not proof of reachability.

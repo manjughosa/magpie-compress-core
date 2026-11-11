@@ -509,7 +509,7 @@ export function buildCcrProtocolInstructionIndirect(callHint) {
   return `${CCR_PROTOCOL_MARKER_SENTINEL} This conversation uses content-compression-retrieve (CCR). When you see a marker like \`[CCR retrieve hash=<24hex> chars=N]\` in a message, it means the full original text (N characters) was stored and replaced with this marker to save space — ${callHint} to get the original text back verbatim. Copy the hash EXACTLY as written — all 24 hexadecimal characters, never truncated, abbreviated, or reformatted — a single wrong character will make the retrieval fail. If you instead see a marker like \`[dedup:ref sha=...]\`, it means that content already appeared earlier in this conversation — look back in the message history for it; do NOT call ${CCR_RETRIEVE_TOOL_NAME} for a dedup reference.`
 }
 
-/** 调用方 tools[] 里是否声明了 CCR retrieve（旧名，实现见 harness.js）。 */
+/** 当前或已加载的工具定义是否声明了 CCR retrieve（实现见 harness.js）。 */
 const callerSupportsCcrRetrieve = callerSupportsDirectRetrieve
 export { callerSupportsCcrRetrieve }
 

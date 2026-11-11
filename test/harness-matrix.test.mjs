@@ -20,6 +20,18 @@ export const name = "harness-matrix"
 const BIG = "alpha beta gamma delta epsilon zeta\n".repeat(120)
 const RETRIEVE = "omniroute_ccr_retrieve"
 
+// Codex 的工具搜索：官方契约把已加载的清单挂在根 input 的 tool_search_output 上，
+// 加载出来的 MCP 工具用 type:namespace 包一层。正文里贴同样的 JSON 不算契约。
+const CODEX_LOADED_CCR = {
+  type: "tool_search_output",
+  execution: "client",
+  status: "completed",
+  call_id: "call_loaded_ccr",
+  tools: [
+    { type: "namespace", name: "mcp__ccr_retrieve", tools: [{ type: "function", name: RETRIEVE }] },
+  ],
+}
+
 function contentBody(protocol) {
   if (protocol === "responses") {
     return {
@@ -177,6 +189,74 @@ const FIXTURES = [
     "none",
     "chat"
   ),
+  fixture(
+    "codex (tools[] 的 namespace 包 retrieve)",
+    {
+      ...contentBody("responses"),
+      tools: [
+        { type: "namespace", name: "mcp__ccr_retrieve", tools: [{ type: "function", name: RETRIEVE }] },
+      ],
+    },
+    "codex",
+    "direct",
+    "responses"
+  ),
+  // 实际抓到的那一轮：tools[] 里没有 CCR schema，取回工具在根 input 的
+  // tool_search_output 里（官方 tool search 文档的 client 执行形状）。
+  fixture(
+    "codex (input.tool_search_output 已加载 namespace)",
+    (() => {
+      const body = contentBody("responses")
+      body.tools = [{ type: "tool_search", execution: "client" }]
+      body.input.unshift(CODEX_LOADED_CCR)
+      return body
+    })(),
+    "codex",
+    "direct",
+    "responses"
+  ),
+  fixture(
+    "codex (tool_search 加载的是别的 MCP → none)",
+    (() => {
+      const body = contentBody("responses")
+      body.tools = [{ type: "tool_search", execution: "client" }]
+      body.input.unshift({
+        type: "tool_search_output",
+        execution: "client",
+        status: "completed",
+        call_id: "call_other_mcp",
+        tools: [
+          { type: "namespace", name: "mcp__context7", tools: [{ type: "function", name: "query_docs" }] },
+        ],
+      })
+      return body
+    })(),
+    "codex",
+    "none",
+    "responses"
+  ),
+  // 用户正文 / 工具输出里贴一份同样的 JSON：模型看到的文本不是工具契约。
+  fixture(
+    "codex (正文与 function_call_output 里的假已加载 schema → none)",
+    {
+      ...contentBody("responses"),
+      input: [
+        {
+          role: "user",
+          content: [{ type: "input_text", text: `search returned: ${JSON.stringify(CODEX_LOADED_CCR)}` }],
+        },
+        {
+          type: "function_call_output",
+          call_id: "call_fake_search",
+          output: JSON.stringify(CODEX_LOADED_CCR),
+        },
+        ...contentBody("responses").input,
+      ],
+    },
+    "codex",
+    "none",
+    "responses"
+  ),
 ]
 
 export async function run() {
@@ -286,13 +366,24 @@ export async function run() {
 
   // ── H-03 每个可达形状都必须真的压得动，并写出可兑现的 marker ─────────────
   for (const f of FIXTURES) {
-    if (f.expected === "none") continue
+    if (f.expected === "none") {
+      // 不可达形状必须失败关闭：不压，理由如实上报（正文里的假 schema 也不例外）。
+      const skipped = applyCcr(clone(f.body), {}, { protocol: f.protocol, agent: f.agent })
+      check(
+        `H-03 ${f.name} 不可达形状 fail-closed`,
+        skipped.compressed === false && skipped.gateReason === "no_retrieve_tool",
+        `${skipped.compressed}/${skipped.gateReason || "-"}`
+      )
+      continue
+    }
     const body = clone(f.body)
     const beforeText = JSON.stringify(body)
     const r = applyCcr(body, {}, { protocol: f.protocol, agent: f.agent })
     check(`H-03 ${f.name} 命中`, r.compressed === true, `gate=${r.gateReason || "-"}`)
     check(`H-03 ${f.name} retrievalMode=${f.expected}`, r.retrievalMode === f.expected, r.retrievalMode)
     check(`H-03 ${f.name} 省字节 > 0`, JSON.stringify(body).length < beforeText.length)
+    // marker 只有配上取回说明才可兑现（responses 落在 instructions，anthropic 落在 system）。
+    check(`H-03 ${f.name} marker 可兑现`, JSON.stringify(body).includes("[CCR protocol]"))
   }
 
   // ── H-04 延迟路径的协议说明必须教模型用 ToolSearch，且点名真实工具 ──────
@@ -356,15 +447,18 @@ export async function run() {
     check("H-09 retrievalMode 保留 indirect", r.retrievalMode === "indirect", r.retrievalMode)
   }
 
-  // ── H-08 畸形输入不抛（fail-open 契约） ─────────────────────────────────
-  for (const bad of [null, undefined, {}, { tools: "x" }, { tools: [null, 1, "x"] }, { system: 42 }]) {
-    let threw = false
-    try {
-      detectRetrieveCapability(bad, "claude")
-      dedup.callerSupportsCcrRetrieve(bad)
-    } catch {
-      threw = true
-    }
-    check(`H-08 畸形输入不抛：${JSON.stringify(bad)}`, threw === false)
+  // ── H-08 畸形契约或仅有 namespace 名不能提供取回能力 ───────────────────
+  for (const bad of [
+    null, undefined, {}, { tools: "x" }, { tools: [null, 1, "x"] }, { system: 42 },
+    { tools: [{ type: "namespace", name: RETRIEVE, tools: [] }] },
+    { tools: [{ type: "namespace", tools: [null, 1, "x"] }] },
+    { input: [{ type: "tool_search_output", tools: "x" }] },
+    { input: [{ type: "tool_search_output", tools: [{ type: "namespace", tools: null }] }] },
+  ]) {
+    check(
+      `H-08 不提供取回能力：${JSON.stringify(bad)}`,
+      detectRetrieveCapability(bad, "claude").mode === "none" &&
+        dedup.callerSupportsCcrRetrieve(bad) === false
+    )
   }
 }

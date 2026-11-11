@@ -35,7 +35,7 @@ mcp/ccr-retrieve-server.mjs（stdio MCP，零依赖）
 
 | 模式 | 判据 | 典型调用方 |
 |:--|:--|:--|
-| `direct` | `body.tools[]` 里有以 `omniroute_ccr_retrieve` 结尾的名字（`__ _ . / : -` 分隔符均可） | Claude Code（旧版）、Copilot、codex `type:"mcp"` |
+| `direct` | 当前 `tools[]`，或根 `input[]` 中 `type:"tool_search_output"` 的 `tools[]`，含 retrieve 定义；支持 `namespace` 内函数 | Claude Code（旧版）、Copilot、Codex |
 | `indirect` | 有 code tool（eval/execute/…）且 agent 在 `INDIRECT_CALL_HINTS` 白名单（**按声明推断的启发式，不是能取回的证明**） | omp / pi / opencode |
 | `deferred` | system/instructions 里有“deferred tools / ToolSearch”说明，且工具名**单独成行** | Claude Code 2.1.3xx（MCP 工具延迟加载） |
 | `none` | 以上都不成立 | hindsight、未装 retrieve 的客户端 |
@@ -45,7 +45,7 @@ ToolSearch 清单，只查 `tools[]` 的门控会静默变成 `no_retrieve_tool`
 `tools[]` / `system` / `instructions`，**不扫描 messages 正文**——正文里提到工具名
 不代表模型能调用。`test/harness-matrix.test.mjs` 为每种形状钉了夹具。
 
-2026-11-12 补两点：
+2026-11-12 补三点：
 
 - 判定支持的形状多了一类：**system/developer 消息** content 块数组里的显式文本块
   （`[{type:"text",text:…}]`，只认 `text` / `input_text`；user/assistant/tool 消息与其它
@@ -58,6 +58,11 @@ ToolSearch 清单，只查 `tools[]` 的门控会静默变成 `no_retrieve_tool`
   宿主上 `/mcp/run/ccr-retrieve` 返回 404（网关运行门控没把 server 派给该 agent），推荐把
   Library 里的 ccr-retrieve 设为 direct（stdio 命令）：同步会据此重写 agent 配置，比手改
   `config.toml` 耐久。客户端是否已修要单独验证，不能从代码侧修好推断。
+- **原生 Codex 加载后的定义**：读取根 `input[]` 中 `type:"tool_search_output"` 项的
+  `tools[]`，并识别 `type:"namespace"` 下的函数定义。首轮未加载 CCR 时仍为 `none`，
+  加载后为 `direct`；namespace 组名、用户正文和普通工具输出都不代表可调用函数。
+  原生调用已逐字取回 6209 字符原文；回归覆盖加载前后状态及伪造声明的负例。
+  结构依据官方 [Tool search](https://developers.openai.com/api/docs/guides/tools-tool-search)。
 
 以上都只是**判定**；真正取回一次要靠调用方实际调用工具，历史命中数字只是当时快照，
 不代表所有客户端都健康。

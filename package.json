@@ -1,6 +1,6 @@
 {
   "name": "@magpie-community/middleware-compress-core",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "magpie middleware: OmniRoute's context-compression engines, ported. 16 strategies, four presets, a usage panel.",
   "repository": {
     "type": "git",
