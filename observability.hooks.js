@@ -10,7 +10,7 @@ import { persist, redact, redactSecrets } from "./telemetry-store.js"
 import { record as recordCompression, flush as flushStats, snapshot as statsSnapshot } from "./stats-writer.js"
 import { saveCapture, refreshCapturesIndex } from "./capture-store.js"
 import { processCaptureCommand, processCcrCommand, processLabCommand, processTelemetryCommand, captureCommandId } from "./options-commands.js"
-import { createPersistentCcrStore } from "./ccr-store-file.js"
+import { createPersistentCcrStore, isNonDurableCcrEntry } from "./ccr-store-file.js"
 import { configureLlmBackend } from "./llm-backend.js"
 
 // CCR 跨请求共享 store：引擎换出去的原文在这里活过请求边界，retrieve 工具
@@ -65,9 +65,13 @@ export async function onRequest(body, ctx) {
     const before = clone(body)
     const working = clone(body)
     const ccr = ccrStoreHandle()
+    await ccr.ready
     const record = strategyEnabled(engineModule("llm"), options)
-      ? await runPipelineAsync(working, { ...ctx, state: {}, ccrStore: ccr.get(), persistCcrStore: ccr.persist }, options, before)
-      : runPipeline(working, { ...ctx, state: {}, ccrStore: ccr.get(), persistCcrStore: ccr.persist }, options, before)
+      ? await runPipelineAsync(working, { ...ctx, state: {}, ccrStore: ccr.get(), persistCcrStore: ccr.persist, isNonDurableCcrEntry }, options, before)
+      : runPipeline(working, { ...ctx, state: {}, ccrStore: ccr.get(), persistCcrStore: ccr.persist, isNonDurableCcrEntry }, options, before)
+    if (record.strategies.some((s) => s.id === "ccr" && s.status === "hit") && !(await ccr.flushNow())) {
+      throw new Error("ccr_persist_failed")
+    }
     record.id = randomUUID()
     record.type = "request"
     record.session = record.session ? `sha256:${hash(record.session)}` : ""
@@ -122,7 +126,7 @@ export async function onRequest(body, ctx) {
     ctx.report?.("ready", record.savedBytes)
     return body
   } catch (error) {
-    await persist({ type: "fail_open", ts: new Date().toISOString(), stage: "bun_onRequest", error: String(error?.message || error).slice(0, 160) })
+    await persist({ type: "fail_open", ts: new Date().toISOString(), stage: "bun_onRequest", error: String(error?.message || error).slice(0, 160) }).catch(() => {})
     console.error("compress-core: Bun companion failed; moejs fallback remains active:", error.message)
     return undefined
   }

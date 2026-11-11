@@ -44,7 +44,7 @@ mcp/ccr-retrieve-server.mjs (stdio MCP, zero dependencies)
 | Shape | Criterion | Typical callers |
 |:--|:--|:--|
 | `direct` | `body.tools[]` contains a name ending in `omniroute_ccr_retrieve` (`__ _ . / : -` separators all work) | Claude Code (older versions), Copilot, codex `type:"mcp"` |
-| `indirect` | There is a code tool (eval/execute/…) and the agent is in the `INDIRECT_CALL_HINTS` allowlist | omp / pi / opencode / codex |
+| `indirect` | There is a code tool (eval/execute/…) and the agent is in the `INDIRECT_CALL_HINTS` allowlist (a **declaration heuristic, not proof of reachability**) | omp / pi / opencode |
 | `deferred` | system/instructions mention "deferred tools / ToolSearch", and the tool name appears **on its own line** | Claude Code 2.1.3xx (deferred MCP tool loading) |
 | `none` | None of the above hold | hindsight, clients without retrieve installed |
 
@@ -53,6 +53,29 @@ ToolSearch manifest in system, so a gate that only checks `tools[]` silently deg
 `no_retrieve_tool`. The detection reads only `tools[]` / `system` / `instructions` and
 **does not scan message bodies** — a tool name mentioned in the body does not mean the
 model can call it. `test/harness-matrix.test.mjs` pins a fixture for each shape.
+
+Two additions on 2026-11-12:
+
+- The detection now also accepts one more shape: explicit text blocks (`text` / `input_text`
+  only) inside the content block array of a **system/developer message**
+  (`[{type:"text",text:…}]`); user/assistant/tool messages and every other block type stay
+  out of scope. A native Claude CLI loopback request confirms this container: the old gate returns `none`
+  and the repaired gate returns `deferred`. Historical linearized captures still cannot
+  recover the container structure of older requests.
+- **Indirect reach is not proof of retrieval**: `indirect` is only a declaration heuristic
+  (a code tool plus an agent on the allowlist) and does not prove the model will call it.
+  codex usually ships a shell/`exec_command`, but a shell is not a retrieval channel, so
+  codex has been removed from `INDIRECT_CALL_HINTS`: ccr only compresses for codex when the
+  tool is declared explicitly (full name in `tools[]`, or `type:"mcp"`) or a deferred
+  manifest matches. If `/mcp/run/ccr-retrieve` returns 404 on the current host (the gateway
+  run gate did not hand the server to that agent), prefer setting ccr-retrieve to direct
+  (the stdio command) in the Library: the sync rewrites each agent's configuration from it
+  and survives later syncs. Whether each client is actually repaired must be verified
+  independently; a code-side fix is not proof of it.
+
+All of the above is only the **gate**; an actual retrieval needs the caller to call the
+tool, and historical hit numbers are snapshots from their own dates, not proof that every
+client is healthy.
 
 ## Installing the retrieve tool (caller agent side, one-time)
 
@@ -97,3 +120,15 @@ COMPRESS_CORE_DATA_DIR/MAGPIE_CONFIG_DIR defaults.
 - Replay behavior unchanged: historical captures do not declare the retrieve tool, so
   ccr skips per the gate (upstream semantics); the telemetry reason changed from the
   generic `nothing_to_remove` to the accurate `no_retrieve_tool`.
+- Blocks **strictly above** the 512KiB persistence cap: the Bun host skips compression by the
+  serialization exclusion rule, the original text goes out unchanged (a block of exactly
+  512KiB is still written).
+- The production pipeline validates **only the segments this request actually replaced**
+  (the injected protocol directive and pre-existing markers do not count); a mapping mismatch
+  rolls back to the snapshot from just before ccr, not the body from before the whole
+  pipeline. The Bun host `await`s the store being ready before compressing and publishes a
+  marker only once this request's originals are flushed; on failure the original stays.
+  A successful flush is not a promise of retrievable forever — TTL expiry and eviction still
+  apply.
+- Historical replay and hit numbers are snapshots taken on their own dates, not a
+  guarantee that every client is healthy.

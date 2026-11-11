@@ -118,14 +118,14 @@ export async function run() {
       tools: [{ type: "function", function: { name: "exec" } }],
       messages: [{ role: "user", content: big(4000) }],
     }
-    check("codex + exec → 间接可达", callerReachesRetrieveIndirectly(codexBody, "codex") !== null)
+    check("codex shell alone does not prove retrieval", callerReachesRetrieveIndirectly(codexBody, "codex") === null)
     // 正例：codex + exec_command 工具（真实 codex 请求里的名字）
     const codexExecCmdBody = {
       model: "m",
       tools: [{ type: "function", function: { name: "exec_command" } }],
       messages: [{ role: "user", content: big(4000) }],
     }
-    check("codex + exec_command → 间接可达", callerReachesRetrieveIndirectly(codexExecCmdBody, "codex") !== null)
+    check("codex exec_command alone does not prove retrieval", callerReachesRetrieveIndirectly(codexExecCmdBody, "codex") === null)
     // 负例：白名单 agent 但没有 code tool
     const noCodeTool = {
       model: "m",
@@ -159,22 +159,21 @@ export async function run() {
     const ocChanged = apply(ocChat, { ...ctxFor("chat"), agent: "opencode" }, {})
     check("opencode + execute 集成：能压", ocChanged === true)
     check("opencode + execute 集成：注入变体 instruction", ocChat.messages[0].role === "system" && ocChat.messages[0].content.includes("from your code tool"))
-    // 集成：codex + exec_command 能压（responses 协议）
+    // A shell and search tool do not establish an available retrieve transport.
     const codexRespBody = {
       model: "m",
       input: [{ role: "user", content: [{ type: "input_text", text }] }],
       tools: [{ type: "function", name: "exec_command" }, { type: "function", name: "tool_search" }],
     }
+    const codexBefore = JSON.stringify(codexRespBody)
     const codexChanged = apply(codexRespBody, { ...ctxFor("responses"), agent: "codex" }, {})
-    check("codex + exec_command 集成：能压", codexChanged === true)
-    check("codex + exec_command 集成：instructions 注入 tool_search 提示", typeof codexRespBody.instructions === "string" && codexRespBody.instructions.includes("tool_search"))
-    // 集成：codex 扁平 name 的 tools 形状
+    check("Codex without retrieve remains verbatim", codexChanged === false && JSON.stringify(codexRespBody) === codexBefore)
     const codexFlatBody = {
       model: "m",
       input: [{ role: "user", content: [{ type: "input_text", text }] }],
-      tools: [{ type: "function", name: "exec_command" }],
+      tools: [{ type: "function", name: "mcp__ccr-retrieve__omniroute_ccr_retrieve" }],
     }
-    check("codex 扁平 name tools：能压", apply(codexFlatBody, { ...ctxFor("responses"), agent: "codex" }, {}) === true)
+    check("Codex declared retrieve still compresses", apply(codexFlatBody, { ...ctxFor("responses"), agent: "codex" }, {}) === true)
     // 负例集成：claude + eval（claude 不在白名单，走原门控逻辑）
     const claudeChat = {
       model: "m",

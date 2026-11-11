@@ -1,6 +1,6 @@
 // Observability, real round-trip, Bun -> moejs handoff and loopback API tests.
 import assert from "node:assert/strict"
-import { mkdtemp, readFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { check } from "./helpers.mjs"
@@ -9,6 +9,8 @@ import { runPipeline, clone } from "../pipeline.js"
 import { summarize, readEvents } from "../telemetry-store.js"
 import * as middleware from "../compress-core.middleware.js"
 import * as hooks from "../observability.hooks.js"
+import { hydrateCcrStore } from "../ccr-store-file.js"
+import { retrieveBlock } from "../engines/ccr/index.js"
 
 export const name = "observability"
 const block = Array.from({ length: 6 }, (_, i) => `stable diagnostic line ${i} ${"x".repeat(28)}`).join("\n")
@@ -81,6 +83,54 @@ export async function run() {
     const unknown = repeatedBody(), ctx = { protocol: "chat", state: {}, options: dedupOnly }
     assert.equal(await hooks.onRequest(unknown, ctx), undefined)
     check("OBS-06b 未知来源不由 Bun 伴随层导出遥测", true)
+  }
+
+  // OBS-16/17 hooks 的 ccr store 是模块单例，路径在第一次本地请求时绑定：本块必须排在
+  // OBS-07 之前，把这些请求建在本用例自己的临时目录上；收尾再把目录复原（见 finally），
+  // 后面的套件（audit 也会真跑 onRequest）不继承一个写不出去的路径。
+  {
+    const ccrDir = await mkdtemp(join(tmpdir(), "compress-core-ccr-hook-"))
+    const storePath = join(ccrDir, "ccr-store.json")
+    const saved = {
+      DATA: process.env.COMPRESS_CORE_DATA_DIR,
+      STATS: process.env.COMPRESS_CORE_NO_STATS,
+    }
+    process.env.COMPRESS_CORE_DATA_DIR = ccrDir
+    process.env.COMPRESS_CORE_NO_STATS = "1" // 这一笔不进共享的 stats 计数
+    try {
+      const ccrOn = { ...allOff, telemetry: { enabled: false }, strategies: { ...allOff.strategies, ccr: true } }
+      const tool = { type: "function", function: { name: "omniroute_ccr_retrieve" } }
+      const text = block + "\n" + "y".repeat(3000)
+      const ccrCtx = () => ({ protocol: "chat", model: "ccr-hook", agent: "node-test", origin: "local", state: {}, options: ccrOn })
+
+      // OBS-16 落盘必须发生在 onRequest 返回之前：这里不调用任何 flush。
+      const body = { model: "ccr-hook", tools: [tool], messages: [{ role: "user", content: text }] }
+      const out = JSON.stringify((await hooks.onRequest(body, ccrCtx())) ?? body)
+      const docText = await readFile(storePath, "utf8").catch(() => "")
+      let disk = hydrateCcrStore(null)
+      try { disk = hydrateCcrStore(JSON.parse(docText)) } catch { /* 还没落盘或文件读不得 */ }
+      const entry = [...disk.entries.values()].find((e) => e.content === text)
+      check("OBS-16 onRequest 返回时原文已在 retrieve 工具读的那份文件里",
+        !!entry && out.includes(`[CCR retrieve hash=${entry.hash} chars=`) &&
+        retrieveBlock(disk, entry.hash, undefined) === text)
+
+      // OBS-17 真写失败：把数据目录本身换成一个普通文件 → store 路径的父目录是文件，
+      // 任何平台都写不出去（不依赖 chmod，也不假设只读盘）。原文写不进去就不能发 marker。
+      await rm(ccrDir, { recursive: true, force: true }).catch(() => {})
+      await writeFile(ccrDir, "x").catch(() => {})
+      const brokenBody = { model: "ccr-hook", tools: [tool], messages: [{ role: "user", content: text + "\n" + "z".repeat(3000) }] }
+      const before = JSON.stringify(brokenBody)
+      const brokenOut = JSON.stringify((await hooks.onRequest(brokenBody, ccrCtx())) ?? brokenBody)
+      check("OBS-17 写不出去时原文原样返回、无 marker",
+        brokenOut === before && !brokenOut.includes("[CCR retrieve hash="))
+    } finally {
+      // 单例整轮进程共用：把数据目录换回可写目录，别把写不出去的路径留给后面的套件。
+      await rm(ccrDir, { force: true }).catch(() => {})
+      await mkdir(ccrDir, { recursive: true }).catch(() => {})
+      for (const [key, value] of [["COMPRESS_CORE_DATA_DIR", saved.DATA], ["COMPRESS_CORE_NO_STATS", saved.STATS]]) {
+        if (value === undefined) delete process.env[key]; else process.env[key] = value
+      }
+    }
   }
   {
     const record = runPipeline(repeatedBody(), { protocol: "chat", state: {} }, dedupOnly, repeatedBody())

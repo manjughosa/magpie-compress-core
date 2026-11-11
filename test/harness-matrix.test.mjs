@@ -123,10 +123,10 @@ const FIXTURES = [
     "chat"
   ),
   fixture(
-    "codex (responses 扁平 name=exec_command)",
+    "codex (shell tool without declared retrieve)",
     { ...contentBody("responses"), tools: [{ type: "function", name: "exec_command" }] },
     "codex",
-    "indirect",
+    "none",
     "responses"
   ),
   fixture(
@@ -214,6 +214,74 @@ export async function run() {
       tools: [{ name: "Read" }], // 没有 ToolSearch，但清单本身已经说明可延迟加载
     }
     check("H-02 清单存在即可达（不依赖 tools[] 里有 ToolSearch）", detectRetrieveCapability(body, "claude").mode === "deferred")
+  }
+
+  // H-02b 延迟清单放在 system/developer 消息的 content 块数组里也要认：
+  // 只认显式文本块（text / input_text），user 消息里的同一份清单不算能力。
+  {
+    const arraySystemBody = {
+      model: "m",
+      messages: [
+        { role: "system", content: [{ type: "text", text: DEFERRED_SYSTEM }] },
+        { role: "user", content: BIG },
+        { role: "assistant", content: "ok" },
+        { role: "user", content: BIG },
+      ],
+    }
+    check(
+      "H-02b 清单在 system 消息的块数组里 → deferred",
+      detectRetrieveCapability(arraySystemBody, "claude").mode === "deferred"
+    )
+    const arrayHit = applyCcr(arraySystemBody, {}, { protocol: "chat", agent: "claude" })
+    check("H-02b 块数组清单真的压得动", arrayHit.compressed === true, `gate=${arrayHit.gateReason || "-"}`)
+    check("H-02b retrievalMode=deferred", arrayHit.retrievalMode === "deferred", arrayHit.retrievalMode)
+
+    const arrayDeveloperBody = {
+      model: "m",
+      messages: [
+        { role: "developer", content: [{ type: "text", text: DEFERRED_SYSTEM }] },
+        { role: "user", content: BIG },
+        { role: "assistant", content: "ok" },
+        { role: "user", content: BIG },
+      ],
+    }
+    check(
+      "H-02b 清单在 developer 消息的块数组里 → deferred",
+      detectRetrieveCapability(arrayDeveloperBody, "claude").mode === "deferred"
+    )
+
+    const arrayUserBody = {
+      model: "m",
+      messages: [
+        { role: "user", content: [{ type: "text", text: DEFERRED_SYSTEM }] },
+        { role: "user", content: BIG },
+        { role: "assistant", content: "ok" },
+        { role: "user", content: BIG },
+      ],
+    }
+    check(
+      "H-02b 同一份清单只在 user 消息的块数组里 → none",
+      detectRetrieveCapability(arrayUserBody, "claude").mode === "none"
+    )
+    const arrayUserMiss = applyCcr(arrayUserBody, {}, { protocol: "chat", agent: "claude" })
+    check(
+      "H-02b user 数组清单不压（no_retrieve_tool）",
+      arrayUserMiss.compressed === false && arrayUserMiss.gateReason === "no_retrieve_tool"
+    )
+
+    const arrayOtherBlockBody = {
+      model: "m",
+      messages: [
+        { role: "system", content: [{ type: "tool_result", text: DEFERRED_SYSTEM }] },
+        { role: "user", content: BIG },
+        { role: "assistant", content: "ok" },
+        { role: "user", content: BIG },
+      ],
+    }
+    check(
+      "H-02b 非文本块不算契约文本 → none",
+      detectRetrieveCapability(arrayOtherBlockBody, "claude").mode === "none"
+    )
   }
 
   // ── H-03 每个可达形状都必须真的压得动，并写出可兑现的 marker ─────────────

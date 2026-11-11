@@ -671,6 +671,7 @@ export function applyCcr(body, cfg, opts) {
   const replaceOpts = { minChars, minBlockBytes, minRepeat, corpus, principalId, rampFactor }
 
   const map = {}
+  const replacements = []
   let replacedCount = 0
   let originalChars = 0
   let newChars = 0
@@ -683,10 +684,13 @@ export function applyCcr(body, cfg, opts) {
       newChars += originals[i].length
       continue
     }
-    const hit = maybeCcrReplace(originals[i], replaceOpts, store)
+    const nonDurable = typeof opts.isNonDurableCcrEntry === "function" &&
+      opts.isNonDurableCcrEntry({ content: originals[i], bytes: utf8ByteLength(originals[i]) })
+    const hit = nonDurable ? null : maybeCcrReplace(originals[i], replaceOpts, store)
     if (hit) {
       seg.set(hit.text)
       map[hit.hash] = originals[i]
+      replacements.push({ index: i, hash: hit.hash, text: hit.text })
       replacedCount++
       newChars += hit.text.length
     } else {
@@ -712,7 +716,7 @@ export function applyCcr(body, cfg, opts) {
   }
 
   const stats = makeStats(originalChars, newChars, Math.round(Date.now() - start), replacedCount)
-  return { body, compressed: true, stats, replacedCount, map, store, retrievalMode }
+  return { body, compressed: true, stats, replacedCount, map, replacements, store, retrievalMode }
 }
 
 // ─── 中间件引擎包装 ─────────────────────────────────────────────────────────
@@ -727,6 +731,7 @@ export function apply(body, ctx, cfg) {
       principalId: (cfg && cfg.principalId) || undefined, // 不能用 session：retrieve server 看不到会话，查的是 anon 区
       store: ctxObj.ccrStore,
       persistStore: ctxObj.persistCcrStore,
+      isNonDurableCcrEntry: ctxObj.isNonDurableCcrEntry,
     })
     // 判定结果写进 state，管线把它带进遥测：direct / indirect / deferred / none。
     // 以后哪个 harness 的客户端升级把门控掀了，requests.jsonl 里能直接看出来。
@@ -742,6 +747,7 @@ export function apply(body, ctx, cfg) {
       // 全量 store 进去会被深拷贝一整轮。
       ctxObj.state.ccr = {
         replacedCount: r.replacedCount,
+        replacements: r.replacements,
         stats: r.stats,
         map: r.map,
         store: ctxObj.ccrStore ? null : r.store,

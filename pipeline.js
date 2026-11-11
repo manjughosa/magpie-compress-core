@@ -2,6 +2,7 @@
 import { PIPELINE, engineModule } from "./engines/index.js"
 import { conversationView } from "./adapter.js"
 import { restoreText } from "./engines/headroom.js"
+import { buildCcrMarker, buildCcrReplacementText } from "./engines/ccr/index.js"
 import { restoreStructured, parseYamlSubset, parseDelimited } from "./engines/leanctx-structured.js"
 
 export const TELEMETRY_VERSION = 1
@@ -216,6 +217,29 @@ function dedupRoundTrip(beforeBody, body, ctx) {
   }
   return firstMismatch < 0 ? { checked, passed } : { checked, passed, firstMismatch }
 }
+function ccrRoundTrip(beforeBody, body, ctx) {
+  const ccr = ctx.state?.ccr || {}
+  const replacements = ccr.replacements || []
+  const checked = Math.max(1, ccr.replacedCount || 0)
+  if (replacements.length !== checked) return { checked, passed: 0 }
+  const before = texts(beforeBody, ctx.protocol)
+  const counts = new Map()
+  for (const text of texts(body, ctx.protocol)) counts.set(text, (counts.get(text) || 0) + 1)
+  // Existing references and injected protocol examples are not new replacements.
+  for (const text of before) if (counts.has(text)) counts.set(text, counts.get(text) - 1)
+  let passed = 0
+  for (const replacement of replacements) {
+    const original = before[replacement.index]
+    if (typeof original !== "string" || ccr.map?.[replacement.hash] !== original) continue
+    const expected = buildCcrReplacementText(original, buildCcrMarker(replacement.hash, original.length))
+    const count = counts.get(expected) || 0
+    if (replacement.text === expected && count > 0) {
+      passed++
+      counts.set(expected, count - 1)
+    }
+  }
+  return { checked, passed }
+}
 function headroomRoundTrip(beforeBody, body, ctx) {
   const before = texts(beforeBody, ctx.protocol), after = texts(body, ctx.protocol)
   let checked = 0, passed = 0
@@ -349,6 +373,7 @@ export function runPipeline(body, ctx, options = {}, beforeBody = null) {
       record.status = changed ? "hit" : "skipped"
       record.reason = changed ? "changed" : reasonFor(engine, ctx)
       record.savedBytes = Math.max(0, record.beforeBytes - record.afterBytes)
+      if (changed && engine.id === "ccr") record.roundTrip = ccrRoundTrip(snapshot, body, ctx)
       if (changed && engine.id === "session-dedup") record.roundTrip = dedupRoundTrip(snapshot, body, ctx)
       if (changed && engine.id === "headroom") record.roundTrip = headroomRoundTrip(snapshot, body, ctx)
       if (changed && engine.id === "leanctx-structured") record.roundTrip = leanctxRoundTrip(snapshot, body, ctx)
@@ -361,6 +386,7 @@ export function runPipeline(body, ctx, options = {}, beforeBody = null) {
       restore(body, snapshot)
       ctx.state = stateSnapshot
       record.afterBytes = byteLength(body)
+      currentBytes = record.afterBytes
       record.ms = Date.now() - t
       record.status = "fail_open"
       record.reason = String(error?.message) === "round_trip_mismatch" ? "round_trip_mismatch" : "engine_error"

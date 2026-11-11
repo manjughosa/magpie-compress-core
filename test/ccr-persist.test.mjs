@@ -1,20 +1,24 @@
 // test/ccr-persist.test.mjs — task-3：跨请求持久 store + retrieve 工具链路。
 // 覆盖：序列化/水合 round-trip、过期与大条目处理、共享 store 压缩→落盘→重载→
-// 工具兑现原文（端到端 round-trip）、门控 reason、ramp 计数跨进程可见。
+// 工具兑现原文（端到端 round-trip）、门控 reason、ramp 计数跨进程可见、
+// 持久上限边界（512KiB / +1）走生产包装、还原校验要认得出缺失映射、
+// flushNow 要如实报写失败。
 
-import { mkdtempSync } from "node:fs"
+import { mkdtempSync, writeFileSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { check, ctxFor } from "./helpers.mjs"
 import {
   apply, applyCcr, makeStore, tryStoreBlock, retrieveBlock, recordRetrieval,
-  shouldSkipCompression, hashContent, restoreCcr, buildCcrMarker,
+  shouldSkipCompression, hashContent, restoreCcr, buildCcrMarker, utf8ByteLength,
 } from "../engines/ccr/index.js"
 import {
   serializeCcrStore, hydrateCcrStore, createPersistentCcrStore,
-  PERSIST_MAX_ENTRY_BYTES,
+  PERSIST_MAX_ENTRY_BYTES, isNonDurableCcrEntry,
 } from "../ccr-store-file.js"
+import { engineModule } from "../engines/index.js"
+import { ENGINES } from "../catalog.js"
 import { callRetrieve, handleRpc, resolveStoreFile } from "../mcp/ccr-retrieve-server.mjs"
 import { runPipeline } from "../pipeline.js"
 
@@ -27,6 +31,16 @@ const big = (n) => {
   while (s.length < n) s += `report line ${i++} ${"y".repeat(50)}\n`
   return s.slice(0, n)
 }
+// 只开 ccr：这个文件里其它默认开着的引擎也会动 body，断言就分不清是谁改的。
+const ccrOnly = {
+  preserve: { system: false, lastTurns: 0 },
+  strategies: { ...Object.fromEntries(ENGINES.map((e) => [e.id, false])), ccr: true },
+}
+// 512KiB 持久上限的字节边界夹具："中" 是 3 字节，524288 % 3 = 2，所以补 "ab" 正好
+// 到上限、补 "abc" 就是上限 +1（字符数与字节数故意不一致，免得把 char 当 byte）。
+const CAP_FILLER = "中".repeat(Math.floor(PERSIST_MAX_ENTRY_BYTES / 3))
+const EXACT_CAP_TEXT = CAP_FILLER + "ab"
+const OVER_CAP_TEXT = CAP_FILLER + "abc"
 
 export async function run() {
   const dir = mkdtempSync(join(tmpdir(), "ccr-persist-"))
@@ -67,6 +81,53 @@ export async function run() {
     check("P-3 大块不落盘", doc.entries.length === 0)
   }
 
+  // P-3b 持久宿主不能替换磁盘无法保存的块。走生产路径（管线 + ctx 里真实注入的
+  // isNonDurableCcrEntry）才验得到引擎包装有没有把它转发给 applyCcr。
+  {
+    check("P-3b 夹具字节数在上限之上一字节",
+      utf8ByteLength(OVER_CAP_TEXT) === PERSIST_MAX_ENTRY_BYTES + 1)
+    const overBody = {
+      model: "m",
+      tools: [retrieveTool],
+      messages: [{ role: "user", content: OVER_CAP_TEXT }],
+    }
+    const overBefore = JSON.stringify(overBody)
+    const shared = makeStore()
+    let persisted = 0
+    const overRecord = runPipeline(overBody, {
+      protocol: "chat",
+      state: {},
+      ccrStore: shared,
+      persistCcrStore: () => persisted++,
+      isNonDurableCcrEntry,
+    }, ccrOnly)
+    check("P-3b 超持久上限的块保持原文", JSON.stringify(overBody) === overBefore)
+    check("P-3b 超持久上限不产生 marker", !JSON.stringify(overBody).includes("[CCR retrieve hash="))
+    check("P-3b 超持久上限是跳过不是失败",
+      overRecord.strategies.find((s) => s.id === "ccr").status === "skipped" && overRecord.failOpen === 0)
+    check("P-3b 超持久上限不写入 store", shared.entries.size === 0 && persisted === 0)
+
+    check("P-3b 夹具字节数正好等于上限",
+      utf8ByteLength(EXACT_CAP_TEXT) === PERSIST_MAX_ENTRY_BYTES)
+    const exactBody = {
+      model: "m",
+      tools: [retrieveTool],
+      messages: [{ role: "user", content: EXACT_CAP_TEXT }],
+    }
+    const exactShared = makeStore()
+    const exactRecord = runPipeline(exactBody, {
+      protocol: "chat",
+      state: {},
+      ccrStore: exactShared,
+      isNonDurableCcrEntry,
+    }, ccrOnly)
+    check("P-3b 持久上限边界仍可压",
+      exactRecord.strategies.find((s) => s.id === "ccr").status === "hit")
+    check("P-3b 边界块的原文在共享 store 里可按 hash 兑现",
+      exactShared.entries.size === 1 &&
+      retrieveBlock(exactShared, hashContent(EXACT_CAP_TEXT), undefined) === EXACT_CAP_TEXT)
+  }
+
   // P-4 持久 handle：压缩 → flushNow → 新 handle 能读到
   {
     const h1 = createPersistentCcrStore(file)
@@ -78,6 +139,18 @@ export async function run() {
     const h2 = createPersistentCcrStore(file)
     await h2.ready
     check("P-4 落盘后新进程视角能取回", retrieveBlock(h2.get(), r.hash, "p4") === text)
+  }
+
+  // P-4b flushNow 必须如实报失败：写不出去却报成功，上层就会把 marker 发出去，
+  // 而原文永远不在盘上（父路径是普通文件 → 任何平台都写不出去，不依赖 chmod）。
+  {
+    const blocker = join(dir, "not-a-directory")
+    writeFileSync(blocker, "x")
+    const h = createPersistentCcrStore(join(blocker, "nested", "ccr-store.json"))
+    await h.ready
+    tryStoreBlock(h.get(), big(2000), "p4b")
+    h.persist()
+    check("P-4b 写不出去时 flushNow 报 false", (await h.flushNow()) === false)
   }
 
   // P-5 端到端：声明 retrieve 工具的 body → 共享 store 命中 → 落盘 →
@@ -115,6 +188,70 @@ export async function run() {
     // 协议指令已注入且幂等
     check("P-5 协议指令注入到 system", body.messages[0].role === "system" &&
       body.messages[0].content.includes("[CCR protocol]"))
+  }
+
+  // P-5b 生产管线必须验证 CCR 的替换映射：协议指令注入（unshift 到 messages[0]）和
+  // 历史里的旧 marker 都不是本次替换，不能算进校验；有效命中（preamble + marker）要过。
+  {
+    const text = big(4000)
+    const oldHash = "0123456789abcdef01234567"
+    const oldLine = `earlier summary ${buildCcrMarker(oldHash, 999)} tail`
+    const body = {
+      model: "m",
+      tools: [retrieveTool],
+      messages: [
+        { role: "user", content: text },
+        { role: "assistant", content: oldLine },
+      ],
+    }
+    const ctx = { protocol: "chat", state: {} }
+    const record = runPipeline(body, ctx, ccrOnly)
+    const ccr = record.strategies.find((s) => s.id === "ccr")
+    check("P-5b 命中经过还原校验", ccr.status === "hit" && record.failOpen === 0)
+    check("P-5b 只校验本次替换：注入的指令与历史 marker 不算",
+      record.roundTripsChecked === 1 && record.roundTripsPassed === 1)
+    check("P-5b 协议指令已注入 system", body.messages[0].role === "system" &&
+      body.messages[0].content.includes("[CCR protocol]"))
+    const hash = hashContent(text)
+    const marker = buildCcrMarker(hash, text.length)
+    const compressed = body.messages.find((m) => typeof m.content === "string" && m.content.includes(marker))
+    check("P-5b preamble 保留、marker 在段尾", !!compressed &&
+      compressed.content.endsWith(marker) &&
+      compressed.content.startsWith(text.slice(0, 200).trimEnd()))
+    check("P-5b 映射把 marker 指回逐字节原文", ctx.state.ccr?.map?.[hash] === text)
+    check("P-5b 历史旧 marker 原样未动", body.messages.some((m) => m.content === oldLine))
+  }
+
+  // P-5c 缺失映射不是靠传一个假 state 造出来的：真跑一次引擎，再删掉它刚写下的映射，
+  // 管线必须在还原校验里发现对不上并整包回滚。
+  {
+    const ccrEngine = engineModule("ccr")
+    const realApply = ccrEngine.apply
+    const text = big(3000)
+    const body = {
+      model: "m",
+      tools: [retrieveTool],
+      messages: [{ role: "user", content: text }],
+    }
+    const before = JSON.stringify(body)
+    const ctx = { protocol: "chat", state: {} }
+    let record = null
+    try {
+      ccrEngine.apply = function (b, c, cfg) {
+        const changed = realApply.call(ccrEngine, b, c, cfg)
+        for (const hash of Object.keys(c?.state?.ccr?.map || {})) delete c.state.ccr.map[hash]
+        return changed
+      }
+      record = runPipeline(body, ctx, ccrOnly)
+    } finally {
+      ccrEngine.apply = realApply // 别把补丁留给后面的用例
+    }
+    const ccr = record.strategies.find((s) => s.id === "ccr")
+    check("P-5c 缺失映射记 round_trip_mismatch",
+      ccr.status === "fail_open" && ccr.reason === "round_trip_mismatch")
+    check("P-5c 缺失映射回滚原 body", JSON.stringify(body) === before)
+    check("P-5c 缺失映射计入 failOpen",
+      record.failOpen === 1 && record.roundTripsChecked === 1 && record.roundTripsPassed === 0)
   }
 
   // P-6 门控：没声明 retrieve 工具 → 跳过且 reason 准确（管线级）

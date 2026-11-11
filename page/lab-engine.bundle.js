@@ -769,7 +769,6 @@
   var INDIRECT_CALL_HINTS = {
     omp: "from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`",
     opencode: "from your code tool (e.g. `execute`), call `mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`",
-    codex: "use `tool_search` to find the `omniroute_ccr_retrieve` tool, then call it with the hash",
     pi: "from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`"
   };
   var INDIRECT_CAPABLE_AGENTS = new Set(Object.keys(INDIRECT_CALL_HINTS));
@@ -811,6 +810,13 @@
       for (const msg of body.messages) {
         if (!msg || msg.role !== "system" && msg.role !== "developer") continue;
         take(msg.content);
+        if (Array.isArray(msg.content)) {
+          for (const part of msg.content) {
+            if (!part || typeof part !== "object") continue;
+            if (part.type !== "text" && part.type !== "input_text") continue;
+            take(part.text);
+          }
+        }
       }
     }
     return out;
@@ -8439,6 +8445,7 @@ ${GCF_FENCE_CLOSE}`;
     const corpus = minRepeat > 1 ? originals.join("\n") : "";
     const replaceOpts = { minChars, minBlockBytes, minRepeat, corpus, principalId, rampFactor };
     const map = {};
+    const replacements = [];
     let replacedCount = 0;
     let originalChars = 0;
     let newChars = 0;
@@ -8449,10 +8456,12 @@ ${GCF_FENCE_CLOSE}`;
         newChars += originals[i].length;
         continue;
       }
-      const hit = maybeCcrReplace(originals[i], replaceOpts, store);
+      const nonDurable = typeof opts.isNonDurableCcrEntry === "function" && opts.isNonDurableCcrEntry({ content: originals[i], bytes: utf8ByteLength(originals[i]) });
+      const hit = nonDurable ? null : maybeCcrReplace(originals[i], replaceOpts, store);
       if (hit) {
         seg.set(hit.text);
         map[hit.hash] = originals[i];
+        replacements.push({ index: i, hash: hit.hash, text: hit.text });
         replacedCount++;
         newChars += hit.text.length;
       } else {
@@ -8473,7 +8482,7 @@ ${GCF_FENCE_CLOSE}`;
       }
     }
     const stats = makeStats(originalChars, newChars, Math.round(Date.now() - start), replacedCount);
-    return { body, compressed: true, stats, replacedCount, map, store, retrievalMode };
+    return { body, compressed: true, stats, replacedCount, map, replacements, store, retrievalMode };
   }
   function apply12(body, ctx, cfg) {
     try {
@@ -8485,7 +8494,8 @@ ${GCF_FENCE_CLOSE}`;
         principalId: cfg && cfg.principalId || void 0,
         // 不能用 session：retrieve server 看不到会话，查的是 anon 区
         store: ctxObj.ccrStore,
-        persistStore: ctxObj.persistCcrStore
+        persistStore: ctxObj.persistCcrStore,
+        isNonDurableCcrEntry: ctxObj.isNonDurableCcrEntry
       });
       if (ctxObj.state && r.retrievalMode) ctxObj.state.ccrRetrievalMode = r.retrievalMode;
       if (!r.compressed) {
@@ -8495,6 +8505,7 @@ ${GCF_FENCE_CLOSE}`;
       if (ctxObj.state) {
         ctxObj.state.ccr = {
           replacedCount: r.replacedCount,
+          replacements: r.replacements,
           stats: r.stats,
           map: r.map,
           store: ctxObj.ccrStore ? null : r.store
@@ -9815,6 +9826,28 @@ ${GCF_FENCE_CLOSE}`;
     }
     return firstMismatch < 0 ? { checked, passed } : { checked, passed, firstMismatch };
   }
+  function ccrRoundTrip(beforeBody, body, ctx) {
+    const ccr = ctx.state?.ccr || {};
+    const replacements = ccr.replacements || [];
+    const checked = Math.max(1, ccr.replacedCount || 0);
+    if (replacements.length !== checked) return { checked, passed: 0 };
+    const before = texts(beforeBody, ctx.protocol);
+    const counts = /* @__PURE__ */ new Map();
+    for (const text of texts(body, ctx.protocol)) counts.set(text, (counts.get(text) || 0) + 1);
+    for (const text of before) if (counts.has(text)) counts.set(text, counts.get(text) - 1);
+    let passed = 0;
+    for (const replacement of replacements) {
+      const original = before[replacement.index];
+      if (typeof original !== "string" || ccr.map?.[replacement.hash] !== original) continue;
+      const expected = buildCcrReplacementText(original, buildCcrMarker2(replacement.hash, original.length));
+      const count = counts.get(expected) || 0;
+      if (replacement.text === expected && count > 0) {
+        passed++;
+        counts.set(expected, count - 1);
+      }
+    }
+    return { checked, passed };
+  }
   function headroomRoundTrip(beforeBody, body, ctx) {
     const before = texts(beforeBody, ctx.protocol), after = texts(body, ctx.protocol);
     let checked = 0, passed = 0;
@@ -9928,6 +9961,7 @@ ${GCF_FENCE_CLOSE}`;
         record.status = changed ? "hit" : "skipped";
         record.reason = changed ? "changed" : reasonFor(engine, ctx);
         record.savedBytes = Math.max(0, record.beforeBytes - record.afterBytes);
+        if (changed && engine.id === "ccr") record.roundTrip = ccrRoundTrip(snapshot, body, ctx);
         if (changed && engine.id === "session-dedup") record.roundTrip = dedupRoundTrip(snapshot, body, ctx);
         if (changed && engine.id === "headroom") record.roundTrip = headroomRoundTrip(snapshot, body, ctx);
         if (changed && engine.id === "leanctx-structured") record.roundTrip = leanctxRoundTrip(snapshot, body, ctx);
@@ -9940,6 +9974,7 @@ ${GCF_FENCE_CLOSE}`;
         restore(body, snapshot);
         ctx.state = stateSnapshot;
         record.afterBytes = byteLength2(body);
+        currentBytes = record.afterBytes;
         record.ms = Date.now() - t;
         record.status = "fail_open";
         record.reason = String(error?.message) === "round_trip_mismatch" ? "round_trip_mismatch" : "engine_error";

@@ -24,12 +24,16 @@ export function ccrStoreFile() {
   return join(telemetryDir(), "ccr-store.json")
 }
 
+/** Entries the disk-only retrieve server can never redeem. */
+export function isNonDurableCcrEntry(entry) {
+  return !entry || typeof entry.content !== "string" || entry.bytes > PERSIST_MAX_ENTRY_BYTES
+}
+
 /** store → 可序列化文档。大条目跳过；retrievalCounts 全量带上（ramp 靠它跨请求生效）。 */
 export function serializeCcrStore(store) {
   const entries = []
   for (const [key, entry] of store.entries) {
-    if (!entry || typeof entry.content !== "string") continue
-    if (entry.bytes > PERSIST_MAX_ENTRY_BYTES) continue
+    if (isNonDurableCcrEntry(entry)) continue
     entries.push([key, entry])
   }
   return {
@@ -123,7 +127,7 @@ export function createPersistentCcrStore(file = ccrStoreFile()) {
   let store = makeStore()
   let dirty = false
   let timer = null
-  let chain = Promise.resolve()
+  let chain = Promise.resolve(true)
 
   const loaded = loadCcrStoreFile(file).then((s) => {
     // 加载期间引擎可能已经压了新块进空 store：以内存为准合并旧条目。
@@ -138,7 +142,7 @@ export function createPersistentCcrStore(file = ccrStoreFile()) {
   loaded.catch(() => {})
 
   function flush() {
-    if (!dirty) return
+    if (!dirty) return chain
     dirty = false
     chain = chain.then(async () => {
       const written = await writeStoreFile(file, store).catch(() => false)
@@ -152,7 +156,9 @@ export function createPersistentCcrStore(file = ccrStoreFile()) {
           if (typeof timer.unref === "function") timer.unref()
         }
       }
+      return written
     })
+    return chain
   }
   return {
     get() { return store },
@@ -162,8 +168,12 @@ export function createPersistentCcrStore(file = ccrStoreFile()) {
       timer = setTimeout(() => { timer = null; flush() }, FLUSH_DELAY_MS)
       if (typeof timer.unref === "function") timer.unref()
     },
-    /** 测试与关机用：立刻把脏数据写出去。 */
-    async flushNow() { if (timer) { clearTimeout(timer); timer = null } flush(); await chain },
+    /** Resolve true only after the current originals are durable. */
+    async flushNow() {
+      await loaded
+      if (timer) { clearTimeout(timer); timer = null }
+      return await flush()
+    },
     ready: loaded,
   }
 }

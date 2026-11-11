@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3 — 2026-11-12
+
+- **CCR gate**: `deferred` now also reads the content block array of a system/developer message (explicit `text` / `input_text` blocks only; other messages and block types are still not scanned) — verified against a native Claude CLI loopback request (`none` before, `deferred` after). codex is off the indirect allowlist: a shell or `exec_command` alone is not a retrieval channel, so codex must declare the retrieve tool or match a deferred manifest; `indirect` stays a declaration heuristic, not proof of reachability.
+- **CCR safety**: the Bun host skips blocks the store cannot persist (**strictly above** the 512KiB cap; a block of exactly 512KiB is still written), `await`s the store being ready before compressing instead of skipping while it is not ready, and keeps the original body when the flush fails. A marker is published only after its original is flushed, but that is not a promise retrieval can never fail — TTL expiry and eviction still apply. The pipeline validates only the segments this request actually replaced and rolls back to the pre-ccr snapshot (not the whole pre-pipeline body) when the mapping does not match.
+- **Docs**: indirect reach is not proof of retrieval, historical hit rates are snapshots rather than universal client health, and a host whose `/mcp/run/ccr-retrieve` returns 404 is best served by setting ccr-retrieve to direct (stdio) in the Library; whether each client is repaired has to be verified independently, not inferred from the code-side fix.
+
 ## 0.5.2 — 2026-11-11
 
 - **lite**: trim trailing spaces before CR, CRLF and Unicode line separators as well as LF. Keep the original fold-then-trim order, whitespace-only messages and long-space linear-time behavior. Added regression cases and rebuilt the lab bundle.

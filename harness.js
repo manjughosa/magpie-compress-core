@@ -55,7 +55,6 @@ export const callerSupportsCcrRetrieve = callerSupportsDirectRetrieve
 export const INDIRECT_CALL_HINTS = {
   omp: 'from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`',
   opencode: 'from your code tool (e.g. `execute`), call `mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`',
-  codex: 'use `tool_search` to find the `omniroute_ccr_retrieve` tool, then call it with the hash',
   pi: 'from your code tool (e.g. `eval`), call `tool.mcp__ccr_retrieve_omniroute_ccr_retrieve({ hash })`',
 }
 
@@ -99,7 +98,7 @@ export function callerReachesRetrieveIndirectly(body, agent) {
 
 const DEFERRED_MARKER_RE = /\bdeferred\s+tools?\b|\btool[\s_-]?search\b/i
 
-/** 工具契约文本：只取 system / instructions，不取 messages 正文。 */
+/** 工具契约文本：只取 system / instructions 与 system/developer 消息；不扫其它消息正文。 */
 function contractTexts(body) {
   const out = []
   if (!body || typeof body !== "object") return out
@@ -118,6 +117,14 @@ function contractTexts(body) {
     for (const msg of body.messages) {
       if (!msg || (msg.role !== "system" && msg.role !== "developer")) continue
       take(msg.content)
+      // Text blocks carry the same trusted contract as string system messages.
+      if (Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (!part || typeof part !== "object") continue
+          if (part.type !== "text" && part.type !== "input_text") continue
+          take(part.text)
+        }
+      }
     }
   }
   return out
