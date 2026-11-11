@@ -404,19 +404,24 @@
     }
     return value;
   }
-  function trimLineEnd(line) {
-    let e = line.length;
-    while (e > 0) {
-      const c = line.charCodeAt(e - 1);
-      if (c !== 32 && c !== 9) break;
-      e--;
+  function trimLineEnds(text) {
+    let out = "", start = 0;
+    for (let i = 0; i <= text.length; i++) {
+      const c = i < text.length ? text.charCodeAt(i) : -1;
+      if (c === -1 || c === 10 || c === 13 || c === 8232 || c === 8233) {
+        let end = i;
+        while (end > start && (text.charCodeAt(end - 1) === 32 || text.charCodeAt(end - 1) === 9)) end--;
+        out += text.slice(start, end);
+        if (c !== -1) out += text[i];
+        start = i + 1;
+      }
     }
-    return e === line.length ? line : line.slice(0, e);
+    return out;
   }
   function normalizeMessageWhitespace(content) {
     if (!content) return "";
     if (content.trim() === "") return content;
-    return content.replace(/\n{3,}/g, "\n\n").split("\n").map(trimLineEnd).join("\n");
+    return trimLineEnds(content.replace(/\n{3,}/g, "\n\n"));
   }
   function collapseWhitespace(body, options) {
     options = options || {};

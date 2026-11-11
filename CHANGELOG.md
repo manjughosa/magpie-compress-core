@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2 — 2026-11-11
+
+- **lite**: trim trailing spaces before CR, CRLF and Unicode line separators as well as LF. Keep the original fold-then-trim order, whitespace-only messages and long-space linear-time behavior. Added regression cases and rebuilt the lab bundle.
+
 ## 0.5.1 — 2026-11-11
 
 - **Diff viewer**: deleting or adding repeated lines, or changing line order, no longer reports identical text. Both page entry points locate the first change even beyond the initial 40-line window, with Chinese and English explanations.

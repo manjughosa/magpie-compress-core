@@ -40,6 +40,12 @@ export async function run() {
   check("3 2换行不动", r.body.messages[0].content === "a\n\nb" && !r.applied)
   r = collapseWhitespace({ messages: [{ role: "user", content: "foo   \nbar\t\t\n" }] })
   check("4 行尾空格tab剥除", r.body.messages[0].content === "foo\nbar\n" && r.applied)
+  r = collapseWhitespace({ messages: [{ role: "user", content: "a \r\nb \rc  d  e" }] })
+  check("4b CR、CRLF 与 Unicode 行分隔符前的行尾空格剥除", r.body.messages[0].content === "a\r\nb\rc d e" && r.applied)
+  r = collapseWhitespace({ messages: [{ role: "user", content: "a\n \n \n \nb" }] })
+  check("4c 先折叠空行再清理，不新增空行", r.body.messages[0].content === "a\n\n\n\nb")
+  r = collapseWhitespace({ messages: [{ role: "user", content: "a\r\n\r\n\r\n\r\nb" }] })
+  check("4d CRLF 本身不参与 LF 折叠", r.body.messages[0].content === "a\r\n\r\n\r\n\r\nb")
   r = collapseWhitespace({ messages: [{ role: "user", content: "" }] })
   check("5 空串", r.body.messages[0].content === "" && !r.applied)
   r = collapseWhitespace({ messages: [{ role: "system", content: "a\n\n\nb" }] }, { preserveSystemPrompt: true })
