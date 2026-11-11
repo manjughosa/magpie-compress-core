@@ -10,7 +10,6 @@
   function pick(zh, en) { return I18N && I18N.pick ? I18N.pick(zh, en) : zh }
   if (I18N && I18N.onChange) {
     I18N.onChange(function (next) {
-      lang = next
       var input = $("labInput")
       var modeEl = $("labMode")
       if (input) {
@@ -201,7 +200,6 @@
 
   function init(opts) {
     if (!opts) return
-    lang = opts.lang || "zh"
     getOptions = opts.getOptions || getOptions
 
     bindLab()
