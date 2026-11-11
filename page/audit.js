@@ -7,6 +7,7 @@
   var I18N = globalThis.CompressI18n
   var $ = function (id) { return document.getElementById(id) }
   var lastResult = null
+  var lang = I18N ? I18N.lang : "zh"
   function pick(zh, en) { return I18N && I18N.pick ? I18N.pick(zh, en) : zh }
   if (I18N && I18N.onChange) {
     I18N.onChange(function (next) {
