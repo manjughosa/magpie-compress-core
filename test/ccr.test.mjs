@@ -202,6 +202,16 @@ export async function run() {
     // 字符阈值
     const b3 = chatWithTool(text)
     check("minChars 5000 → 不压", apply(b3, ctxFor("chat"), { minChars: 5000 }) === false)
+    // 默认值下的中文：一个汉字三字节，默认门槛必须放过一段正常的中文回答。
+    // 600/2048 时这段 900 字的回答会被换成 marker，下一轮读不回来。
+    const cjk = "中".repeat(900)
+    const cjkBody = chatWithTool(cjk)
+    check("默认门槛放过 900 字中文（三字节/字）", apply(cjkBody, ctxFor("chat"), {}) === false)
+    check("900 字中文原样保留", cjkBody.messages.find((m) => m.role === "user").content === cjk)
+    // 超大块仍然照折：默认门槛不是关掉 ccr。
+    const cjkHuge = "中".repeat(4000)
+    const cjkHugeBody = chatWithTool(cjkHuge)
+    check("默认门槛仍折 4000 字中文", apply(cjkHugeBody, ctxFor("chat"), {}) === true)
   }
 
   // ---- minRepeat ----

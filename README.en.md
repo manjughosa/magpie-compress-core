@@ -51,7 +51,7 @@ ccr is the "replace a large block with a tag" strategy. What makes it different 
 
 The workflow:
 
-1. **At compression time**: when the request carries a long enough block of text (600 characters or more by default), ccr swaps the whole block for one line:
+1. **At compression time**: when the request carries a long enough block of text (2000 characters or more by default, and at least 2048 bytes), ccr swaps the whole block for one line:
    `[CCR retrieve hash=955dac5846d17f19c5811f24 chars=1641]`. The original text is stored, keyed by that hash, in `ccr-store.json` inside the plugin's data directory. The request shrinks on the spot.
 2. **When the model reads the tag**: it sees a placeholder, not the text. When it needs the original, it calls the `omniroute_ccr_retrieve` tool and hands over the hash.
 3. **The retrieve tool**: a small local MCP server (`mcp/ccr-retrieve-server.mjs`, zero dependencies) looks the hash up in the store and returns the original byte for byte. Six read modes are supported — `full` (the whole text, capped at 256KiB), `head` / `tail` (first/last N lines), `lines` (a line range), `grep` (regex filter), `stats` (metadata) — so the model can fetch only the part it wants.

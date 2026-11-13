@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.5 — 2026-11-13
+
+- **CCR defaults**: `minChars` is now 2000 rather than upstream's 600. The two thresholds are ANDed — a block folds only when it is at least `minChars` characters **and** `minBlockBytes` bytes — so in CJK text, where one character is three UTF-8 bytes, 600 characters against a 2048-byte floor meant a normal Chinese answer of roughly 683 characters was swapped for a marker and became unreadable on the next turn. 2000 leaves ordinary Chinese and English replies intact while tool output and long logs still fold. `minBlockBytes` stays at 2048, so English behaviour is unchanged.
+
 ## 0.5.4 — 2026-11-12
 
 - **Native Codex tool search**: recognize loaded CCR definitions in typed `input[].tools` contracts (`tool_search_output`) and nested `namespace` tools. The old gate stayed `none` even after successful tool discovery and retrieval. Definitions not yet loaded still fail closed.

@@ -69,7 +69,7 @@ globalThis.CompressCatalog = {
           "type": "number",
           "label": "Minimum block characters",
           "description": "Minimum character count for a block to be a CCR candidate.",
-          "defaultValue": 600,
+          "defaultValue": 2000,
           "min": 100,
           "max": 1000000
         },

@@ -30,8 +30,10 @@
 //      instruction 注入仍只支持 messages 数组（chat/anthropic），responses/gemini 跳过。
 //
 // catalog 里 ccr 的 fields 是 minBlockBytes / minRepeat（上游没有这两个键）。两个都实现，
-// 默认值取上游语义：minRepeat 默认 1（= 不要求重复，上游任何 ≥minChars 的块都折叠）；
-// minBlockBytes 默认 2048（catalog 显示值；上游只有 600 字符阈值，设 0 即回到纯字符阈值）。
+// 默认值取上游语义：minRepeat 默认 1（= 不要求重复，任何 ≥minChars 的块都折叠）。
+// minChars 默认不沿用上游的 600：两个阈值是「都满足才折」，而中文 UTF-8 三字节一字，
+// 600 字符的门槛约等于 683 个汉字，一段正常的中文回答会被换成引用、下一轮读不回来。
+// 抬到 2000 后中英文的单段回答都不再被折，工具输出与长日志仍然照折。
 
 import { sha256hex } from "../../hash.js"
 import { conversationView } from "../../adapter.js"
@@ -61,8 +63,11 @@ export const available = true
 // ─── 常量（上游逐字） ────────────────────────────────────────────────────────
 
 const ENGINE_ID = "ccr"
-/** 块成为 CCR 候选的最小字符数。 */
-const DEFAULT_MIN_CHARS = 600
+/** 块成为 CCR 候选的最小字符数。上游是 600。
+ *  真正卡住中文的是这个字符门槛：两个阈值是「都要满足才折」，而中文 UTF-8 三字节一字，
+ *  600 字符配上 2048 字节的下限，约 683 个汉字就会被换成引用，下一轮再也读不回来。
+ *  2000 字符让中英文的单段回答都不再被折，工具输出与长日志仍然照折。 */
+const DEFAULT_MIN_CHARS = 2000
 /** catalog 的 minBlockBytes 默认值；上游无此阈值。0 = 关闭字节阈值。 */
 const DEFAULT_MIN_BLOCK_BYTES = 2048
 /** 同一块至少出现几次才折叠。上游无此阈值（默认 1）。 */

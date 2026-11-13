@@ -7990,7 +7990,7 @@ ${GCF_FENCE_CLOSE}`;
   var levels7 = void 0;
   var available7 = true;
   var ENGINE_ID = "ccr";
-  var DEFAULT_MIN_CHARS = 600;
+  var DEFAULT_MIN_CHARS = 2e3;
   var DEFAULT_MIN_BLOCK_BYTES = 2048;
   var DEFAULT_MIN_REPEAT = 1;
   var RETRIEVAL_THRESHOLD = 3;
