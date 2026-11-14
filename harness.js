@@ -41,7 +41,7 @@ function toolNames(tool) {
   if (typeof tool.name === "string") out.push(tool.name)
   if (tool.function && typeof tool.function.name === "string") out.push(tool.function.name)
   // Responses API：{ type: "mcp", server_label: "ccr-retrieve" } 不写全名。
-  if (tool.type === "mcp" && typeof tool.server_label === "string") {
+  if (tool.type === "mcp" && ["ccr-retrieve", "ccr_retrieve"].includes(tool.server_label)) {
     out.push(`mcp__${tool.server_label}__${CCR_RETRIEVE_TOOL_NAME}`)
   }
   return out
@@ -122,10 +122,12 @@ function contractTexts(body) {
       if (part && typeof part.text === "string") out.push(part.text)
     }
   }
-  // chat 协议把 system 放在 messages 里；只认 system/developer 角色。
-  if (Array.isArray(body.messages)) {
-    for (const msg of body.messages) {
+  // chat 的 messages 与 Responses 的 input 都可携带可信工具清单。
+  for (const messages of [body.messages, body.input]) {
+    if (!Array.isArray(messages)) continue
+    for (const msg of messages) {
       if (!msg || (msg.role !== "system" && msg.role !== "developer")) continue
+      if (messages === body.input && msg.type !== undefined && msg.type !== "message") continue
       take(msg.content)
       // Text blocks carry the same trusted contract as string system messages.
       if (Array.isArray(msg.content)) {

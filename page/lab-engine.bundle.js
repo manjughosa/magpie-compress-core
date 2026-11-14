@@ -762,7 +762,7 @@
     }
     if (typeof tool.name === "string") out.push(tool.name);
     if (tool.function && typeof tool.function.name === "string") out.push(tool.function.name);
-    if (tool.type === "mcp" && typeof tool.server_label === "string") {
+    if (tool.type === "mcp" && ["ccr-retrieve", "ccr_retrieve"].includes(tool.server_label)) {
       out.push(`mcp__${tool.server_label}__${CCR_RETRIEVE_TOOL_NAME}`);
     }
     return out;
@@ -815,9 +815,11 @@
         if (part && typeof part.text === "string") out.push(part.text);
       }
     }
-    if (Array.isArray(body.messages)) {
-      for (const msg of body.messages) {
+    for (const messages of [body.messages, body.input]) {
+      if (!Array.isArray(messages)) continue;
+      for (const msg of messages) {
         if (!msg || msg.role !== "system" && msg.role !== "developer") continue;
+        if (messages === body.input && msg.type !== void 0 && msg.type !== "message") continue;
         take(msg.content);
         if (Array.isArray(msg.content)) {
           for (const part of msg.content) {

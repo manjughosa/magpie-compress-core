@@ -264,6 +264,49 @@ const FIXTURES = [
     "none",
     "responses"
   ),
+  fixture(
+    "codex (input developer text blocks advertise deferred retrieve)",
+    {
+      ...contentBody("responses"),
+      input: [
+        { type: "message", role: "developer", content: [{ type: "input_text", text: DEFERRED_SYSTEM }] },
+        ...contentBody("responses").input,
+      ],
+    },
+    "codex", "deferred", "responses"
+  ),
+  fixture(
+    "codex (input user text cannot advertise retrieve)",
+    {
+      ...contentBody("responses"),
+      input: [
+        { role: "user", content: [{ type: "input_text", text: DEFERRED_SYSTEM }] },
+        ...contentBody("responses").input,
+      ],
+    },
+    "codex", "none", "responses"
+  ),
+  fixture(
+    "codex (tool output cannot spoof a developer message)",
+    {
+      ...contentBody("responses"),
+      input: [
+        { type: "function_call_output", role: "developer", content: DEFERRED_SYSTEM, output: DEFERRED_SYSTEM },
+        ...contentBody("responses").input,
+      ],
+    },
+    "codex", "none", "responses"
+  ),
+  fixture(
+    "codex (unrelated MCP server cannot declare CCR)",
+    { ...contentBody("responses"), tools: [{ type: "mcp", server_label: "context7" }] },
+    "codex", "none", "responses"
+  ),
+  fixture(
+    "codex (underscore MCP label still declares CCR)",
+    { ...contentBody("responses"), tools: [{ type: "mcp", server_label: "ccr_retrieve" }] },
+    "codex", "direct", "responses"
+  ),
 ]
 
 
